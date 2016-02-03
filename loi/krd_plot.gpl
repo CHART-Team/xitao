@@ -1,0 +1,153 @@
+#!/usr/bin/gnuplot -persist
+#
+#    
+#    	G N U P L O T
+#    	Version 4.6 patchlevel 1    last modified 2012-09-26 
+#    	Build System: Linux x86_64
+#    
+#    	Copyright (C) 1986-1993, 1998, 2004, 2007-2012
+#    	Thomas Williams, Colin Kelley and many others
+#    
+#    	gnuplot home:     http://www.gnuplot.info
+#    	faq, bugs, etc:   type "help FAQ"
+#    	immediate help:   type "help"  (plot window: hit 'h')
+# set terminal qt 0
+# set output
+unset clip points
+set clip one
+unset clip two
+set bar 1.000000 front
+set border 31 front linetype -1 linewidth 1.000
+set timefmt z "%d/%m/%y,%H:%M"
+set zdata 
+set timefmt y "%d/%m/%y,%H:%M"
+set ydata 
+set timefmt x "%d/%m/%y,%H:%M"
+set xdata 
+set timefmt cb "%d/%m/%y,%H:%M"
+set timefmt y2 "%d/%m/%y,%H:%M"
+set y2data 
+set timefmt x2 "%d/%m/%y,%H:%M"
+set x2data 
+set boxwidth 0.2 absolute
+set style fill  empty border
+set style rectangle back fc  lt -3 fillstyle   solid 1.00 border lt -1
+set style circle radius graph 0.02, first 0, 0 
+set dummy x,y
+set format x "% g"
+set format y "% g"
+set format x2 "% g"
+set format y2 "% g"
+set format z "% g"
+set format cb "% g"
+set format r "% g"
+set angles radians
+set grid nopolar
+set grid noxtics nomxtics ytics nomytics noztics nomztics \
+ nox2tics nomx2tics noy2tics nomy2tics nocbtics nomcbtics
+set grid layerdefault   linetype 0 linewidth 1.000,  linetype 0 linewidth 1.000
+set key title ""
+set key inside left top vertical Right noreverse enhanced autotitles nobox
+set key noinvert samplen 4 spacing 1 width 0 height 0 
+set key maxcolumns 0 maxrows 0
+unset label
+unset arrow
+set style increment default
+unset style line
+unset style arrow
+set style histogram clustered gap 2 title  offset character 0, 0, 0
+unset logscale
+set logscale x 10
+set offsets 0, 0, 0, 0
+set pointsize 1
+set pointintervalbox 1
+set encoding default
+unset polar
+unset parametric
+unset decimalsign
+set view 60, 30, 1, 1
+set samples 500, 500
+set isosamples 10, 10
+set surface
+unset contour
+set clabel '%8.3g'
+set mapping cartesian
+set datafile separator whitespace
+unset hidden3d
+set cntrparam order 4
+set cntrparam linear
+set cntrparam levels auto 5
+set cntrparam points 5
+set size ratio 0 1,1
+set origin 0,0
+set style data points
+set style function lines
+set xzeroaxis linetype -2 linewidth 1.000
+set yzeroaxis linetype -2 linewidth 1.000
+set zzeroaxis linetype -2 linewidth 1.000
+set x2zeroaxis linetype -2 linewidth 1.000
+set y2zeroaxis linetype -2 linewidth 1.000
+set ticslevel 0.5
+set mxtics default
+set mytics default
+set mztics default
+set mx2tics default
+set my2tics default
+set mcbtics default
+set xtics border in scale 1,0.5 mirror rotate by -45  offset character 0, 0, 0 
+set xtics  norangelimit
+set xtics   ("64B" 64.0000, "128B" 128.000, "256B" 256.000, "512B" 512.000, "1KB" 1024.00, "2KB" 2048.00, "4KB" 4096.00, "8KB" 8192.00, "16KB" 16384.0, "32KB" 32768.0, "64KB" 65536.0, "128KB" 131072., "256KB" 262144., "512KB" 524288., "1MB" 1.04858e+06, "2MB" 2.09715e+06, "4MB" 4.19430e+06, "8MB" 8.38861e+06, "16MB" 1.67772e+07, "32MB" 3.35544e+07, "64MB" 6.71089e+07, "128MB" 1.34218e+08, "256MB" 2.68435e+08, "512MB" 5.36871e+08, "1GB" 1.07374e+09, "2GB" 2.14748e+09, "4GB" 4.29497e+09, "8GB" 8.58993e+09, "16GB" 1.71799e+10, "32GB" 3.43597e+10, "64GB" 6.87195e+10)
+set ytics border in scale 1,0.5 mirror norotate  offset character 0, 0, 0 
+set ytics 10 norangelimit
+set ztics border in scale 1,0.5 nomirror norotate  offset character 0, 0, 0 
+set ztics autofreq  norangelimit
+set nox2tics
+set noy2tics
+set cbtics border in scale 1,0.5 mirror norotate  offset character 0, 0, 0 
+set cbtics autofreq  norangelimit
+set title "" 
+set title  offset character 0, 0, 0 font "" norotate
+set timestamp bottom 
+set timestamp "" 
+set timestamp  offset character 0, 0, 0 font "" norotate
+set rrange [ * : * ] noreverse nowriteback
+set trange [ * : * ] noreverse nowriteback
+set urange [ * : * ] noreverse nowriteback
+set vrange [ * : * ] noreverse nowriteback
+set xlabel "Reuse Window (bytes)" 
+set xlabel  offset character 0, 0, 0 font "" textcolor lt -1 norotate
+set x2label "" 
+set x2label  offset character 0, 0, 0 font "" textcolor lt -1 norotate
+set xrange [ * : * ] noreverse nowriteback
+set x2range [ * : * ] noreverse nowriteback
+set ylabel "References (%)" 
+set ylabel  offset character 0, 0, 0 font "" textcolor lt -1 rotate by -270
+set y2label "" 
+set y2label  offset character 0, 0, 0 font "" textcolor lt -1 rotate by -270
+set yrange [ 0.00000 : 100.000 ] noreverse nowriteback
+set y2range [ * : * ] noreverse nowriteback
+set zlabel "" 
+set zlabel  offset character 0, 0, 0 font "" textcolor lt -1 norotate
+set zrange [ * : * ] noreverse nowriteback
+set cblabel "" 
+set cblabel  offset character 0, 0, 0 font "" textcolor lt -1 rotate by -270
+set cbrange [ * : * ] noreverse nowriteback
+set zero 1e-08
+set lmargin  -1
+set bmargin  -1
+set rmargin  -1
+set tmargin  -1
+set locale "en_US.UTF-8"
+set pm3d explicit at s
+set pm3d scansautomatic
+set pm3d interpolate 1,1 flush begin noftriangles nohidden3d corners2color mean
+set palette positive nops_allcF maxcolors 0 gamma 1.5 color model RGB 
+set palette rgbformulae 7, 5, 15
+set colorbox default
+set colorbox vertical origin screen 0.9, 0.2, 0 size screen 0.05, 0.6, 0 front bdefault
+set loadpath 
+set fontpath 
+set fit noerrorvariables
+GNUTERM = "qt"
+plot "histo.out" using 2:13 w lp title "Core Reuses", "histo.out" using 2:18 w lp title "Cluster Reuses", "histo.out" using 2:26 w lp title "Invalidation Misses",             "histo.out" u ($2):($28+$30) w boxes fs solid .6 title "Cold Misses" , "./histo.out" u ($2):($28+$29) w boxes fs solid 1 title "Total Invalidated",  "./histo.out" u 2:28 w boxes fs solid 0.2 lc 0 lw 0 notitle
+#    EOF

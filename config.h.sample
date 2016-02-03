@@ -1,0 +1,17 @@
+#ifndef _CONFIG_H
+#define _CONFIG_H
+
+#define GOTAO_NTHREADS 4
+#define GOTAO_THREAD_BASE 0
+// NUMA_ALIGNMENT == 0 or undef will use the assembly width as alignment
+#define NUMA_ALIGNMENT 0
+#define GOTAO_NUMA_SIZE 4
+#define MAXTHREADS 4
+// use a test-and-test-and-set lock
+#define TTS
+#define TAO_WIDTH 1
+#define STEAL_ATTEMPTS 1
+#define TASK_POOL 100
+#define TAO_AFFINITY  1
+
+#endif
