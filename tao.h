@@ -178,13 +178,13 @@ class PolyTask{
                     affinity_queue = -1;
 #endif
 #if defined(DEBUG) || defined(EXTRAE)
-	 	    taskid = created_tasks += 1;
+		    taskid = created_tasks += 1;
 #endif
 		    if(task_pool[_nthread].tasks == 0){
-                    	pending_tasks += TASK_POOL;
+			pending_tasks += TASK_POOL;
 			task_pool[_nthread].tasks = TASK_POOL-1;
 #ifdef DEBUG
-		       	std::cout << "Requested: " << TASK_POOL << " tasks. Pending is now: " << pending_tasks << "\n";
+			std::cout << "Requested: " << TASK_POOL << " tasks. Pending is now: " << pending_tasks << "\n";
 #endif
 			}
 		    else task_pool[_nthread].tasks--;
@@ -255,8 +255,8 @@ class PolyTask{
 #endif 
                         if(!ret
 #ifdef TAO_PLACES
-// this needs to be updated with the new notion of places
- 				&& (((*it)->affinity_queue/(*it)->width) == (_nthread/(*it)->width))
+                           // check the case affinity_queue == -1
+				&& (((*it)->affinity_queue == -1) || (((*it)->affinity_queue/(*it)->width) == (_nthread/(*it)->width)))
 #endif
 )
                            ret = *it; // forward locally only if affinity matches
@@ -264,10 +264,10 @@ class PolyTask{
                             // otherwise insert into affinity queue, or in local queue
 #ifdef TAO_PLACES
                             int ndx = (*it)->affinity_queue;
-                            if((ndx == -1) || ((*it)->affinity_queue == _nthread) )
+                            if((ndx == -1) || (((*it)->affinity_queue/(*it)->width) == (_nthread/(*it)->width)))
                                  ndx = _nthread;
 #else
-	  		    int ndx = _nthread;
+			    int ndx = _nthread;
 #endif
 
                             // seems like we acquire and release the lock for each assembly. 
