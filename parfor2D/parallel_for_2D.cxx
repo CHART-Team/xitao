@@ -16,8 +16,8 @@
 class parfor2D_square : public TAO_PAR_FOR_2D_BASE
 {
         public: 
-                parfor2D_square(void *a, void*c, int rows, int cols, gotao_schedule_2D sched, 
-                                int chunkx, int chunky, int width, int nthread=0) 
+                parfor2D_square(void *a, void*c, int rows, int cols, int off1, int off2, int chunk1, int chunk2,
+                                gotao_schedule_2D sched,  int chunkx, int chunky, int width, int nthread=0) 
                                     : TAO_PAR_FOR_2D_BASE(a,c,rows,cols,0,0,rows,cols,sched,chunkx,chunky,width,-1) {}
 
                 int compute_for2D(int offx, int offy, int chunkx, int chunky)
@@ -84,6 +84,8 @@ main(int argc, char* argv[])
                      mat2, // pointer to output matrix
                      matsize, // rows
                      matsize, // columns
+                     0, 0,    // offsets
+                     matsize, matsize, // chunk rows 
                      gotao_sched_2D_static, // schedule
                      chunksize, // chunk size in rows 
                      chunksize, // chunk size in columns

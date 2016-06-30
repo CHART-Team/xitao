@@ -3,14 +3,11 @@
 // http://stackoverflow.com/questions/2945312/optimistic-lock-free-fifo-queues-impl
 // which is in turn adapted from Herb Sutter
 
-//   Although the original question asked about Shavit's optimistic queue, I am
-//   not sure that Herb's implementation actually follows this design
-
 // Changes:
 //  - changed alignment buffers to GCC attributes
 //  - reverted changes in c++ naming 
 //  - changed references to pointers 
-//  - removed locks to ensure single producer/consumer. This is already enforced by the TAO design
+//  - removed locks that ensure single producer/consumer. This is already enforced by the GO:TAO design
 
 #include <atomic>
 

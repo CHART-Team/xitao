@@ -23,8 +23,6 @@ CFLAGS := $(LIBS)  -g3 -I.. -I.  -O3 ${EXTRAEINC}
 include makefile.micro
 CXXFLAGS=$(CFLAGS) --std=c++11  -pthread ${EXTRAEINC}
 
-
-
 LIBS = -lm ${EXTRAELIBS}
 PROGRAM_OBJS=tao_main.o ../tao_sched.o
 

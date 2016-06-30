@@ -36,7 +36,6 @@ class TAO_PAR_FOR_2D_BASE : public AssemblyTask
                                  int _chunk_size_x,         // internal chunking in x
                                  int _chunk_size_y,         // internal chunking in y
                                  int width,   // assembly width
-                                 int _affinity,
                                  int nthread=0)
                         : AssemblyTask(width, nthread) 
                 {   
@@ -72,8 +71,6 @@ class TAO_PAR_FOR_2D_BASE : public AssemblyTask
                                std::cout << "Error: gotao_sched_2D_dynamic not yet implemented\n"
                                             "Proceed using static\n";
 
-                       this->set_affinity(_affinity);
-    
                        // the total number of steps to be completed by this assembly
                        // is the number of 2D chunks divided by the width
                        steps = (xchunks*ychunks + width - 1)/width;

@@ -40,18 +40,19 @@ int main ( int argc, char *argv[] )
 
    // set the number of threads and thread_base
 
-   if(getenv("TAO_NTHREADS"))
-        nthreads = atoi(getenv("TAO_NTHREADS"));
+   if(getenv("GOTAO_NTHREADS"))
+        nthreads = atoi(getenv("GOTAO_NTHREADS"));
    else 
         nthreads = GOTAO_NTHREADS;
 
-   if(getenv("TAO_THREAD_BASE"))
-        thread_base = atoi(getenv("TAO_THREAD_BASE"));
+   if(getenv("GOTAO_THREAD_BASE"))
+        thread_base = atoi(getenv("GOTAO_THREAD_BASE"));
    else
         thread_base = GOTAO_THREAD_BASE;
 
 // just five levels of sorting
 // do not attempt generic depth for now
+	gotao_init(nthreads,thread_base);
 
 #if LEVEL1 == 1
 #define TAOQuickMerge TAOQuickMergeDyn
@@ -120,34 +121,19 @@ int main ( int argc, char *argv[] )
         fill_array();
         scramble_array();
 
-#define NUMA_SIZE 6
-        qsort_width=NUMA_SIZE;
-	int partitions = nthreads / qsort_width;
+        std::chrono::time_point<std::chrono::system_clock> start, end;
+        std::cout << "Sorting " << sort_buffer_size << " integers via 4-1 TAOSort " << std::endl;
+  	start = std::chrono::system_clock::now();
 
-#if defined(DISTRIBUTED_QUEUES) && defined(PLACEMENT_DISTRIBUTED)
-        blocksize = 256 / partitions;
-//        k = -qsort_width;
-#endif
-
-
-	for(int part = 0; part < partitions; part++){
-            for(int be = 0; be < blocksize; be++){
-		int i = part*blocksize + be;
+	for(int i = 0; i < 256; i++){
                 level1[i] = new TAOQuickMerge(array + 64*i*BLOCKSIZE, tmp + 64*i*BLOCKSIZE, 64*BLOCKSIZE, DYNW1);
                 st1 = (PolyTask *) level1[i];
-#if defined(DISTRIBUTED_QUEUES) && defined(PLACEMENT_DISTRIBUTED)
-                worker_ready_q[thread_base + part*NUMA_SIZE + ((NUMA_SIZE * be) /blocksize)].push_back(st1);
-#else           
-#if defined(DISTRIBUTED_QUEUES)  // placement always on the same thread
-                worker_ready_q[thread_base].push_back(st1);
-#else                            // placement in central queue
-                central_ready_q.push_back(st1);
+#if defined(PLACEMENT_DISTRIBUTED) && defined(TAO_PLACES)
+                st1->set_place( ((float) i/ (float) 256));
 #endif
-#endif
-        	}
+                gotao_push(st1);
 	}
 
-    	goTAO_init(nthreads, thread_base);
         for(i = 0; i < 64; i++){
                 level2[i] = new TAOMerge_2(array + 256*i*BLOCKSIZE, tmp + 256*i*BLOCKSIZE, 256*BLOCKSIZE, DYNW2);
                 for(j = i*4; j < (i+1)*4; j++)
@@ -180,23 +166,20 @@ int main ( int argc, char *argv[] )
     int maxthr = nthreads;
 #endif
 
-        std::chrono::time_point<std::chrono::system_clock> start, end;
       
-        std::cout << "Sorting " << sort_buffer_size << " integers via 4-1 TAOSort " << std::endl;
 #ifdef EXTRAE
         std::cout << "Total number of tasks is " <<  PolyTask::created_tasks << "\n";
 #endif
 
    	goTAO_start();
 #ifdef DO_LOI 
-    phase_profile_start();
+        phase_profile_start();
 #endif
-  	start = std::chrono::system_clock::now();
 
   	goTAO_fini();
       
 #ifdef DO_LOI
-    phase_profile_stop(0); 
+        phase_profile_stop(0); 
 #endif
 
   	end = std::chrono::system_clock::now();

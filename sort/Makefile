@@ -3,7 +3,7 @@
 
 include ../makefile.inc
 CFLAGS := -std=gnu11 -g3 -O3 ${EXTRAEINC}
-CXXFLAGS = $(CFLAGS) --std=c++11 -pthread  -g3 -O3 -DPAUSE ${EXTRAEINC}
+CXXFLAGS = --std=c++11 -pthread  -g3 -O3 -DPAUSE ${EXTRAEINC}
 
 include makefile.sort
 
@@ -12,7 +12,7 @@ CXXFLAGS += -DDYNW1=$(DYNW1)   -DDYNW2=$(DYNW2)   -DDYNW3=$(DYNW3)   -DDYNW4=$(D
 
 LFLAGS :=
 
-LOIFLAGS :=
+LOIFLAGS := -DMERGEBLOCK=4096
 
 
 include ../loi/loikrd.defs

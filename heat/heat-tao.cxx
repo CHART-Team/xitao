@@ -15,8 +15,8 @@
 #ifdef DO_LOI
 #include "loi.h"
 #endif
-#ifndef TAO_AFFINITY
-#error "./heat-tao requires TAO_AFFINITY"
+#ifndef TAO_PLACES
+#error "./heat-tao requires TAO_PLACES"
 #endif 
 
 // Use LOI instrumentation: 
@@ -102,15 +102,6 @@ int main( int argc, char *argv[] )
    else
         thread_base = GOTAO_THREAD_BASE;
 
-// let's initialize here the gotao runtime
-    gotao_init(nthreads, thread_base);
-
-// LOI instrumentation
-#if DO_LOI
-    loi_init(); // calc TSC freq and init data structures
-    printf(" TSC frequency has been measured to be: %g Hz\n", (double) TSCFREQ);
-    int maxthr = nthreads;
-#endif
 
     if( !initialize(&param, 1) )
     {
@@ -190,10 +181,10 @@ int main( int argc, char *argv[] )
                              gotao_sched_2D_static,
                              ceildiv(np, ixdecomp*exdecomp), // (np + ixdecomp*exdecomp -1) / (ixdecomp*exdecomp),
                              ceildiv(np, iydecomp*eydecomp), //(np + iydecomp*eydecomp -1) / (iydecomp*eydecomp), 
-                             (awidth * (x * eydecomp + y)) % GOTAO_NTHREADS,
                              awidth);
 
-          gotao_push_init(stc[iter][x][y], (awidth * (x * eydecomp + y)) % GOTAO_NTHREADS); // insert into affinity queue
+          stc[iter][x][y]->set_place((float) (x * eydecomp + y) / (float) (exdecomp*eydecomp));
+          gotao_push_init(stc[iter][x][y]); // insert into affinity queue
        }
 
     // from this point just creat "iter" copies of the loop
@@ -215,12 +206,13 @@ int main( int argc, char *argv[] )
                              gotao_sched_2D_static,
                              ceildiv(np, ixdecomp*exdecomp), 
                              ceildiv(np, iydecomp*eydecomp), 
-                             (awidth * (x * eydecomp + y)) % GOTAO_NTHREADS,
                              awidth);
 
 // this should ensure that we do not overwrite data which has not yet been fully processed
 // necessary because we do not do renaming
           stc[iter][x][y]->make_edge(cpb[iter][x][y]);
+          cpb[iter][x][y]->clone_place(stc[iter][x][y]);
+
           if((x-1)>=0)       stc[iter][x-1][y]->make_edge(cpb[iter][x][y]);
           if((x+1)<exdecomp) stc[iter][x+1][y]->make_edge(cpb[iter][x][y]);
           if((y-1)>=0)       stc[iter][x][y-1]->make_edge(cpb[iter][x][y]);
@@ -244,10 +236,11 @@ int main( int argc, char *argv[] )
                              gotao_sched_2D_static,
                              ceildiv(np, ixdecomp*exdecomp), // (np + ixdecomp*exdecomp -1) / (ixdecomp*exdecomp),
                              ceildiv(np, iydecomp*eydecomp), //(np + iydecomp*eydecomp -1) / (iydecomp*eydecomp), 
-                             (awidth * (x * eydecomp + y)) % GOTAO_NTHREADS,
                              awidth);
 
           cpb[iter-1][x][y]->make_edge(stc[iter][x][y]);
+          stc[iter][x][y]->clone_place(cpb[iter-1][x][y]);
+
           if((x-1)>=0)       cpb[iter-1][x-1][y]->make_edge(stc[iter][x][y]);
           if((x+1)<exdecomp) cpb[iter-1][x+1][y]->make_edge(stc[iter][x][y]);
           if((y-1)>=0)       cpb[iter-1][x][y-1]->make_edge(stc[iter][x][y]);
@@ -270,12 +263,13 @@ int main( int argc, char *argv[] )
                              gotao_sched_2D_static,
                              ceildiv(np, ixdecomp*exdecomp), 
                              ceildiv(np, iydecomp*eydecomp), 
-                             (awidth * (x * eydecomp + y)) % GOTAO_NTHREADS,
                              awidth);
 
 // this should ensure that we do not overwrite data which has not yet been fully processed
 // necessary because we do not do renaming
           stc[iter][x][y]->make_edge(cpb[iter][x][y]);
+          cpb[iter][x][y]->clone_place(stc[iter][x][y]);
+
           if((x-1)>=0)       stc[iter][x-1][y]->make_edge(cpb[iter][x][y]);
           if((x+1)<exdecomp) stc[iter][x+1][y]->make_edge(cpb[iter][x][y]);
           if((y-1)>=0)       stc[iter][x][y-1]->make_edge(cpb[iter][x][y]);
@@ -285,9 +279,19 @@ int main( int argc, char *argv[] )
 
    std::chrono::time_point<std::chrono::system_clock> start, end;
 
+// let's initialize here the gotao runtime
+    gotao_init(nthreads, thread_base);
+
+// LOI instrumentation
+#if DO_LOI
+    loi_init(); // calc TSC freq and init data structures
+    printf(" TSC frequency has been measured to be: %g Hz\n", (double) TSCFREQ);
+    int maxthr = nthreads;
+#endif
+
    gotao_start();
 #ifdef DO_LOI 
-    phase_profile_start();
+   phase_profile_start();
 #endif
    start = std::chrono::system_clock::now();
 

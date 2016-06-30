@@ -134,7 +134,7 @@ int main ( int argc, char *argv[] )
 
         qsort_width=1;
 
-#if defined(DISTRIBUTED_QUEUES) && defined(PLACEMENT_DISTRIBUTED)
+#if defined(PLACEMENT_DISTRIBUTED)
         blocksize = 4096  / (NTHREADS / qsort_width);
         k = -qsort_width;
 #endif
@@ -143,15 +143,11 @@ int main ( int argc, char *argv[] )
         for(i = 0; i < 4096; i++){
                 level1[i] = new TAOQuickMerge(array + 4*i*BLOCKSIZE, tmp + 4*i*BLOCKSIZE, 4*BLOCKSIZE, DYNW1);
                 st1 = (SuperTask *) level1[i];
-#if defined(DISTRIBUTED_QUEUES) && defined(PLACEMENT_DISTRIBUTED)
+#if defined(PLACEMENT_DISTRIBUTED)
                 if(i % blocksize == 0) k+=qsort_width;
-                    worker_ready_q[THREAD_BASE + k].push_back(st1);
+                worker_ready_q[THREAD_BASE + k].push_back(st1);
 #else           
-#if defined(DISTRIBUTED_QUEUES)  // placement always on the same thread
                 worker_ready_q[THREAD_BASE].push_back(st1);
-#else                            // placement in central queue
-                central_ready_q.push_back(st1);
-#endif
 #endif
         }
 

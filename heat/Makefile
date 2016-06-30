@@ -19,7 +19,7 @@
 ##############################################################################################
 
 include ../makefile.inc
-CFLAGS := $(LIBS) -g3 -I.. -I. -O3 ${EXTRAEINC}
+CFLAGS := $(LIBS) -g -I.. -I. -O3 ${EXTRAEINC}
 CXXFLAGS=$(CFLAGS)  -pthread ${EXTRAEINC}
 
 include makefile.heat
@@ -29,15 +29,31 @@ CXX=g++
 LIBS = -lm ${EXTRAELIBS}
 PROGRAM_OBJS=heat-tao.o misc.o ../tao_sched.o
 
+LOIFLAGS :=
+
+
+include ../loi/loikrd.defs
+
+# options for LOI/KRD
+ifdef LOI
+LOI_SOURCES =  ../loi/loi.c ../loi/krd_common.c ../loi/krd_trace.c ../loi/krd_bench.c
+LOI_OBJS    =  ../loi/loi.o ../loi/krd_common.o ../loi/krd_trace.o ../loi/krd_bench.o
+LOI_DIR = ../loi
+LOI_HDR = ../loi/loi.h ../loi/krd.h
+else
+LOI_DIR = ../loi
+endif
+
+CXXFLAGS += -I$(LOI_DIR)
 all: heat-tao
 
 %.o : %.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) --std=gnu11 -c $< -o $@
+	$(CC) $(CFLAGS) $(CPPFLAGS)  $(LOIFLAGS) --std=gnu11 -c $< -o $@
  
 %.o : %.cxx
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) --std=c++11  -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS)  $(LOIFLAGS) --std=c++11  -c $< -o $@
  
-heat-tao: $(PROGRAM_OBJS)
+heat-tao: $(PROGRAM_OBJS)  $(LOI_OBJS)
 	$(CXX) $^ -o $@ $(CXXFLAGS) ${LIBS} -L$(TBBLIB) -ltbbmalloc_proxy -ltbbmalloc -Wl,-rpath=$(TBBLIB)
 
 heat: heat.o solver.o misc.o

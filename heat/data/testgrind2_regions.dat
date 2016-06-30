@@ -1,6 +1,0 @@
-10    # iterations 
-128    # resolution 
-1    # Algorithm 0=Jacobi 1=Gauss 2=RedBlack
-2                     # number of heat sources
-0.1  0.1  1.0  500.5    # (x,y), size temperature 
-0.9  0.9  1.0  500.5    # 

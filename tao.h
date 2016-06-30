@@ -15,6 +15,13 @@
 #include "lfq-fifo.h"
 #include "config.h"
 
+extern int gotao_thread_base;
+extern int gotao_nthreads;
+
+extern int gotao_sys_topo[5];
+
+#define GET_TOPO_WIDTH_FROM_LEVEL(x) gotao_sys_topo[x]
+
 // a "sleeping" C++11 barrier for a set of threads
 class cxx_barrier
 {
@@ -132,16 +139,11 @@ struct aligned_lock {
 #endif
 
 // a PolyTask is either an assembly or a simple task 
-#ifdef DISTRIBUTED_QUEUES
 extern std::list<PolyTask *> worker_ready_q[MAXTHREADS];
-#if defined(SUPERTASK_STEALING) || defined(TAO_AFFINITY)
+#if defined(SUPERTASK_STEALING) || defined(TAO_PLACES)
 extern aligned_lock worker_lock[MAXTHREADS];
 #endif 
 
-#else // CENTRALIZED_QUEUES
-extern aligned_lock worker_lock;
-extern std::list<PolyTask *> central_ready_q;
-#endif
 
 // ASSEMBLY QUEUES
 #ifdef LOCK_FREE_QUEUE
@@ -150,6 +152,10 @@ extern aligned_lock worker_assembly_lock[MAXTHREADS];
 #else
 extern std::list<PolyTask *> worker_assembly_q[MAXTHREADS]; 
 extern std::mutex             worker_assembly_lock[MAXTHREADS];
+#endif
+
+#ifdef DEBUG
+extern GENERIC_LOCK(output_lck);
 #endif
 
 extern long int tao_total_steals;
@@ -166,10 +172,12 @@ class PolyTask{
            PolyTask(int t, int _nthread=0) : type(t) 
            {
                     refcount = 0;
-#ifdef TAO_AFFINITY
-                    affinity = false;
+#ifdef TAO_PLACES
+#define GOTAO_NO_AFFINITY (1.0)
+                    affinity_relative_index = GOTAO_NO_AFFINITY;
+                    affinity_queue = -1;
 #endif
-#ifdef EXTRAE	
+#if defined(DEBUG) || defined(EXTRAE)
 	 	    taskid = created_tasks += 1;
 #endif
 		    if(task_pool[_nthread].tasks == 0){
@@ -185,7 +193,7 @@ class PolyTask{
 
            int type;
 
-#ifdef EXTRAE
+#if defined(DEBUG) || defined(EXTRAE)
            int taskid;
            static std::atomic<int> created_tasks;
 #endif
@@ -194,16 +202,35 @@ class PolyTask{
            std::atomic<int> refcount;
            std::list <PolyTask *> out;
            std::atomic<int> threads_out_tao;
+           int width;  // number of resources that this assembly uses
 
-#ifdef TAO_AFFINITY
-           // PolyTasks can have affinity. 
-           bool affinity; // the affinity covers [width] consecutive threads
-                          // determined as with assembly distribution mechanism
-           int affinity_index;
+#ifdef TAO_PLACES
+           // PolyTasks can have affinity. Currently these are specified on a unidimensional vector
+           // space [0,1) of type float
+           float affinity_relative_index; // [0,1) are valid affinities, >=1.0 means no affinity
+           int   affinity_queue;          // this is the particular queue. When cloning an affinity, we just copy this value
+                                          // Internally, GOTAO works only with queues, not places
 
-           virtual int set_affinity(int x) = 0; // set affinity to thread 'x'
-           virtual bool has_affinity(int y) = 0;    // return true if part of affinity set
-           virtual int get_affinity() = 0;    // return affinity value (-1 for no affinity)
+           int place_to_queue(float x){
+                 if(x >= GOTAO_NO_AFFINITY) 
+                         affinity_queue = -1;
+                 else if (x < 0.0) return 1;  // error, should it be reported?
+                 else affinity_queue = (int) (x*gotao_nthreads);
+                 return 0; 
+           }
+
+           int set_place(float x) {    
+                 affinity_relative_index = x;  // whenever a place is changed, it triggers a translation
+                 return place_to_queue(x);
+           } 
+
+           float get_place() { return affinity_relative_index; }    // return place value
+
+           int clone_place(PolyTask *pt) { 
+                affinity_relative_index = pt->affinity_relative_index;    
+                affinity_queue = pt->affinity_queue; // make sure to copy the exact queue
+                return 0;
+           }
 #endif
 
            void make_edge(PolyTask *t)
@@ -221,34 +248,38 @@ class PolyTask{
                 {
                 int refs = (*it)->refcount.fetch_sub(1);
                 if(refs == 1){
+#ifdef DEBUG
+			LOCK_ACQUIRE(output_lck);
+			std::cout << "Task " << (*it)->taskid << " became ready" << std::endl;
+			LOCK_RELEASE(output_lck);
+#endif 
                         if(!ret
-#ifdef TAO_AFFINITY
- 				&& (*it)->has_affinity(_nthread)
+#ifdef TAO_PLACES
+// this needs to be updated with the new notion of places
+ 				&& (((*it)->affinity_queue/(*it)->width) == (_nthread/(*it)->width))
 #endif
 )
                            ret = *it; // forward locally only if affinity matches
                         else{
                             // otherwise insert into affinity queue, or in local queue
-#ifdef TAO_AFFINITY
-                            int ndx = (*it)->get_affinity();
-                            if((ndx == -1) || (*it)->has_affinity(_nthread) )
+#ifdef TAO_PLACES
+                            int ndx = (*it)->affinity_queue;
+                            if((ndx == -1) || ((*it)->affinity_queue == _nthread) )
                                  ndx = _nthread;
 #else
 	  		    int ndx = _nthread;
 #endif
 
-#ifdef DISTRIBUTED_QUEUES
-#if defined(SUPERTASK_STEALING) || defined(TAO_AFFINITY)
+                            // seems like we acquire and release the lock for each assembly. 
+                            // This is suboptimal, but given that TAO_PLACES makes the allocation
+                            // somewhat random it simpifies the implementation. In the case that
+                            // TAO_PLACES is not defined, we could optimize it, but is it worth?
+#if defined(SUPERTASK_STEALING) || defined(TAO_PLACES)
                             LOCK_ACQUIRE(worker_lock[ndx]);
 #endif
                             worker_ready_q[ndx].push_front(*it);
-#if defined(SUPERTASK_STEALING) || defined(TAO_AFFINITY)
+#if defined(SUPERTASK_STEALING) || defined(TAO_PLACES)
                             LOCK_RELEASE(worker_lock[ndx]);
-#endif
-#else // CENTRALIZED_QUEUES
-                            LOCK_ACQUIRE(worker_lock);
-                            central_ready_q.push_front(*it);
-                            LOCK_RELEASE(worker_lock);
 #endif
                          } 
                     }
@@ -268,18 +299,15 @@ class PolyTask{
 // classes. The sleeping barrier is used by TAO to synchronize the start of assemblies
 class AssemblyTask: public PolyTask{
         public:
-                AssemblyTask(int w, int nthread=0) : PolyTask(TASK_ASSEMBLY, nthread), width(w), leader(-1) 
+                AssemblyTask(int w, int nthread=0) : PolyTask(TASK_ASSEMBLY, nthread), leader(-1) 
                 {
+		    width = w;
 #ifdef NEED_BARRIER
                     barrier = new BARRIER(w);
-#endif
-#ifdef TAO_AFFINITY
-                    affinity = false; // initially no affinity
 #endif
                     //std::cout << "New assembly " << taskid << " of width " << w << std::endl;
                 }
 
-                int width;  // number of resources that this assembly uses
 #ifdef NEED_BARRIER
                 BARRIER *barrier;
 #endif
@@ -292,47 +320,18 @@ class AssemblyTask: public PolyTask{
                       delete barrier;
 #endif
                 }  
-
-#ifdef TAO_AFFINITY
-                // affinity is defined for assemblies
-                int set_affinity(int x)
-                {
-                    affinity = true;
-                    affinity_index = (x / width) * width;
-                }
-
-                int get_affinity()
-                {
-                    if(!affinity) return -1;
-                    else return affinity_index;
-                }
-
-                bool has_affinity(int y)
-                {
-                    if(!affinity) 
-                            return true;
-
-                    if((y >= affinity_index) && (y < affinity_index + width))
-                            return true;
-
-                    return false;
-                }
-#endif
 };
 
 class SimpleTask: public PolyTask{
     public:
-            SimpleTask(task fn, void *a, int nthread=0) : PolyTask(TASK_SIMPLE, nthread), args(a), f(fn) { }
+            SimpleTask(task fn, void *a, int nthread=0) : PolyTask(TASK_SIMPLE, nthread), args(a), f(fn) 
+	{ 
+	  width = 1; 
+	}
 
             void *args;
             task f;
 
-           // we do not use affinity for simple tasks
-#ifdef TAO_AFFINITY
-           int set_affinity(int x) {} 
-           bool has_affinity(int y) { return false; }   
-           int get_affinity(){ return -1; }
-#endif
 };
 
 
@@ -357,7 +356,5 @@ enum extrae_events{
         EXTRAE_STEALING,
 };
 
-extern int gotao_thread_base;
-extern int gotao_nthreads;
 
 #endif // _TAO_H

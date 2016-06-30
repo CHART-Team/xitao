@@ -9,17 +9,19 @@
 #include "extrae_user_events.h"
 #endif
 
+// define the topology
+int gotao_sys_topo[5] = TOPOLOGY;
+
+
 // a PolyTask is either an assembly or a simple task
-#ifdef DISTRIBUTED_QUEUES
 std::list<PolyTask *> worker_ready_q[MAXTHREADS];
-#if defined(SUPERTASK_STEALING) || defined(TAO_AFFINITY)
+#if defined(SUPERTASK_STEALING) || defined(TAO_PLACES)
 GENERIC_LOCK(worker_lock[MAXTHREADS]);
 //aligned_lock worker_lock[MAXTHREADS];
 #endif
-#else // CENTRALIZED_QUEUES
-GENERIC_LOCK(worker_lock);
-//aligned_lock worker_lock;
-std::list<PolyTask *> central_ready_q;
+
+#ifdef DEBUG
+GENERIC_LOCK(output_lck);
 #endif
 
 BARRIER *starting_barrier;
@@ -30,6 +32,7 @@ int gotao_thread_base;
 int worker_loop(int);
 
 std::thread *t[MAXTHREADS];
+
 
 int gotao_init(int nthr, int thrb)
 {
@@ -68,20 +71,26 @@ int gotao_fini()
 // programmer should specify some queue
 int gotao_push(PolyTask *pt, int queue)
 {
-#ifdef DISTRIBUTED_QUEUES
-  if(queue == -1) 
+
+// if queue has a value, we take that
+// however, we don't really want the user to do that, so should it be deprecated?
+#ifdef TAO_PLACES
+  // if no queue is specified, then the affinity has precedence
+  if((queue == -1) && (pt->affinity_queue != -1))
+          queue = pt->affinity_queue;
+  else 
+#endif
+  // otherwise we go for local scheduling
+     if (queue == -1)
           queue = sched_getcpu();
 
-#if defined(SUPERTASK_STEALING) || defined(TAO_AFFINITY)
+#if defined(SUPERTASK_STEALING) || defined(TAO_PLACES)
   LOCK_ACQUIRE(worker_lock[queue]);
 #endif
   worker_ready_q[queue].push_front(pt);
-#if defined(SUPERTASK_STEALING) || defined(TAO_AFFINITY)
+#if defined(SUPERTASK_STEALING) || defined(TAO_PLACES)
   LOCK_RELEASE(worker_lock[queue]);
 #endif // SUPERTASK_STEALING
-#else
-  central_ready_q.push_front(pt);
-#endif
 }
 
 // Push work when not yet running. This version does not require locks
@@ -90,14 +99,17 @@ int gotao_push(PolyTask *pt, int queue)
 // 2. if the queue is not specified, then put everything into the first queue
 int gotao_push_init(PolyTask *pt, int queue)
 {
-#ifdef DISTRIBUTED_QUEUES
+#ifdef TAO_PLACES
+  // if no queue is specified, then the affinity has precedence
+  if((queue == -1) && (pt->affinity_queue != -1))
+          queue = pt->affinity_queue;
+  else 
+#endif
   if(queue == -1) 
           queue = gotao_thread_base;
 
-  worker_ready_q[queue + gotao_thread_base].push_front(pt);
-#else
-  central_ready_q.push_front(pt);
-#endif
+ // std::cout << "Pushing task into Queue: " << queue << std::endl;
+  worker_ready_q[queue].push_front(pt);
 }
 
 #ifdef LOCK_FREE_QUEUE
@@ -245,6 +257,11 @@ int worker_loop(int _nthread)
             st = nullptr;
 
             if(_final){ // the last exiting thread updates
+#ifdef DEBUG
+		LOCK_ACQUIRE(output_lck);
+		std::cout << "Thread " << phys_core << " completed assembly task " << assembly->taskid << std::endl;
+		LOCK_RELEASE(output_lck);
+#endif 
                st = assembly->commit_and_wakeup(phys_core);
                assembly->cleanup();
                delete assembly;
@@ -254,48 +271,31 @@ int worker_loop(int _nthread)
             continue;
         }
 
-#ifdef DISTRIBUTED_QUEUES
         // 2. check own queue
         {
-#if defined(SUPERTASK_STEALING) || defined(TAO_AFFINITY)
+#if defined(SUPERTASK_STEALING) || defined(TAO_PLACES)
 	  LOCK_ACQUIRE(worker_lock[phys_core]);
        //   while(worker_lock[phys_core].lock.exchange(true)) {}              
 #endif
           if(!worker_ready_q[phys_core].empty()){
              st = worker_ready_q[phys_core].front(); 
              worker_ready_q[phys_core].pop_front();
-#if defined(SUPERTASK_STEALING) || defined(TAO_AFFINITY)
+#if defined(SUPERTASK_STEALING) || defined(TAO_PLACES)
 	     LOCK_RELEASE(worker_lock[phys_core]);
        //      worker_lock[phys_core].lock = false;
 #endif
              continue;
              }
-#if defined(SUPERTASK_STEALING) || defined(TAO_AFFINITY)
+#if defined(SUPERTASK_STEALING) || defined(TAO_PLACES)
              LOCK_RELEASE(worker_lock[phys_core]);
              //worker_lock[phys_core].lock = false;
 #endif
         }
-#else // CENTRALIZED_QUEUE
-        if(phys_core % TAO_WIDTH == 0){
-		LOCK_ACQUIRE(worker_lock);
-       //         while(worker_lock.lock.exchange(true)) {}              
-                if(!central_ready_q.empty()){
-                        st = central_ready_q.front();
-                        central_ready_q.pop_front();
-			LOCK_RELEASE(worker_lock);
-       //                 worker_lock.lock = false;
-                        continue;
-                }
-             LOCK_RELEASE(worker_lock);
-             //worker_lock.lock = false;
-        }
-#endif
 
-
-        // 3. try to steal (only valid for DISTRIBUTED_QUEUES)
+        // 3. try to steal 
         // TAO_WIDTH determines which threads participates in stealing
         // STEAL_ATTEMPTS determines number of steals before retrying the loop
-#if defined(DISTRIBUTED_QUEUES) && defined(SUPERTASK_STEALING)
+#if defined(SUPERTASK_STEALING)
         if((phys_core % TAO_WIDTH == 0) && STEAL_ATTEMPTS) {
 #ifdef EXTRAE
 	  if(!stealing){
@@ -339,8 +339,10 @@ int worker_loop(int _nthread)
         if(task_completions[phys_core].tasks > 0){
                 PolyTask::pending_tasks -= task_completions[phys_core].tasks;
 #ifdef DEBUG
+		LOCK_ACQUIRE(output_lck);
 		std::cout << "Thread " << phys_core << " completed " << task_completions[phys_core].tasks << " tasks. " 
  			"Pending tasks = " << PolyTask::pending_tasks << "\n";
+		LOCK_RELEASE(output_lck);
 #endif
                 task_completions[phys_core].tasks = 0;
         }
@@ -349,8 +351,10 @@ int worker_loop(int _nthread)
 	if(task_pool[phys_core].tasks > 0){
 		PolyTask::pending_tasks -= task_pool[phys_core].tasks;
 #ifdef DEBUG
+		LOCK_ACQUIRE(output_lck);
 		std::cout << "Thread " << phys_core << " removed " << task_pool[phys_core].tasks << " virtual tasks. " 
  			"Pending tasks = " << PolyTask::pending_tasks << "\n";
+		LOCK_RELEASE(output_lck);
 #endif
 		task_pool[phys_core].tasks = 0;
 	}
@@ -375,6 +379,7 @@ std::atomic<int> PolyTask::pending_tasks;
 struct completions task_completions[MAXTHREADS];
 struct completions task_pool[MAXTHREADS];
 
-#ifdef EXTRAE
+// need to declare the static class memeber
+#if defined(DEBUG) || defined(EXTRAE)
 std::atomic<int> PolyTask::created_tasks;
 #endif
