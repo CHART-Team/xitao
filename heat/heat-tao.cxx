@@ -154,6 +154,9 @@ int main( int argc, char *argv[] )
 			           "\n\tInternal X Decomposition = " << ixdecomp <<
 			           "\n\tInternal Y Decomposition = " << iydecomp << std::endl;
     
+    // When using places, the runtime needs to be initialized before we start creating objects
+    gotao_init(nthreads, thread_base);
+
     // first a single iteration of a stencil
     jacobi2D *stc[param.maxiter][exdecomp][eydecomp];
     copy2D   *cpb[param.maxiter][exdecomp][eydecomp];
@@ -279,8 +282,6 @@ int main( int argc, char *argv[] )
 
    std::chrono::time_point<std::chrono::system_clock> start, end;
 
-// let's initialize here the gotao runtime
-    gotao_init(nthreads, thread_base);
 
 // LOI instrumentation
 #if DO_LOI
@@ -289,11 +290,11 @@ int main( int argc, char *argv[] )
     int maxthr = nthreads;
 #endif
 
-   gotao_start();
 #ifdef DO_LOI 
    phase_profile_start();
 #endif
    start = std::chrono::system_clock::now();
+   gotao_start();
 
    // here the computation takes place
 
