@@ -20,7 +20,6 @@ int main(int argc, char ** argv) {                              // Main function
   const int numTargets = 10;                                    // Number of targets for checking answer
   const int ncrit = 8;                                          // Number of bodies per leaf cell
   const real_t cycle = 2 * M_PI;                                // Cycle of periodic boundary condition
-  images = 3;                                                   // 3^images * 3^images * 3^images periodic images
   theta = 0.4;                                                  // Multipole acceptance criterion
 
   //! Initialize dsitribution, source & target value of bodies
@@ -74,7 +73,7 @@ int main(int argc, char ** argv) {                              // Main function
   upwardPass(C0);                                               // Upward pass for P2M, M2M
   printf("%-20s : %lf s\n","Upward pass",getTime()-time);       // Stop timer 
   time = getTime();                                             // Start timer 
-  traversal(C0, C0, cycle);                                     // Traversal for M2L, P2P
+  traversal(C0, C0);                                            // Traversal for M2L, P2P
   printf("%-20s : %lf s\n","Traverse",getTime()-time);          // Stop timer 
   time = getTime();                                             // Start timer 
   downwardPass(C0);                                             // Downward pass for L2L, L2P
@@ -96,7 +95,7 @@ int main(int argc, char ** argv) {                              // Main function
     for (int d=0; d<2; d++) bodies[b].F[d] = 0;                 //  Clear force
   }                                                             // End loop over bodies
   time = getTime();                                             // Start timer 
-  direct(numTargets, bodies, numBodies, jbodies, cycle);        // Direc N-body
+  direct(numTargets, bodies, numBodies, jbodies);               // Direc N-body
   printf("%-20s : %lf s\n","Direct N-Body",getTime()-time);     // Stop timer 
 
   //! Evaluate relaitve L2 norm error
