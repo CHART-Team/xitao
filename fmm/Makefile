@@ -1,6 +1,6 @@
 .SUFFIXES: .cxx .o
 
-CXX = g++ -O3 -ffast-math
+CXX = g++ -O3 -ffast-math -DLIST
 
 .cxx.o  :
 	$(CXX) -c $^ -o $@

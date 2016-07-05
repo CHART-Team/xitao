@@ -32,9 +32,17 @@ void traversal(Cell * Ci, Cell * Cj) {
   for (int d=0; d<2; d++) dX[d] = Ci->X[d] - Cj->X[d];          // Distance vector from source to target
   real_t R2 = (dX[0] * dX[0] + dX[1] * dX[1]) * theta * theta;  // Scalar distance squared
   if (R2 > (Ci->R + Cj->R) * (Ci->R + Cj->R)) {                 // If distance is far enough
+#ifdef LIST
+    Ci->M2L.push_back(Cj);                                      //  Queue M2L kernels
+#else
     M2L(Ci, Cj);                                                //  Use approximate kernels
+#endif
   } else if (Ci->NNODE == 1 && Cj->NNODE == 1) {                // Else if both cells are bodies
+#ifdef LIST
+    Ci->P2P.push_back(Cj);                                      //  Queue P2P kernels
+#else
     P2P(Ci, Cj);                                                //  Use exact kernel
+#endif
   } else {                                                      // Else if cells are close but not bodies
     splitCell(Ci, Cj);                                          //  Split cell and call function recursively for child
   }                                                             // End if for multipole acceptance
@@ -53,8 +61,16 @@ void upwardPass(Cell * C) {
 
 //! Recursive call for downward pass
 void downwardPass(Cell * C) {
+#ifdef LIST
+  for (int i=0; i<C->M2L.size(); i++) M2L(C,C->M2L[i]);         // M2L kernel
+#endif
   L2L(C);                                                       // L2L kernel
-  if (C->NNODE == 1) L2P(C);                                    // L2P kernel
+  if (C->NNODE == 1) {
+#ifdef LIST
+    for (int i=0; i<C->P2P.size(); i++) P2P(C,C->P2P[i]);       // P2P kernel
+#endif
+    L2P(C);                                                     // L2P kernel
+  }
   for (int i=0; i<4; i++) {                                     // Loop over child cells
     if (C->CHILD[i]) downwardPass(C->CHILD[i]);                 //  Recursive call with new task
   }                                                             // End loop over child cells
