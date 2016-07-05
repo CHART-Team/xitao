@@ -8,6 +8,7 @@ Cell * buildTree(Body * bodies, Body * buffer, int begin, int end,
   //! Create a tree cell
   Cell * cell = new Cell();                                   // Allocate memory for single cell
   cell->BODY = bodies + begin;                                // Pointer of first body in cell
+  if(direction) cell->BODY = buffer + begin;                  // If bodies is in buffer, point to it
   cell->NBODY = end - begin;                                  // Number of bodies in cell
   cell->NNODE = 1;                                            // Initialize counter for decendant cells
   for (int d=0; d<2; d++) cell->X[d] = X[d];                  // Center position of cell
