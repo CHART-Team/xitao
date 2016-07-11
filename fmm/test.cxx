@@ -3,10 +3,15 @@
 #include <cstdio>
 #include <sys/time.h>
 
+#ifdef DO_LOI
+#include "loi.h"
+#endif
+
 #include "types.h"
 #include "buildtree.h"
 #include "kernel.h"
 #include "traversal.h"
+
 
 //! Get the current time in seconds
 double getTime() {
@@ -16,10 +21,17 @@ double getTime() {
 }
 
 int main(int argc, char ** argv) {                              // Main function
-  const int numBodies = 1000000;                                // Number of bodies
+  const int numBodies = 100000;                                // Number of bodies
   const int numTargets = 10;                                    // Number of targets for checking answer
   const int ncrit = 8;                                          // Number of bodies per leaf cell
   theta = 0.4;                                                  // Multipole acceptance criterion
+
+#if DO_LOI
+    loi_init(); // calc TSC freq and init data structures
+    printf(" TSC frequency has been measured to be: %g Hz\n", (double) TSCFREQ);
+    int maxthr = 1;
+#endif
+
 
   //! Initialize dsitribution, source & target value of bodies
   printf("--- FMM Profiling ----------------\n");               // Start profiling
@@ -72,7 +84,13 @@ int main(int argc, char ** argv) {                              // Main function
   upwardPass(C0);                                               // Upward pass for P2M, M2M
   printf("%-20s : %lf s\n","Upward pass",getTime()-time);       // Stop timer 
   time = getTime();                                             // Start timer 
+#ifdef DO_LOI 
+        phase_profile_start();
+#endif
   traversal(C0, C0);                                            // Traversal for M2L, P2P
+#ifdef DO_LOI
+        phase_profile_stop(0); 
+#endif
   printf("%-20s : %lf s\n","Traverse",getTime()-time);          // Stop timer 
   time = getTime();                                             // Start timer 
   downwardPass(C0);                                             // Downward pass for L2L, L2P
@@ -109,5 +127,14 @@ int main(int argc, char ** argv) {                              // Main function
   printf("--- FMM vs. direct ---------------\n");               // Print message
   printf("Rel. L2 Error (p)  : %e\n",sqrtf(dp2/p2));            // Print potential error
   printf("Rel. L2 Error (f)  : %e\n",sqrtf(df2/f2));            // Print force error
+  printf("Number of Cells %d, sizeof body %d, sizeof Cell %d\n", C0->NNODE, sizeof(Body), sizeof(Cell));                    // print number of cells
+#ifdef DO_LOI
+#ifdef LOI_TIMING
+    loi_statistics(&fmm_kernels, maxthr);
+#endif
+#ifdef DO_KRD
+    krd_save_traces();
+#endif
+#endif
   return 0;
 }

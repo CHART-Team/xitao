@@ -2,8 +2,31 @@
 #define kernel_h
 #include <iostream>
 
+#ifdef DO_LOI
+#include "loi.h"
+
+// keep exact same format as LOI example 
+enum kernels{
+    _M2L = 0, // identifier for the M2L kernel
+    _P2P = 1, // identifier for the P2P kernel
+    };
+
+/* this structure describes the relationship between phases and kernels in the application */ 
+struct loi_kernel_info fmm_kernels = {
+        2,              // 2 kernels in total
+        1,              // 1 phase
+        {"M2L", "P2P"}, // Name of the two kernels
+        {"Traverse"},   // Name of the phase
+        {(1<<_M2L | 1<<_P2P)}, // both kernels belong to the same phase [0]
+        };
+#endif
+
+
 //!< P2P kernel between cells Ci and Cj 
 void P2P(Cell * Ci, Cell * Cj) {
+#if DO_LOI
+    kernel_profile_start();
+#endif
   Body * Bi = Ci->BODY;                                         // Target body pointer
   Body * Bj = Cj->BODY;                                         // Source body pointer
   for (int i=0; i<Ci->NBODY; i++) {                             // Loop over target bodies
@@ -22,6 +45,19 @@ void P2P(Cell * Ci, Cell * Cj) {
     Bi[i].p += p;                                               //  Accumulate potential
     for (int d=0; d<2; d++) Bi[i].F[d] -= F[d];                 //  Accumulate force
   }                                                             // End loop over target bodies
+#if DO_LOI
+    kernel_profile_stop(_P2P);
+#if DO_KRD
+    // Read Data:    Bj bodies, Cj, Ci structures
+    // Written Data: Bi bodies
+    kernel_trace2(_P2P, 
+                    Bi, KWRITE(Cj->NBODY)*sizeof(Body),
+                    Bj, KREAD(Ci->NBODY)*sizeof(Body));
+    kernel_trace2(_P2P, 
+                    Cj, KREAD(1)*sizeof(Cell),
+                    Ci, KREAD(1)*sizeof(Cell));
+#endif
+#endif
 }
 
 //!< P2M kernel for cell C
@@ -59,6 +95,9 @@ void M2M(Cell * Ci) {
 
 //!< M2L kernel between cells Ci and Cj
 void M2L(Cell * Ci, Cell * Cj) {
+#if DO_LOI
+    kernel_profile_start();
+#endif
   real_t dX[2];                                                 // Distance vector
   for (int d=0; d<2; d++) dX[d] = Ci->X[d] - Cj->X[d];          // Get distance vector
   complex_t Z(dX[0],dX[1]), powZn(1.0, 0.0), powZnk(1.0, 0.0), invZ(powZn/Z);// Convert to complex plane
@@ -86,6 +125,16 @@ void M2L(Cell * Ci, Cell * Cj) {
     }                                                           //  End loop
     powZnk *= real_t(n-1);                                      //  Store (n-1)! / z^n
   }                                                             // End loop
+#if DO_LOI
+    kernel_profile_stop(_M2L);
+#if DO_KRD
+    // Read Data:    Cj->M    multipole expansion
+    // Written Data: Ci->L    local expansion
+    kernel_trace2(_M2L, 
+                    Ci->L, KWRITE(P)*sizeof(Ci->L[0]),
+                    Cj->M,  KREAD(P)*sizeof(Ci->M[0]));
+#endif
+#endif
 }
 
 //!< L2L kernel for one parent cell Cj
