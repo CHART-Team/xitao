@@ -16,7 +16,11 @@ struct loi_kernel_info fmm_kernels = {
         2,              // 2 kernels in total
         1,              // 1 phase
         {"M2L", "P2P"}, // Name of the two kernels
+#ifdef LIST
+        {"BreadthFirst"},   // Name of the phase
+#else
         {"Traverse"},   // Name of the phase
+#endif
         {(1<<_M2L | 1<<_P2P)}, // both kernels belong to the same phase [0]
         };
 #endif

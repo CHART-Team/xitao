@@ -84,15 +84,22 @@ int main(int argc, char ** argv) {                              // Main function
   upwardPass(C0);                                               // Upward pass for P2M, M2M
   printf("%-20s : %lf s\n","Upward pass",getTime()-time);       // Stop timer 
   time = getTime();                                             // Start timer 
-#ifdef DO_LOI 
+#if !defined(LIST) && defined(DO_LOI)
         phase_profile_start();
 #endif
   traversal(C0, C0);                                            // Traversal for M2L, P2P
-#ifdef LIST
-  breadthFirst(C0);                                             // Traversal for M2L, P2P
+#if !defined(LIST) && defined(DO_LOI)
+        phase_profile_stop(0);
 #endif
+
+#ifdef LIST
+#ifdef DO_LOI 
+        phase_profile_start();
+#endif
+  breadthFirst(C0);                                             // Traversal for M2L, P2P
 #ifdef DO_LOI
         phase_profile_stop(0); 
+#endif
 #endif
   printf("%-20s : %lf s\n","Traverse",getTime()-time);          // Stop timer 
   time = getTime();                                             // Start timer 

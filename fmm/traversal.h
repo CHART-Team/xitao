@@ -59,6 +59,7 @@ void upwardPass(Cell * C) {
   M2M(C);                                                       // M2M kernel
 }
 
+#ifdef LIST
 void breadthFirst(Cell *C) {
   std::queue<Cell*> cellQueue;                                  // Queue of cells for breadth first traversal
   cellQueue.push(C);                                            // Push root into queue
@@ -75,6 +76,7 @@ void breadthFirst(Cell *C) {
     }                                                           //  End if for leaf cell
   }                                                             // End while loop for non empty queue
 }
+#endif
 
 //! Recursive call for downward pass
 void downwardPass(Cell * C) {

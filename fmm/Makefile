@@ -1,6 +1,6 @@
 .SUFFIXES: .cxx .o
 
-CXX = g++  -O3 -ffast-math #-DLIST
+CXX = g++  -O3 -ffast-math -DLIST
 
 include ../loi/loikrd.defs
 
@@ -28,4 +28,5 @@ test: test.o  $(LOI_OBJS)
 	numactl -C 0 ./a.out
 
 clean:
-	$(RM) *.o a.out
+	$(RM) *.o a.out $(LOI_OBJS)
+

@@ -574,7 +574,7 @@ int main(int argc, char *argv[])
 	// the first range is always at 0 
 	printf("#!/bin/bash\n");
 	//printf("%s %d %d 0 0 %ld &\n", cmd[data_model], index, index_offset, partition);
-	printf("krd_tool %d %d %d 0 0 %ld -1 &\n", data_model, index, index_offset, partition);
+	printf("krd_tool %d %d %d 0 0 %ld -1 \n", data_model, index, index_offset, partition);
 	
 	// advance pointers so that they point to the first valid entry
 	do{
@@ -607,7 +607,7 @@ int main(int argc, char *argv[])
 		if((p_p / partition) > count){
 			//  printf("DEBUG: p_p %ld, partition %ld, count %d\n", p_p, partition, count);
 			//printf("%s %d %d %d %d %ld &\n", cmd[data_model], index, index_offset + count + 1, w, p, partition);
-			printf("krd_tool %d %d %d %d %d %ld -1 &\n", data_model, index, index_offset + count + 1, w, p, partition);
+			printf("krd_tool %d %d %d %d %d %ld -1 \n", data_model, index, index_offset + count + 1, w, p, partition);
 			count++;
 			}
 		
