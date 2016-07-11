@@ -59,15 +59,32 @@ void upwardPass(Cell * C) {
   M2M(C);                                                       // M2M kernel
 }
 
+void breadthFirst(Cell *C) {
+  std::queue<Cell*> cellQueue;                                  // Queue of cells for breadth first traversal
+  cellQueue.push(C);                                            // Push root into queue
+  while (!cellQueue.empty()) {                                  // While queue is not empty
+    C = cellQueue.front();                                      //  Read front
+    cellQueue.pop();                                            //  Pop queue
+    for (int i=0; i<C->M2L.size(); i++) M2L(C,C->M2L[i]);       //  M2L kernel
+    if (C->NNODE == 1) {                                        //  If leaf cell
+      for (int i=0; i<C->P2P.size(); i++) P2P(C,C->P2P[i]);     //   P2P kernel
+    } else {                                                    //  Else
+      for (int i=0; i<4; i++) {                                 //   Loop over child cells
+        if (C->CHILD[i]) cellQueue.push(C->CHILD[i]);           //    Push child to queue
+      }                                                         //   End loop over child cells
+    }                                                           //  End if for leaf cell
+  }                                                             // End while loop for non empty queue
+}
+
 //! Recursive call for downward pass
 void downwardPass(Cell * C) {
 #ifdef LIST
-  for (int i=0; i<C->M2L.size(); i++) M2L(C,C->M2L[i]);         // M2L kernel
+  //for (int i=0; i<C->M2L.size(); i++) M2L(C,C->M2L[i]);         // M2L kernel
 #endif
   L2L(C);                                                       // L2L kernel
   if (C->NNODE == 1) {
 #ifdef LIST
-    for (int i=0; i<C->P2P.size(); i++) P2P(C,C->P2P[i]);       // P2P kernel
+    //for (int i=0; i<C->P2P.size(); i++) P2P(C,C->P2P[i]);       // P2P kernel
 #endif
     L2P(C);                                                     // L2P kernel
   }
