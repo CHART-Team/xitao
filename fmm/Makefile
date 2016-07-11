@@ -22,10 +22,10 @@ CXXFLAGS += -I$(LOI_DIR)
 
 %.o : %.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(LOIFLAGS) -c $< -o $@
- 
+
 test: test.o  $(LOI_OBJS)
 	$(CXX) $?  $(CXXFLAGS)
 	numactl -C 0 ./a.out
 
 clean:
-	$(RM) *.o *.out
+	$(RM) *.o a.out

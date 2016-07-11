@@ -88,6 +88,9 @@ int main(int argc, char ** argv) {                              // Main function
         phase_profile_start();
 #endif
   traversal(C0, C0);                                            // Traversal for M2L, P2P
+#ifdef LIST
+  breadthFirst(C0);                                             // Traversal for M2L, P2P
+#endif
 #ifdef DO_LOI
         phase_profile_stop(0); 
 #endif
@@ -127,7 +130,6 @@ int main(int argc, char ** argv) {                              // Main function
   printf("--- FMM vs. direct ---------------\n");               // Print message
   printf("Rel. L2 Error (p)  : %e\n",sqrtf(dp2/p2));            // Print potential error
   printf("Rel. L2 Error (f)  : %e\n",sqrtf(df2/f2));            // Print force error
-  printf("Number of Cells %d, sizeof body %d, sizeof Cell %d\n", C0->NNODE, sizeof(Body), sizeof(Cell));                    // print number of cells
 #ifdef DO_LOI
 #ifdef LOI_TIMING
     loi_statistics(&fmm_kernels, maxthr);
