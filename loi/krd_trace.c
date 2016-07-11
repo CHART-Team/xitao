@@ -550,18 +550,18 @@ int main(int argc, char *argv[])
 	long w_p, p_p; // warmup point and partition point (counted in bytes)
 	int count = 0; // number of partitions that have been printed
 	int index_offset; 
-	int scattered_data = 0;
+	int data_model = 0;
 	
 	if(argc != 6){
-		printf("Usage: partition_tool <trace> <warm-up> <partition-size> <index_offset> <scattered_data>\n");
+		printf("Usage: partition_tool <data_model> <trace> <index_offset> <warm-up> <partition-size>\n");
 			exit(1);
 			}
 
-	index = atoi(argv[1]);
-	warmup = atol(argv[2]);
-	partition = atol(argv[3]);
-	index_offset = atoi(argv[4]);
-	scattered_data = atoi(argv[5]);
+	data_model = atoi(argv[1]);
+	index = atoi(argv[2]);
+	index_offset = atoi(argv[3]);
+	warmup = atol(argv[4]);
+	partition = atol(argv[5]);
 	
 	krd_init_index(index, TRACE_LENGTH*16);
 	krd_read_coherent_trace(index);
@@ -573,8 +573,8 @@ int main(int argc, char *argv[])
 	
 	// the first range is always at 0 
 	printf("#!/bin/bash\n");
-	//printf("%s %d %d 0 0 %ld &\n", cmd[scattered_data], index, index_offset, partition);
-	printf("krd_tool %d 0 %d %d 0 0 %ld &\n", scattered_data, index, index_offset, partition);
+	//printf("%s %d %d 0 0 %ld &\n", cmd[data_model], index, index_offset, partition);
+	printf("krd_tool %d %d %d 0 0 %ld -1 &\n", data_model, index, index_offset, partition);
 	
 	// advance pointers so that they point to the first valid entry
 	do{
@@ -606,8 +606,8 @@ int main(int argc, char *argv[])
 		// if p_p has reached a partition point, then print out the ranges
 		if((p_p / partition) > count){
 			//  printf("DEBUG: p_p %ld, partition %ld, count %d\n", p_p, partition, count);
-			//printf("%s %d %d %d %d %ld &\n", cmd[scattered_data], index, index_offset + count + 1, w, p, partition);
-			printf("krd_tool %d 0 %d %d %d %d %ld &\n", scattered_data, index, index_offset + count + 1, w, p, partition);
+			//printf("%s %d %d %d %d %ld &\n", cmd[data_model], index, index_offset + count + 1, w, p, partition);
+			printf("krd_tool %d %d %d %d %d %ld -1 &\n", data_model, index, index_offset + count + 1, w, p, partition);
 			count++;
 			}
 		

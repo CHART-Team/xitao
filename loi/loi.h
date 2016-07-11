@@ -236,11 +236,11 @@ void krd_bench();
 // See examples for usage examples
 
 #define  kernel_trace1(kid, id, s)      		TTrace_add_and_incr(__ndx, ((uint64_t) id),  __kstart,  s, kid)
-#define  kernel_trace2(kid, id1, s1, id2, s2) 		TTrace_add_and_incr(__ndx, ((uint64_t) id1), __kstart, s1, kid); \
-							TTrace_add_and_incr(__ndx, ((uint64_t) id2), __kstart, s2, kid)
-#define  kernel_trace3(kid, id1, s1, id2, s2, id3, s3)	TTrace_add_and_incr(__ndx, ((uint64_t) id1), __kstart, s1, kid); \
-							TTrace_add_and_incr(__ndx, ((uint64_t) id2), __kstart, s2, kid); \
-							TTrace_add_and_incr(__ndx, ((uint64_t) id3), __kstart, s3, kid)
+#define  kernel_trace2(kid, id1, s1, id2, s2) 		TTrace_add_and_incr(__ndx, ((uint64_t) id1), __kstart,  s1, kid); \
+							TTrace_add_and_incr(__ndx, ((uint64_t) id2), __kstart,  s2, kid)
+#define  kernel_trace3(kid, id1, s1, id2, s2, id3, s3)	TTrace_add_and_incr(__ndx, ((uint64_t) id1), __kstart,  s1, kid); \
+							TTrace_add_and_incr(__ndx, ((uint64_t) id2), __kstart,  s2, kid); \
+							TTrace_add_and_incr(__ndx, ((uint64_t) id3), __kstart,  s3, kid)
 
 // Use these macros to specify whether the data access is read-only (KREAD) or ready-write (KWRITE)
 #define KREAD(b)    			((int32_t)(b))

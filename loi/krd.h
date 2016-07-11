@@ -26,7 +26,7 @@ struct krd_id_tsc{
                 // RWI trace: >0 bytes read/written, <0 bytes invalidated
 // core/numa IDs are used to track the origin in merged traces. It is also used by the krd_tool to compute shared reuses/invalidations
     uint16_t core;  // core that generated this access
-    uint16_t kernel_id;  // kernel ID that is performing this access
+    int16_t kernel_id;  // kernel ID that is performing this access
 //. uint16_t numa;  // numa node that generated this access
     };
 
@@ -103,7 +103,7 @@ enum data_models{
 // Add an entry to the trace
 // Note that a thread can write at most TRACE_LENGTH entries. 
 // Allocating larger entries using krd_init_block is mainly used for merging and coherence
-static inline void TTrace_add_and_incr(uint32_t tid, uint64_t elem, uint64_t timestamp, int32_t size, uint16_t kid)
+static inline void TTrace_add_and_incr(uint32_t tid, uint64_t elem, uint64_t timestamp, int32_t size, int16_t kid)
 {
      int coreid = tid; 
      if(threadtraces[coreid].num_elems < TRACE_LENGTH){
@@ -111,14 +111,12 @@ static inline void TTrace_add_and_incr(uint32_t tid, uint64_t elem, uint64_t tim
         threadtraces[coreid].data_ids[threadtraces[coreid].num_elems].id = elem;
         threadtraces[coreid].data_ids[threadtraces[coreid].num_elems].size = size;
         threadtraces[coreid].data_ids[threadtraces[coreid].num_elems].kernel_id = kid; 
-//  threadtraces[coreid].data_ids[threadtraces[coreid].num_elems].core = coreid;
-//  threadtraces[coreid].data_ids[threadtraces[coreid].num_elems].numa = NUMA(tid);
         threadtraces[coreid].num_elems++;
        }
 } 
 
 // modified version for benchmarking purposes
-static inline void TTrace_add_and_incr_entry(uint32_t tid, uint64_t elem, uint64_t timestamp, int32_t size, int32_t entry, uint16_t kid)
+static inline void TTrace_add_and_incr_entry(uint32_t tid, uint64_t elem, uint64_t timestamp, int32_t size, int32_t entry, int16_t kid)
 {
      int coreid = tid; 
      if(threadtraces[coreid].num_elems < TRACE_LENGTH){
@@ -126,8 +124,6 @@ static inline void TTrace_add_and_incr_entry(uint32_t tid, uint64_t elem, uint64
     threadtraces[coreid].data_ids[entry].id = elem;
     threadtraces[coreid].data_ids[entry].size = size;
     threadtraces[coreid].data_ids[entry].kernel_id = kid;
-//  threadtraces[coreid].data_ids[entry].core = coreid;
-//  threadtraces[coreid].data_ids[entry].numa = NUMA(tid);
        }
 } 
 

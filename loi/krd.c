@@ -89,7 +89,7 @@ static struct stack_entry *stack_head = NULL;
 
 // count total data on the stack and print it
 // this computes an approximation of the value "M" corresponding to the total amount of distinct addresses
-static void print_trace_data()
+static void print_trace_data(FILE *log)
 {
   struct stack_entry *entry = stack_head;
   unsigned long data = 0;
@@ -99,7 +99,7 @@ static void print_trace_data()
    entry = entry->next;
    }
 
-  printf("Total Stack Data is %lu bytes\n", data);
+  fprintf(log, "Total Stack Data is %lu bytes\n", data);
 }
 
 // check if data blocks overlap and record overlap region in 'start' and 'size'
@@ -576,7 +576,7 @@ void do_one_histogram_mem(
         // the stack is fully populated at the end, so this is the time to measure the total resource usage
         getrusage(RUSAGE_SELF, &resource_usage);
         fprintf(log, "Total resident size in KiloBytes: %ld\n", resource_usage.ru_maxrss);
-        print_trace_data();
+        print_trace_data(log);
     }
 }
 
@@ -706,7 +706,7 @@ int main(int argc, char *argv[])
 	partition = -1;
 	newid = threadid;
 	}
-  else if(argc == 9){
+  else if(argc == 8){
 	data_model = atoi(argv[1]);
 	threadid = atoi(argv[2]);
 	newid  = atoi(argv[3]);
@@ -716,7 +716,7 @@ int main(int argc, char *argv[])
 	kid = (int16_t) atoi(argv[7]);
 	}
    else { 
-	printf("Usage: ./krd_tool <model> <in_trace> <out_histogram> <warmup> <histo> <partition> <kernel_id>\n");
+	printf("Usage: ./krd_tool <model> <in_trace> <out_histogram> <warmup> <start> <partition> <kernel_id>\n");
 	printf("Usage: ./krd_tool <model> <in_trace> <kernel_id>\n");
 	return -1;
   }
