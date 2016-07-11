@@ -2,6 +2,9 @@
 #include <cstdlib>
 #include <cstdio>
 #include <sys/time.h>
+#include <tbb/parallel_for.h>
+#include <tbb/task_group.h>
+#include <tbb/task_scheduler_init.h>
 
 #ifdef DO_LOI
 #include "loi.h"
@@ -21,10 +24,13 @@ double getTime() {
 }
 
 int main(int argc, char ** argv) {                              // Main function
-  const int numBodies = 100000;                                // Number of bodies
+  const int numBodies = 100000;                                 // Number of bodies
   const int numTargets = 10;                                    // Number of targets for checking answer
   const int ncrit = 8;                                          // Number of bodies per leaf cell
+  const int numWorkers = 8;
   theta = 0.4;                                                  // Multipole acceptance criterion
+  nspawn = 1000;                                                // Threshold for spawning threads
+  tbb::task_scheduler_init init(numWorkers);                    // Number of worker threads
 
 #if DO_LOI
     loi_init(); // calc TSC freq and init data structures
@@ -87,7 +93,8 @@ int main(int argc, char ** argv) {                              // Main function
 #if !defined(LIST) && defined(DO_LOI)
         phase_profile_start();
 #endif
-  traversal(C0, C0);                                            // Traversal for M2L, P2P
+  Traversal traversal(C0, C0);                                  // Traversal for M2L, P2P
+  traversal();
 #if !defined(LIST) && defined(DO_LOI)
         phase_profile_stop(0);
 #endif
