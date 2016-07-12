@@ -1,6 +1,6 @@
 .SUFFIXES: .cxx .o
 
-CXX = g++ -O3 -ffast-math #-DLIST
+CXX = g++ -O3 -ffast-math -DLIST
 
 include ../loi/loikrd.defs
 

@@ -110,8 +110,7 @@ void breadthFirst(Cell *C) {
   for (int c=0; c<cellVector.size(); c++) {                     // Loop over cells
     Cell * C = cellVector[c];                                   //  Current cell
     Evaluate evaluate(C);                                       //  Instantiate functor
-    if(C->NBODY > nspawn) tg.run(evaluate);                     //  If task is large, spawn new task
-    else evaluate();                                            //  Else evaluate on old task
+    tg.run(evaluate);                                           //  If task is large, spawn new task
   };                                                            // End loop over cells
   tg.wait();                                                    // Sync threads
 }

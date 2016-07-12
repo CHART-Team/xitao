@@ -30,7 +30,7 @@ int main(int argc, char ** argv) {                              // Main function
   const int numBodies = 1000000;                                 // Number of bodies
   const int numTargets = 10;                                    // Number of targets for checking answer
   const int ncrit = 8;                                          // Number of bodies per leaf cell
-  const int numWorkers = 4;
+  const int numWorkers = 2;
   theta = 0.4;                                                  // Multipole acceptance criterion
   nspawn = 1000;                                                // Threshold for spawning threads
   tbb::task_scheduler_init init(numWorkers);                    // Number of worker threads
