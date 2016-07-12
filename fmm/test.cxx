@@ -7,7 +7,10 @@
 #include <tbb/task_scheduler_init.h>
 
 #ifdef DO_LOI
+extern "C"
+{
 #include "loi.h"
+}
 #endif
 
 #include "types.h"
@@ -24,10 +27,10 @@ double getTime() {
 }
 
 int main(int argc, char ** argv) {                              // Main function
-  const int numBodies = 100000;                                 // Number of bodies
+  const int numBodies = 1000000;                                 // Number of bodies
   const int numTargets = 10;                                    // Number of targets for checking answer
   const int ncrit = 8;                                          // Number of bodies per leaf cell
-  const int numWorkers = 8;
+  const int numWorkers = 4;
   theta = 0.4;                                                  // Multipole acceptance criterion
   nspawn = 1000;                                                // Threshold for spawning threads
   tbb::task_scheduler_init init(numWorkers);                    // Number of worker threads
@@ -35,7 +38,7 @@ int main(int argc, char ** argv) {                              // Main function
 #if DO_LOI
     loi_init(); // calc TSC freq and init data structures
     printf(" TSC frequency has been measured to be: %g Hz\n", (double) TSCFREQ);
-    int maxthr = 1;
+    int maxthr = numWorkers;
 #endif
 
 

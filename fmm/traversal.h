@@ -10,7 +10,7 @@ struct Traversal {                                              //!< Functor for
   Cell * Ci;                                                    //!< Target cell pointer
   Cell * Cj;                                                    //!< Source cell pointer
   Traversal(Cell * _Ci, Cell * _Cj) : Ci(_Ci), Cj(_Cj) {};      // Constructor
-  void operator() () {                                          // Functor
+  void operator() () const {                                          // Functor
     real_t dX[2];                                               // Distance vector
     for (int d=0; d<2; d++) dX[d] = Ci->X[d] - Cj->X[d];        // Distance vector from source to target
     real_t R2 = (dX[0] * dX[0] + dX[1] * dX[1]) * theta * theta;// Scalar distance squared
@@ -80,17 +80,17 @@ void upwardPass(Cell * C) {
   M2M(C);                                                       // M2M kernel
 }
 
+#ifdef LIST
 struct Evaluate {                                               // Functor for kernel evaluation
   Cell * C;                                                     // Cell to evaluate
   Evaluate(Cell * _C) : C(_C) {};                               // Constructor
-  void operator() () {                                          // Functor
+  void operator() () const {                                          // Functor
     for (int i=0; i<C->M2L.size(); i++) M2L(C,C->M2L[i]);       //  M2L kernel
     if (C->NNODE == 1)                                          //  If leaf cell
       for (int i=0; i<C->P2P.size(); i++) P2P(C,C->P2P[i]);     //   P2P kernel
   }                                                             // End functor
 };
 
-#ifdef LIST
 void breadthFirst(Cell *C) {
   std::vector<Cell*> cellVector;                                // Vector of cells
   std::queue<Cell*> cellQueue;                                  // Queue of cells for breadth first traversal
