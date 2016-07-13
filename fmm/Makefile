@@ -1,6 +1,9 @@
 .SUFFIXES: .cxx .o
 
-CXX = g++ -O3 -ffast-math -DLIST
+LIST_SCHEDULE:=-DOPENMP -fopenmp
+#LIST_SCHEDULE:=-DTASK_GROUP
+
+CXX = g++ -O3 -ffast-math -DLIST $(LIST_SCHEDULE)
 
 include ../loi/loikrd.defs
 

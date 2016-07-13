@@ -106,13 +106,29 @@ void breadthFirst(Cell *C) {
       }                                                         //   End if child exists
     }                                                           //  End loop over child cells
   }                                                             // End while loop for non empty queue
+#ifdef TASK_GROUP
   tbb::task_group tg;                                           // Create task group
   for (int c=0; c<cellVector.size(); c++) {                     // Loop over cells
     Cell * C = cellVector[c];                                   //  Current cell
     Evaluate evaluate(C);                                       //  Instantiate functor
     tg.run(evaluate);                                           //  If task is large, spawn new task
-  };                                                            // End loop over cells
+  }                                                             // End loop over cells
   tg.wait();                                                    // Sync threads
+#elif OPENMP
+#pragma omp parallel for schedule(static) num_threads(numWorkers) 
+  for (int c=0; c<cellVector.size(); c++) {                     // Loop over cells
+    Cell * C = cellVector[c];                                   //  Current cell
+    Evaluate evaluate(C);                                       //  Instantiate functor
+    evaluate();                                           //  If task is large, spawn new task
+  }                                                            // End loop over cells
+#else // PARALLEL_FOR
+#error "PARALLEL_FOR is currently not working. Use OpenMP or TBB Task Groups for the while :-)"
+//  tbb::parallel_for(0, cellVector.size(), [&](int i) {
+//    Cell * C = cellVector[i];                                   //  Current cell
+//    Evaluate evaluate(C);                                       //  Instantiate functor
+//    evaluate();                                                 //  run functor
+//    })
+#endif
 }
 #endif
 
