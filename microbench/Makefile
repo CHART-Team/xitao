@@ -21,7 +21,7 @@
 include ../makefile.inc
 CFLAGS := $(LIBS)  -g3 -I.. -I.  -O3 ${EXTRAEINC}
 include makefile.micro
-CXXFLAGS=$(CFLAGS) --std=c++11  -pthread ${EXTRAEINC}
+CXXFLAGS=$(CFLAGS) --std=c++11  -pthread ${EXTRAEINC} -I${QTHINC}
 
 LIBS = -lm ${EXTRAELIBS}
 PROGRAM_OBJS=tao_main.o ../tao_sched.o
@@ -33,6 +33,10 @@ all: micro
  
 micro: $(PROGRAM_OBJS)
 	$(CXX) $^ -o $@ $(CXXFLAGS) ${LIBS} -L$(TBBLIB) -ltbbmalloc_proxy -ltbbmalloc -Wl,-rpath=$(TBBLIB)
+
+qthmicro: qthmicro.o
+	$(CXX) $^ -o $@ $(CXXFLAGS) ${QTHLFLAGS} ${LIBS} 
+
 
 clean:
 	rm $(PROGRAM_OBJS)

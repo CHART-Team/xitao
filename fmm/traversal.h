@@ -119,8 +119,8 @@ void breadthFirst(Cell *C) {
   for (int c=0; c<cellVector.size(); c++) {                     // Loop over cells
     Cell * C = cellVector[c];                                   //  Current cell
     Evaluate evaluate(C);                                       //  Instantiate functor
-    evaluate();                                           //  If task is large, spawn new task
-  }                                                            // End loop over cells
+    evaluate();                                                 //  If task is large, spawn new task
+  }                                                             // End loop over cells
 #else // PARALLEL_FOR
 #error "PARALLEL_FOR is currently not working. Use OpenMP or TBB Task Groups for the while :-)"
 //  tbb::parallel_for(0, cellVector.size(), [&](int i) {
