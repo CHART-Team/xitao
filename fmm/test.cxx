@@ -13,7 +13,7 @@ extern "C"
 }
 #endif
 
-const int numWorkers = 2;
+const int numWorkers = 4;
 
 #include "types.h"
 #include "buildtree.h"
