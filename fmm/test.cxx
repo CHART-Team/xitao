@@ -13,7 +13,7 @@ extern "C"
 }
 #endif
 
-const int numWorkers = 2;
+int numWorkers = 1;
 
 #include "types.h"
 #include "buildtree.h"
@@ -31,9 +31,13 @@ double getTime() {
 int main(int argc, char ** argv) {                              // Main function
   const int numBodies = 1000000;                                 // Number of bodies
   const int numTargets = 10;                                    // Number of targets for checking answer
-  const int ncrit = 8;                                          // Number of bodies per leaf cell
-  theta = 0.4;                                                  // Multipole acceptance criterion
+  const int ncrit = 4;                                          // Number of bodies per leaf cell
+  theta = 0.2;                                                  // Multipole acceptance criterion
   nspawn = 1000;                                                // Threshold for spawning threads
+
+  if(argc == 2) 
+	numWorkers = atoi(argv[1]);
+
   tbb::task_scheduler_init init(numWorkers);                    // Number of worker threads
 
 #if DO_LOI

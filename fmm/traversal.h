@@ -115,7 +115,7 @@ void breadthFirst(Cell *C) {
   }                                                             // End loop over cells
   tg.wait();                                                    // Sync threads
 #elif OPENMP
-#pragma omp parallel for schedule(static) num_threads(numWorkers) 
+#pragma omp parallel for schedule(static,100) num_threads(numWorkers) 
   for (int c=0; c<cellVector.size(); c++) {                     // Loop over cells
     Cell * C = cellVector[c];                                   //  Current cell
     Evaluate evaluate(C);                                       //  Instantiate functor
