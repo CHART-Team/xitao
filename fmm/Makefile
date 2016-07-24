@@ -1,10 +1,22 @@
 .SUFFIXES: .cxx .o
 
-LIST_SCHEDULE:=-DOPENMP -fopenmp
-#LIST_SCHEDULE:=-DTASK_GROUP
-PROGRAM_OBJS=test.o 
-#LIST_SCHEDULE:=-DTAO -pthread
-#PROGRAM_OBJS=test.o ../tao_sched.o
+#TARGET = OPENMP
+#TARGET=TBB
+TARGET=TAO
+
+
+ifeq ($(TARGET), OPENMP) 
+LIST_SCHEDULE := -DOPENMP -fopenmp 
+PROGRAM_OBJS = test.o 
+else ifeq ($(TARGET), TBB)
+PROGRAM_OBJS = test.o 
+LIST_SCHEDULE:=-DTASK_GROUP
+else ifeq ($(TARGET), TAO)
+LIST_SCHEDULE := -DTAO -pthread
+PROGRAM_OBJS = test.o ../tao_sched.o
+else
+$(info "Invalid TARGET selected. I saw " $TARGET)
+endif
 
 include ../makefile.inc
 CXX = g++ -std=c++11 -O3 -g3 -ffast-math -DLIST $(LIST_SCHEDULE)
