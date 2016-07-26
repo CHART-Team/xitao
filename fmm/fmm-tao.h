@@ -24,6 +24,7 @@ class fmm_st : public AssemblyTask
         int execute(int threadid)
         {
         int tid = threadid - leader;
+	//std::cout << "Leader " << leader << ", Worker id " << tid << " started " << std::endl;
         for(int c=0; c<cv[tid].size(); c++) {                     // Loop over cells
           Cell * C = cv[tid][c];                                   //  Current cell
           Evaluate evaluate(C);                                    //  Instantiate functor

@@ -112,6 +112,22 @@ int gotao_push_init(PolyTask *pt, int queue)
   worker_ready_q[queue].push_front(pt);
 }
 
+// version that pushes to the back
+int gotao_push_back_init(PolyTask *pt, int queue)
+{
+#ifdef TAO_PLACES
+  // if no queue is specified, then the affinity has precedence
+  if((queue == -1) && (pt->affinity_queue != -1))
+          queue = pt->affinity_queue;
+  else 
+#endif
+  if(queue == -1) 
+          queue = gotao_thread_base;
+
+ // std::cout << "Pushing task into Queue: " << queue << std::endl;
+  worker_ready_q[queue].push_back(pt);
+}
+
 #ifdef LOCK_FREE_QUEUE
 LFQueue<PolyTask *> worker_assembly_q[MAXTHREADS];
 GENERIC_LOCK(worker_assembly_lock[MAXTHREADS]);
@@ -181,6 +197,7 @@ int worker_loop(int _nthread)
               int leader = ( phys_core / assembly->width) * assembly->width;
 #endif
               assembly->leader = leader;
+	 //     std::cout << "Assigned leader " << leader << " to assembly" << std::endl;
               int i;
   
               // take all locks in ascending order and insert assemblies

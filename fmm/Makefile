@@ -1,6 +1,6 @@
 .SUFFIXES: .cxx .o
 
-#TARGET = OPENMP
+# TARGET = OPENMP
 #TARGET=TBB
 TARGET=TAO
 
@@ -12,7 +12,7 @@ else ifeq ($(TARGET), TBB)
 PROGRAM_OBJS = test.o 
 LIST_SCHEDULE:=-DTASK_GROUP
 else ifeq ($(TARGET), TAO)
-LIST_SCHEDULE := -DTAO -pthread
+LIST_SCHEDULE := -DTAO -pthread -DTAO_PLACES -DLOCK_FREE_QUEUE -DSPINLOCK
 PROGRAM_OBJS = test.o ../tao_sched.o
 else
 $(info "Invalid TARGET selected. I saw " $TARGET)
@@ -46,5 +46,5 @@ test: $(PROGRAM_OBJS) $(LOI_OBJS)
 	./a.out
 
 clean:
-	$(RM) *.o a.out taofmm $(LOI_OBJS)
+	$(RM) *.o a.out taofmm $(PROGRAM_OBJS) $(LOI_OBJS)
 
