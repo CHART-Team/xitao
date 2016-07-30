@@ -91,9 +91,17 @@ void breadthFirst(Cell *C) {
   std::queue<Cell*> cellQueue;                                  // Queue of cells for breadth first traversal
   cellQueue.push(C);                                            // Push root into queue
 #ifdef TAO
-  fmm_st  *fmms = new fmm_st(L3_W);                             // create a set of fmm_st assemblies
+  int ndx = 0, ins = 0;
+#define NA 16
+  fmm_st  *fmms[NA];                                           // create a set of fmm_st assemblies
   gotao_init(numWorkers,0);                                     // initialize the gotao runtime
-  fmms->insert(C); 
+  for(int i = 0; i < NA; i++){
+    fmms[i] = new fmm_st(L1_W);
+    fmms[i]->set_place(((float)  i) / (( float) NA));
+  //  std::cout << "affinity queue " << fmms[i]->affinity_queue << std::endl;
+    }
+
+  fmms[ndx]->insert(C); 
 #else
   std::vector<Cell*> cellVector;                                // Vector of cells
   cellVector.push_back(C);                                      // Push root into vector
@@ -105,7 +113,12 @@ void breadthFirst(Cell *C) {
     for (int i=0; i<4; i++) {                                   //  Loop over child cells
       if (C->CHILD[i]) {                                        //   If child exists
 #ifdef TAO
-        fmms->insert(C->CHILD[i]); 
+        fmms[ndx]->insert(C->CHILD[i]); 
+	ins++; 
+	if(ins == 10000){
+		ins = 0; 
+		ndx = (ndx + 1) % NA;
+		}
 #else
         cellVector.push_back(C->CHILD[i]);                      //    Push child to vector
 #endif
@@ -130,7 +143,9 @@ void breadthFirst(Cell *C) {
   }                                                             // End loop over cells
 #elif TAO
 
-  gotao_push_init(fmms);
+  for (int i=0; i < NA; i++)
+     gotao_push_init(fmms[i]);
+
   gotao_start();
   gotao_fini();
 
