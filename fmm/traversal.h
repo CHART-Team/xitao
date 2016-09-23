@@ -81,27 +81,47 @@ void upwardPass(Cell * C) {
 }
 
 #ifdef LIST
-struct Evaluate {                                               // Functor for kernel evaluation
-  Cell * C;                                                     // Cell to evaluate
-  Evaluate(Cell * _C) : C(_C) {};                               // Constructor
-  void operator() () const {                                          // Functor
-    for (int i=0; i<C->M2L.size(); i++) M2L(C,C->M2L[i]);       //  M2L kernel
-    if (C->NNODE == 1)                                          //  If leaf cell
-      for (int i=0; i<C->P2P.size(); i++) P2P(C,C->P2P[i]);     //   P2P kernel
-  }                                                             // End functor
-};
+#include "evaluate.h"
+
+#ifdef TAO
+#include "fmm-tao.h"
+#endif
 
 void breadthFirst(Cell *C) {
-  std::vector<Cell*> cellVector;                                // Vector of cells
   std::queue<Cell*> cellQueue;                                  // Queue of cells for breadth first traversal
-  cellVector.push_back(C);                                      // Push root into vector
   cellQueue.push(C);                                            // Push root into queue
+#ifdef TAO
+  int ndx = 0, ins = 0;
+#define NA 16
+  fmm_st  *fmms[NA];                                           // create a set of fmm_st assemblies
+  gotao_init(numWorkers,0);                                     // initialize the gotao runtime
+  for(int i = 0; i < NA; i++){
+    fmms[i] = new fmm_st(L1_W);
+    fmms[i]->set_place(((float)  i) / (( float) NA));
+  //  std::cout << "affinity queue " << fmms[i]->affinity_queue << std::endl;
+    }
+
+  fmms[ndx]->insert(C); 
+#else
+  std::vector<Cell*> cellVector;                                // Vector of cells
+  cellVector.push_back(C);                                      // Push root into vector
+  // I delay this in the hope of not interfering with the DTT, which is based on TBB
+#endif
   while (!cellQueue.empty()) {                                  // While queue is not empty
     C = cellQueue.front();                                      //  Read front
     cellQueue.pop();                                            //  Pop queue
     for (int i=0; i<4; i++) {                                   //  Loop over child cells
       if (C->CHILD[i]) {                                        //   If child exists
+#ifdef TAO
+        fmms[ndx]->insert(C->CHILD[i]); 
+	ins++; 
+	if(ins == 10000){
+		ins = 0; 
+		ndx = (ndx + 1) % NA;
+		}
+#else
         cellVector.push_back(C->CHILD[i]);                      //    Push child to vector
+#endif
         cellQueue.push(C->CHILD[i]);                            //    Push child to queue
       }                                                         //   End if child exists
     }                                                           //  End loop over child cells
@@ -121,6 +141,14 @@ void breadthFirst(Cell *C) {
     Evaluate evaluate(C);                                       //  Instantiate functor
     evaluate();                                                 //  If task is large, spawn new task
   }                                                             // End loop over cells
+#elif TAO
+
+  for (int i=0; i < NA; i++)
+     gotao_push_init(fmms[i]);
+
+  gotao_start();
+  gotao_fini();
+
 #else // PARALLEL_FOR
 #error "PARALLEL_FOR is currently not working. Use OpenMP or TBB Task Groups for the while :-)"
 //  tbb::parallel_for(0, cellVector.size(), [&](int i) {

@@ -1,10 +1,25 @@
 .SUFFIXES: .cxx .o
 
-LIST_SCHEDULE:=-DOPENMP -fopenmp
-#LIST_SCHEDULE:=-DTASK_GROUP
+# TARGET = OPENMP
+#TARGET=TBB
+TARGET=TAO
 
-CXX = g++ -O3 -ffast-math -DLIST $(LIST_SCHEDULE)
 
+ifeq ($(TARGET), OPENMP) 
+LIST_SCHEDULE := -DOPENMP -fopenmp 
+PROGRAM_OBJS = test.o 
+else ifeq ($(TARGET), TBB)
+PROGRAM_OBJS = test.o 
+LIST_SCHEDULE:=-DTASK_GROUP
+else ifeq ($(TARGET), TAO)
+LIST_SCHEDULE := -DTAO -pthread -DTAO_PLACES -DLOCK_FREE_QUEUE -DSPINLOCK
+PROGRAM_OBJS = test.o ../tao_sched.o
+else
+$(info "Invalid TARGET selected. I saw " $TARGET)
+endif
+
+include ../makefile.inc
+CXX = g++ -std=c++11 -O3 -g3 -ffast-math -DLIST $(LIST_SCHEDULE)
 include ../loi/loikrd.defs
 
 # options for LOI/KRD
@@ -18,7 +33,7 @@ else
 LOI_DIR = ../loi
 endif
 
-CXXFLAGS += -I$(LOI_DIR)
+CXXFLAGS += -I$(LOI_DIR)  -I..
 
 .cxx.o  :
 	$(CXX) -c $^ -o $@ $(LOIFLAGS)  $(CXXFLAGS)
@@ -26,10 +41,10 @@ CXXFLAGS += -I$(LOI_DIR)
 %.o : %.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(LOIFLAGS) -c $< -o $@
 
-test: test.o  $(LOI_OBJS)
-	$(CXX) $?  $(CXXFLAGS) -ltbb
+test: $(PROGRAM_OBJS) $(LOI_OBJS)
+	$(CXX) $?  $(CXXFLAGS)  -ltbb 
 	./a.out
 
 clean:
-	$(RM) *.o a.out $(LOI_OBJS)
+	$(RM) *.o a.out taofmm $(PROGRAM_OBJS) $(LOI_OBJS)
 

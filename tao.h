@@ -346,6 +346,7 @@ int gotao_fini();
 #define goTAO_push gotao_push
 int gotao_push(PolyTask *, int queue=-1);
 int gotao_push_init(PolyTask *, int queue=-1);
+int gotao_push_back_init(PolyTask *, int queue=-1);
 
 //events
 enum extrae_events{
