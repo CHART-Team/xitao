@@ -368,14 +368,14 @@ int main( int argc, char *argv[] )
     if(getenv("TAO_NOPLOT")) return 0;
 
     // for plot...
-    coarsen( param.u, np, np, param.padding,
-         param.uvis, param.visres+2, param.visres+2 );
-  
-    write_image( resfile, param.uvis, param.padding,
-         param.visres+2, 
-         param.visres+2 );
-
-    finalize( &param );
+//    coarsen( param.u, np, np, param.padding,
+//         param.uvis, param.visres+2, param.visres+2 );
+//  
+//    write_image( resfile, param.uvis, param.padding,
+//         param.visres+2, 
+//         param.visres+2 );
+//
+//    finalize( &param );
 
     return 0;
 }

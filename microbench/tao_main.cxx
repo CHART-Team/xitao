@@ -89,20 +89,22 @@ main(int argc, char* argv[])
    else
         thread_base = GOTAO_THREAD_BASE;
 
+   goTAO_init(nthreads, thread_base);
+
+   std::chrono::time_point<std::chrono::system_clock> start, end;
+   start = std::chrono::system_clock::now();
    // generate workload and insert it into the number of requested queues, in round robin
    int total_assemblies = nqueues * nas;
    TAO_U *ao[total_assemblies];
    for(int i = 0; i < total_assemblies ; i++){
            ao[i] = new TAO_U(awidth);
-           worker_ready_q[(i % nqueues) + thread_base].push_back(ao[i]);
+	   gotao_push_init(ao[i], i % nqueues);
+//           worker_ready_q[(i % nqueues) + thread_base].push_back(ao[i]);
    }
 
-   goTAO_init(nthreads, thread_base);
    // measure execution time
-   std::chrono::time_point<std::chrono::system_clock> start, end;
 
    goTAO_start();
-   start = std::chrono::system_clock::now();
 
    goTAO_fini();
    end = std::chrono::system_clock::now();

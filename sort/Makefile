@@ -46,10 +46,10 @@ taosort:  $(TAO_OBJS)  $(LOI_OBJS)
 taosort4096:  $(TAO4096_OBJS)  $(LOI_OBJS)
 	$(CXX) $^ -o $@${SUFFIX} ${CXXFLAGS} $(LFLAGS)  -fpermissive -DTAO_SORT -L$(TBBLIB) -ltbbmalloc_proxy -ltbbmalloc -Wl,-rpath=$(TBBLIB)
 
-tbbsort: tbbsort.cxx $(LOI_SOURCES)
+tbbsort: tbbsort.cxx $(LOI_OBJS)
 	$(CXX) $^ -o $@ ${CXXFLAGS} ${TBBLFLAGS} $(LOIFLAGS) $(LFLAGS) -fpermissive
 
-qthsort: qthsort.cxx $(LOI_SOURCES)
+qthsort: qthsort.cxx $(LOI_OBJS)
 	$(CXX) $^ -o $@ ${CXXFLAGS} ${QTHLFLAGS} $(LOIFLAGS) $(LFLAGS) -fpermissive
 
 qthserial: qthsort.cxx $(LOI_SOURCES)

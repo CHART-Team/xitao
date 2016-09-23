@@ -26,7 +26,7 @@ void print_array( int a, ELM *arr )
                 printf("Elem %d = %ld\n", i, arr[i]);
 }
 
-#define BLOCKSIZE (2*1024)
+#define BLOCKSIZE (16*1024)
 
 int main ( int argc, char *argv[] )
 {
@@ -112,7 +112,7 @@ int main ( int argc, char *argv[] )
         TAOMerge4 *level5[1];
 #endif 
 
-        sort_buffer_size = 32*1024*1024;
+        sort_buffer_size = 16384*BLOCKSIZE;
         insertion_thr    = 20;
 
         array = (ELM *) malloc(sort_buffer_size * sizeof(ELM));

@@ -69,7 +69,7 @@ class jacobi2D : public TAO_PAR_FOR_2D_BASE
       int krdblockx = ((x + KRDBLOCKX - 1) < xstop)? KRDBLOCKX : xstop - x;
       int krdblocky = ((y + KRDBLOCKY - 1) < ystop)? KRDBLOCKY : ystop - y;
       kernel_trace1(JACOBI2D, &in[ndx(x,y)], KREAD(krdblockx*krdblocky)*sizeof(double));
-      kernel_trace1(JACOBI2D, &out[ndx(x,y)], KREAD(krdblockx*krdblocky)*sizeof(double));
+      kernel_trace1(JACOBI2D, &out[ndx(x,y)], KWRITE(krdblockx*krdblocky)*sizeof(double));
       }
 #endif
 #endif
@@ -133,7 +133,7 @@ class copy2D : public TAO_PAR_FOR_2D_BASE
       int krdblockx = ((x + KRDBLOCKX - 1) < xstop)? KRDBLOCKX : xstop - x;
       int krdblocky = ((y + KRDBLOCKY - 1) < ystop)? KRDBLOCKY : ystop - y;
       kernel_trace1(JACOBI2D, &in[ndx(x,y)], KREAD(krdblockx*krdblocky)*sizeof(double));
-      kernel_trace1(JACOBI2D, &out[ndx(x,y)], KREAD(krdblockx*krdblocky)*sizeof(double));
+      kernel_trace1(JACOBI2D, &out[ndx(x,y)], KWRITE(krdblockx*krdblocky)*sizeof(double));
       }
 #endif
 #endif

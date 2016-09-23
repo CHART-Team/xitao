@@ -15,7 +15,7 @@ aligned_t returnzero(void *args){
 }
 
 
-int main()
+int main(int argc, char *argv[])
 {
         const qthread_shepherd_id_t * sp;
         std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -27,7 +27,10 @@ int main()
         sp = qthread_sorted_sheps ();                   // list of shepherds
 
         int tt;  // total tasks
-        tt = 4000000;
+	if(argc == 2)
+          tt = atoi(argv[1]);
+	else 
+	  tt = 1000000;
         aligned_t * ret = new aligned_t[tt];
 
         start = std::chrono::system_clock::now();
