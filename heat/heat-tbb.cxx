@@ -7,6 +7,7 @@
 
 #include <tbb/flow_graph.h>
 #include "tbb/task_scheduler_init.h"
+
 using namespace std; // for task_scheduler_init
 using namespace tbb::flow;
 using namespace tbb;
@@ -46,7 +47,7 @@ void usage( char *s )
         "Usage: %s <input file> [result file]\n\n", s);
 }
 
-int ndx(int a, int b){ return a*gotao_parfor2D_cols + b; }
+int ndx(int a, int b, int c){ return a*c + b; }
 
 void jacobi2D_tbb(void *i, void *o, int rows, int cols, 
                   int offx, int offy, int chunkx, int chunky)
@@ -55,6 +56,7 @@ void jacobi2D_tbb(void *i, void *o, int rows, int cols,
                     double *out = (double *) o;
 
                     // global rows and cols
+                    std::cout << "Jacobi 2D: " << offx << " " << offy << std::endl;
 
                     int xstart = (offx == 0)? 1 : offx;
                     int ystart = (offy == 0)? 1 : offy;
@@ -66,10 +68,10 @@ void jacobi2D_tbb(void *i, void *o, int rows, int cols,
 #endif
                     for (int i=xstart; i<xstop; i++) 
                         for (int j=ystart; j<ystop; j++) {
-                        out[ndx(i,j)]= 0.25 * (in[ndx(i,j-1)]+  // left
-                                               in[ndx(i,j+1)]+  // right
-                                               in[ndx(i-1,j)]+  // top
-                                               in[ndx(i+1,j)]); // bottom
+                        out[ndx(i,j,cols)]= 0.25 * (in[ndx(i,j-1,cols)]+  // left
+                                               in[ndx(i,j+1,cols)]+  // right
+                                               in[ndx(i-1,j,cols)]+  // top
+                                               in[ndx(i+1,j,cols)]); // bottom
                                
                         }
 #if DO_LOI
@@ -94,6 +96,8 @@ void copy2D_tbb(void *i,  void *o,  int rows,   int cols,
                     double *in  = (double *) i;
                     double *out = (double *) o;
 
+                    std::cout << "Copy 2D: " << offx << " " << offy << std::endl;
+
                     int xstart = (offx == 0)? 1 : offx;
                     int ystart = (offy == 0)? 1 : offy;
                     int xstop = ((offx + chunkx) >= rows)? rows - 1: offx + chunkx;
@@ -104,19 +108,19 @@ void copy2D_tbb(void *i,  void *o,  int rows,   int cols,
 #endif
                     for (int i=xstart; i<xstop; i++) 
                         for (int j=ystart; j<ystop; j++) 
-                            out[ndx(i,j)]= in[ndx(i,j)];
+                            out[ndx(i,j,cols)]= in[ndx(i,j,cols)];
 
 #if DO_LOI
     kernel_profile_stop(JACOBI2D);
 #if DO_KRD
-    for(int x = xstart; x < xstop; x += KRDBLOCKX)
-      for(int y = ystart; y < ystop; y += KRDBLOCKY)
-      {
-      int krdblockx = ((x + KRDBLOCKX - 1) < xstop)? KRDBLOCKX : xstop - x;
-      int krdblocky = ((y + KRDBLOCKY - 1) < ystop)? KRDBLOCKY : ystop - y;
-      kernel_trace1(JACOBI2D, &in[ndx(x,y)], KREAD(krdblockx*krdblocky)*sizeof(double));
-      kernel_trace1(JACOBI2D, &out[ndx(x,y)], KWRITE(krdblockx*krdblocky)*sizeof(double));
-      }
+                    for(int x = xstart; x < xstop; x += KRDBLOCKX)
+                      for(int y = ystart; y < ystop; y += KRDBLOCKY)
+                      {
+                      int krdblockx = ((x + KRDBLOCKX - 1) < xstop)? KRDBLOCKX : xstop - x;
+                      int krdblocky = ((y + KRDBLOCKY - 1) < ystop)? KRDBLOCKY : ystop - y;
+                      kernel_trace1(JACOBI2D, &in[ndx(x,y)], KREAD(krdblockx*krdblocky)*sizeof(double));
+                      kernel_trace1(JACOBI2D, &out[ndx(x,y)], KWRITE(krdblockx*krdblocky)*sizeof(double));
+                      }
 #endif
 #endif
 
@@ -219,8 +223,8 @@ int main( int argc, char *argv[] )
                           std::endl;
     
     // TBB flow_graph nodes
-    continue_node<coninue_msg> *stc[param.maxiter][exdecomp][eydecomp];
-    continue_node<coninue_msg> *cpb[param.maxiter][exdecomp][eydecomp];
+    continue_node<continue_msg> *stc[param.maxiter][exdecomp][eydecomp];
+    continue_node<continue_msg> *cpb[param.maxiter][exdecomp][eydecomp];
     graph g;
 
 #define ceildiv(a,b) ((a + b -1)/(b))
@@ -231,7 +235,7 @@ int main( int argc, char *argv[] )
     for(int x = 0; x < exdecomp; x++)
        for(int y = 0; y < eydecomp; y++) 
        {
-          stc[iter][x][y] = new continue_node<continue_msg>(g, [=], 
+          stc[iter][x][y] = new continue_node<continue_msg>(g, [=]
                       (const continue_msg&) { 
                          jacobi2D_tbb( param.u, param.uhelp, np, np,
                              x*ceildiv(np, exdecomp), y*ceildiv(np, eydecomp), 
@@ -248,9 +252,9 @@ int main( int argc, char *argv[] )
     for(int x = 0; x < exdecomp; x++)
        for(int y = 0; y < eydecomp; y++) 
        {
-          cpb[iter][x][y] = new continue_node<continue_msg>(g, [=], 
+          cpb[iter][x][y] = new continue_node<continue_msg>(g, [=] 
                       (const continue_msg&) { 
-                         copy2D_tbb( param.u, param.uhelp, np, np,
+                         copy2D_tbb( param.uhelp, param.u, np, np,
                              x*ceildiv(np, exdecomp), y*ceildiv(np, eydecomp), 
                              ceildiv(np, exdecomp), ceildiv(np, eydecomp)); 
                              });
@@ -269,7 +273,7 @@ int main( int argc, char *argv[] )
     for(int x = 0; x < exdecomp; x++)
        for(int y = 0; y < eydecomp; y++) 
        {
-          stc[iter][x][y] = new continue_node<continue_msg>(g, [=], 
+          stc[iter][x][y] = new continue_node<continue_msg>(g, [=] 
                       (const continue_msg&) { 
                          jacobi2D_tbb( param.u, param.uhelp, np, np,
                              x*ceildiv(np, exdecomp), y*ceildiv(np, eydecomp), 
@@ -278,10 +282,10 @@ int main( int argc, char *argv[] )
 
           make_edge(*cpb[iter-1][x][y], *stc[iter][x][y]);
 
-          if((x-1)>=0)       make_edge(cpb[iter-1][x-1][y], *stc[iter][x][y]);
-          if((x+1)<exdecomp) make_edge(cpb[iter-1][x+1][y], *stc[iter][x][y]);
-          if((y-1)>=0)       make_edge(cpb[iter-1][x][y-1], *stc[iter][x][y]);
-          if((y+1)<eydecomp) make_edge(cpb[iter-1][x][y+1], *stc[iter][x][y]);
+          if((x-1)>=0)       make_edge(*cpb[iter-1][x-1][y], *stc[iter][x][y]);
+          if((x+1)<exdecomp) make_edge(*cpb[iter-1][x+1][y], *stc[iter][x][y]);
+          if((y-1)>=0)       make_edge(*cpb[iter-1][x][y-1], *stc[iter][x][y]);
+          if((y+1)<eydecomp) make_edge(*cpb[iter-1][x][y+1], *stc[iter][x][y]);
        }
     }
 
@@ -289,19 +293,19 @@ int main( int argc, char *argv[] )
     for(int x = 0; x < exdecomp; x++)
        for(int y = 0; y < eydecomp; y++) 
        {
-          cpb[iter][x][y] = new continue_node<continue_msg>(g, [=], 
+          cpb[iter][x][y] = new continue_node<continue_msg>(g, [=] 
                       (const continue_msg&) { 
-                         copy2D_tbb( param.u, param.uhelp, np, np,
+                         copy2D_tbb( param.uhelp, param.u, np, np,
                              x*ceildiv(np, exdecomp), y*ceildiv(np, eydecomp), 
                              ceildiv(np, exdecomp), ceildiv(np, eydecomp)); 
                              });
 
           make_edge(*stc[iter][x][y], *cpb[iter][x][y]);
 
-          if((x-1)>=0)       make_edge(stc[iter][x-1][y], *cpb[iter][x][y]);
-          if((x+1)<exdecomp) make_edge(stc[iter][x+1][y], *cpb[iter][x][y]);
-          if((y-1)>=0)       make_edge(stc[iter][x][y-1], *cpb[iter][x][y]);
-          if((y+1)<eydecomp) make_edge(stc[iter][x][y+1], *cpb[iter][x][y]);
+          if((x-1)>=0)       make_edge(*stc[iter][x-1][y], *cpb[iter][x][y]);
+          if((x+1)<exdecomp) make_edge(*stc[iter][x+1][y], *cpb[iter][x][y]);
+          if((y-1)>=0)       make_edge(*stc[iter][x][y-1], *cpb[iter][x][y]);
+          if((y+1)<eydecomp) make_edge(*stc[iter][x][y+1], *cpb[iter][x][y]);
 
        }
 
@@ -336,7 +340,7 @@ int main( int argc, char *argv[] )
    std::chrono::duration<double> elapsed_seconds = end-start;
    std::time_t end_time = std::chrono::system_clock::to_time_t(end);
  
-   std::cout << "elapsed time: " << elapsed_seconds.count() << "s. " << "Total number of steals: " <<  tao_total_steals << "\n";
+   std::cout << "elapsed time: " << elapsed_seconds.count() << "s. " << "\n";
 
 
     // Flop count after iter iterations
@@ -354,14 +358,14 @@ int main( int argc, char *argv[] )
 #endif
 
     // for plot...
-//    coarsen( param.u, np, np, param.padding,
-//         param.uvis, param.visres+2, param.visres+2 );
-//  
-//    write_image( resfile, param.uvis, param.padding,
-//         param.visres+2, 
-//         param.visres+2 );
-//
-//    finalize( &param );
+    coarsen( param.u, np, np, param.padding,
+         param.uvis, param.visres+2, param.visres+2 );
+  
+    write_image( resfile, param.uvis, param.padding,
+         param.visres+2, 
+         param.visres+2 );
+
+    finalize( &param );
 
     return 0;
 }

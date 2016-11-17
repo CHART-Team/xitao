@@ -20,7 +20,7 @@
 
 include ../makefile.inc
 CFLAGS := $(LIBS) -g -I.. -I. -O3 ${EXTRAEINC}
-CXXFLAGS=$(CFLAGS)  -pthread ${EXTRAEINC}
+CXXFLAGS=$(CFLAGS) -std=c++11 -pthread ${EXTRAEINC}
 
 include makefile.heat
 
@@ -56,12 +56,13 @@ all: heat-tao
 heat-tao: $(PROGRAM_OBJS)  $(LOI_OBJS)
 	$(CXX) $^ -o $@ $(CXXFLAGS) ${LIBS} -L$(TBBLIB) -ltbbmalloc_proxy -ltbbmalloc -Wl,-rpath=$(TBBLIB)
 
-heat-tbb: heat-tbb.cxx  $(LOI_OBJS) misc.o
-	$(CXX) $^ -o $@ $(CXXFLAGS) ${LIBS} -I$(TBBINC)  -L$(TBBLIB) -ltbbmalloc_proxy -ltbbmalloc -Wl,-rpath=$(TBBLIB)
+heat-tbb: $(LOI_OBJS) misc.o
+	$(CXX) heat-tbb.cxx -c $(CXXFLAGS) ${LIBS} -I$(TBBINC)  
+	$(CXX) $^ heat-tbb.o -o $@ $(CXXFLAGS) ${LIBS} -I$(TBBINC)  -L$(TBBLIB)  -ltbb
 
 heat: heat.o solver.o misc.o
 	$(CC) $^ -o $@ $(CFLAGS) ${LIBS}
 
 clean:
-	rm $(PROGRAM_OBJS)
+	rm $(PROGRAM_OBJS) heat-tbb heat-tbb.o
 
