@@ -56,6 +56,9 @@ all: heat-tao
 heat-tao: $(PROGRAM_OBJS)  $(LOI_OBJS)
 	$(CXX) $^ -o $@ $(CXXFLAGS) ${LIBS} -L$(TBBLIB) -ltbbmalloc_proxy -ltbbmalloc -Wl,-rpath=$(TBBLIB)
 
+heat-tbb: heat-tbb.cxx  $(LOI_OBJS) misc.o
+	$(CXX) $^ -o $@ $(CXXFLAGS) ${LIBS} -I$(TBBINC)  -L$(TBBLIB) -ltbbmalloc_proxy -ltbbmalloc -Wl,-rpath=$(TBBLIB)
+
 heat: heat.o solver.o misc.o
 	$(CC) $^ -o $@ $(CFLAGS) ${LIBS}
 
