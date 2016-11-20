@@ -1,6 +1,6 @@
 .SUFFIXES: .cxx .o
 
-# TARGET = OPENMP
+#TARGET = OPENMP
 #TARGET=TBB
 TARGET=TAO
 
@@ -10,7 +10,7 @@ LIST_SCHEDULE := -DOPENMP -fopenmp
 PROGRAM_OBJS = test.o 
 else ifeq ($(TARGET), TBB)
 PROGRAM_OBJS = test.o 
-LIST_SCHEDULE:=-DTASK_GROUP
+LIST_SCHEDULE:=-DTASK_GROUP 
 else ifeq ($(TARGET), TAO)
 LIST_SCHEDULE := -DTAO -pthread -DTAO_PLACES -DLOCK_FREE_QUEUE -DSPINLOCK
 PROGRAM_OBJS = test.o ../tao_sched.o
@@ -36,13 +36,13 @@ endif
 CXXFLAGS += -I$(LOI_DIR)  -I..
 
 .cxx.o  :
-	$(CXX) -c $^ -o $@ $(LOIFLAGS)  $(CXXFLAGS)
+	$(CXX) -c $^ -o $@ $(LOIFLAGS)  $(CXXFLAGS) $(TBBLFLAGS) 
 
 %.o : %.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(LOIFLAGS) -c $< -o $@
 
 test: $(PROGRAM_OBJS) $(LOI_OBJS)
-	$(CXX) $?  $(CXXFLAGS)  -ltbb 
+	$(CXX) $?  $(CXXFLAGS) $(TBBLFLAGS) 
 	./a.out
 
 clean:

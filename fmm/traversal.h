@@ -69,6 +69,7 @@ void splitCell(Cell * Ci, Cell * Cj) {
   tg.wait();                                                    // Sync threads
 }
 
+
 //! Recursive call for upward pass 
 void upwardPass(Cell * C) {
   for (int i=0; i<4; i++) {                                     // Loop over child cells
@@ -94,9 +95,10 @@ void breadthFirst(Cell *C) {
   int ndx = 0, ins = 0;
 #define NA 16
   fmm_st  *fmms[NA];                                           // create a set of fmm_st assemblies
+  std::cout << "Calling gotao init with workers num: " << numWorkers << std::endl;
   gotao_init(numWorkers,0);                                     // initialize the gotao runtime
   for(int i = 0; i < NA; i++){
-    fmms[i] = new fmm_st(L1_W);
+    fmms[i] = new fmm_st(numWorkers);
     fmms[i]->set_place(((float)  i) / (( float) NA));
   //  std::cout << "affinity queue " << fmms[i]->affinity_queue << std::endl;
     }
@@ -115,7 +117,7 @@ void breadthFirst(Cell *C) {
 #ifdef TAO
         fmms[ndx]->insert(C->CHILD[i]); 
 	ins++; 
-	if(ins == 10000){
+	if(ins == 100000){
 		ins = 0; 
 		ndx = (ndx + 1) % NA;
 		}

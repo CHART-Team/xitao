@@ -13,7 +13,9 @@ class fmm_st : public AssemblyTask
         int insert(Cell *C)
         {
                 cv[nx].push_back(C);
-                nx = (nx+1) % w;
+                ny = (ny+1) % w;
+		if(!ny)
+                    nx = (nx+1) % w;
         }
 
         int cleanup(){
@@ -35,6 +37,7 @@ class fmm_st : public AssemblyTask
         int w;
         std::vector<Cell*> * cv;                // internal list of cells, one per virtual core
         int nx;                                 // we do round robin distribution here
+	int ny;
         GENERIC_LOCK(io); 
 
 };

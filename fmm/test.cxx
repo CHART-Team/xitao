@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <sys/time.h>
+
 #include <tbb/parallel_for.h>
 #include <tbb/task_group.h>
 #include <tbb/task_scheduler_init.h>
@@ -13,7 +14,7 @@ extern "C"
 }
 #endif
 
-int numWorkers = 1;
+int numWorkers = 32;
 
 #include "types.h"
 #include "buildtree.h"
@@ -99,21 +100,21 @@ int main(int argc, char ** argv) {                              // Main function
   printf("%-20s : %lf s\n","Upward pass",getTime()-time);       // Stop timer 
   time = getTime();                                             // Start timer 
 #if !defined(LIST) && defined(DO_LOI)
-        phase_profile_start();
+  phase_profile_start();
 #endif
   Traversal traversal(C0, C0);                                  // Traversal for M2L, P2P
   traversal();
 #if !defined(LIST) && defined(DO_LOI)
-        phase_profile_stop(0);
+  phase_profile_stop(0);
 #endif
 
 #ifdef LIST
 #ifdef DO_LOI 
-        phase_profile_start();
+  phase_profile_start();
 #endif
   breadthFirst(C0);                                             // Traversal for M2L, P2P
 #ifdef DO_LOI
-        phase_profile_stop(0); 
+  phase_profile_stop(0); 
 #endif
 #endif
   printf("%-20s : %lf s\n","Traverse",getTime()-time);          // Stop timer 
