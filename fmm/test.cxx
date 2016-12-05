@@ -15,6 +15,7 @@ extern "C"
 #endif
 
 int numWorkers = 32;
+int awidth = numWorkers;
 
 #include "types.h"
 #include "buildtree.h"
@@ -38,6 +39,11 @@ int main(int argc, char ** argv) {                              // Main function
 
   if(argc == 2) 
 	numWorkers = atoi(argv[1]);
+
+  if(argc == 3){  
+	numWorkers = atoi(argv[1]);
+	awidth = atoi(argv[2]);
+	}
 
   tbb::task_scheduler_init init(numWorkers);                    // Number of worker threads
 
@@ -153,6 +159,9 @@ int main(int argc, char ** argv) {                              // Main function
   printf("--- FMM vs. direct ---------------\n");               // Print message
   printf("Rel. L2 Error (p)  : %e\n",sqrtf(dp2/p2));            // Print potential error
   printf("Rel. L2 Error (f)  : %e\n",sqrtf(df2/f2));            // Print force error
+#ifdef TAO
+  printf("TAO total steals: %d\n", tao_total_steals);
+#endif
 #ifdef DO_LOI
 #ifdef LOI_TIMING
     loi_statistics(&fmm_kernels, maxthr);

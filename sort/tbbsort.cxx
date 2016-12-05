@@ -88,7 +88,7 @@ using namespace std;
 
 #define SORT_BUFFER_SIZE (32*1024*1024)
 //#define MERGE_TASK_SIZE (1*1024)
-#define SORT_TASK_SIZE (16*3*1024)
+#define SORT_TASK_SIZE (2*3*1024)
 #define INSERTION_THR (20)
 
 #include "../config.h"

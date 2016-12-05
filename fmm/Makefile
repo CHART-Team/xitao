@@ -12,14 +12,14 @@ else ifeq ($(TARGET), TBB)
 PROGRAM_OBJS = test.o 
 LIST_SCHEDULE:=-DTASK_GROUP 
 else ifeq ($(TARGET), TAO)
-LIST_SCHEDULE := -DTAO -pthread -DTAO_PLACES -DLOCK_FREE_QUEUE -DSPINLOCK
+LIST_SCHEDULE := -DTAO -pthread -DTAO_PLACES -DLOCK_FREE_QUEUE -DSPINLOCK -DSUPERTASK_STEALING
 PROGRAM_OBJS = test.o ../tao_sched.o
 else
 $(info "Invalid TARGET selected. I saw " $TARGET)
 endif
 
 include ../makefile.inc
-CXX = g++ -std=c++11 -O3 -g3 -ffast-math -DLIST $(LIST_SCHEDULE)
+CXX = icc -std=c++11 -O3 -g3 -ffast-math -DLIST $(LIST_SCHEDULE)
 include ../loi/loikrd.defs
 
 # options for LOI/KRD

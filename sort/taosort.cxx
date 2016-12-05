@@ -26,7 +26,7 @@ void print_array( int a, ELM *arr )
                 printf("Elem %d = %ld\n", i, arr[i]);
 }
 
-#define BLOCKSIZE (16*1024)
+#define BLOCKSIZE (2*1024)
 
 int main ( int argc, char *argv[] )
 {

@@ -93,9 +93,9 @@ void breadthFirst(Cell *C) {
   cellQueue.push(C);                                            // Push root into queue
 #ifdef TAO
   int ndx = 0, ins = 0;
-#define NA 16
+#define NA 256
   fmm_st  *fmms[NA];                                           // create a set of fmm_st assemblies
-  std::cout << "Calling gotao init with workers num: " << numWorkers << std::endl;
+  std::cout << "numWorkers: " << numWorkers <<", awidth: " << awidth << std::endl;
   gotao_init(numWorkers,0);                                     // initialize the gotao runtime
   for(int i = 0; i < NA; i++){
     fmms[i] = new fmm_st(numWorkers);
@@ -117,7 +117,7 @@ void breadthFirst(Cell *C) {
 #ifdef TAO
         fmms[ndx]->insert(C->CHILD[i]); 
 	ins++; 
-	if(ins == 100000){
+	if(ins == (awidth*40000)){
 		ins = 0; 
 		ndx = (ndx + 1) % NA;
 		}
