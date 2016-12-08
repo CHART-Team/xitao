@@ -26,7 +26,10 @@ void print_array( int a, ELM *arr )
                 printf("Elem %d = %ld\n", i, arr[i]);
 }
 
-#define BLOCKSIZE (2*1024)
+
+#define MULTIPLIER 1
+//#define MULTIPLIER 8
+#define BLOCKSIZE (2*MULTIPLIER*1024)
 
 int main ( int argc, char *argv[] )
 {

@@ -66,7 +66,7 @@ main(int argc, char* argv[])
 {
 
    int thread_base; int nthreads;
-   int nqueues;  // how many queues to fill (1: one, 0: all)
+   int nqueues;  // how many queues to fill 
    int awidth;    // width of assemblies
    int nas;      // number of assemblies per queue
 
