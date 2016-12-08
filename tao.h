@@ -338,7 +338,7 @@ class SimpleTask: public PolyTask{
 // API calls
 //
 #define goTAO_init gotao_init
-int gotao_init(int, int);
+int gotao_init(int, int,int);
 #define goTAO_start gotao_start
 int gotao_start();
 #define goTAO_fini gotao_fini

@@ -39,7 +39,7 @@ int main ( int argc, char *argv[] )
         int blocksize;
         int qsort_width;
 
-	int thread_base, nthreads;
+	int thread_base, nthreads, nctx;
 
    // set the number of threads and thread_base
 
@@ -53,9 +53,14 @@ int main ( int argc, char *argv[] )
    else
         thread_base = GOTAO_THREAD_BASE;
 
+   if(getenv("GOTAO_HW_CONTEXTS"))
+        nctx = atoi(getenv("GOTAO_HW_CONTEXTS"));
+   else
+        nctx = GOTAO_HW_CONTEXTS;
+
 // just five levels of sorting
 // do not attempt generic depth for now
-	gotao_init(nthreads,thread_base);
+	gotao_init(nthreads,thread_base,nctx);
 
 #if LEVEL1 == 1
 #define TAOQuickMerge TAOQuickMergeDyn

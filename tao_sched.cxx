@@ -20,13 +20,12 @@ GENERIC_LOCK(worker_lock[MAXTHREADS]);
 //aligned_lock worker_lock[MAXTHREADS];
 #endif
 
-#ifdef DEBUG
 GENERIC_LOCK(output_lck);
-#endif
 
 BARRIER *starting_barrier;
 
 int gotao_nthreads;
+int gotao_ncontexts;
 int gotao_thread_base;
 
 int worker_loop(int);
@@ -34,15 +33,19 @@ int worker_loop(int);
 std::thread *t[MAXTHREADS];
 
 
-int gotao_init(int nthr, int thrb)
+int gotao_init(int nthr, int thrb, int nhwc)
 {
    if(nthr>=0)  gotao_nthreads = nthr;
    else         gotao_nthreads = GOTAO_NTHREADS;
+
+   if(nhwc>=0)  gotao_ncontexts = nhwc;
+   else         gotao_ncontexts = GOTAO_HW_CONTEXTS;
 
    if(thrb>=0)  gotao_thread_base = thrb;
    else         gotao_thread_base = GOTAO_THREAD_BASE;
 
    starting_barrier = new BARRIER(gotao_nthreads + 1);
+
    for(int i = 0; i < gotao_nthreads; i++)
       t[i]  = new std::thread(worker_loop, i);
 
@@ -156,11 +159,14 @@ int worker_loop(int _nthread)
     // We need to implement a hierarchical transformation here
    
     int nthread = _nthread + gotao_thread_base;
-    int hw_context_index = ((_nthread % GOTAO_HW_CONTEXTS) * (MAXTHREADS/GOTAO_HW_CONTEXTS));
-    int core_index = _nthread / GOTAO_HW_CONTEXTS;
+    int hw_context_index = ((_nthread % gotao_ncontexts) * (MAXTHREADS/gotao_ncontexts));
+    int core_index = _nthread / gotao_ncontexts;
 
     int phys_core = hw_context_index + core_index;
-    std::cout << "_nthread: " << _nthread << " mapped to physical core: "<< phys_core;
+    LOCK_ACQUIRE(output_lck);
+    std::cout << "_nthread: " << _nthread << " mapped to physical core: "<< phys_core << std::endl;
+    LOCK_RELEASE(output_lck);
+
     long int seed = 123456789;
 
     cpu_set_t cpu_mask;
