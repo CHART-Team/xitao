@@ -17,4 +17,5 @@
 #define L4_W   12
 #define L5_W   48
 #define TOPOLOGY { L1_W, L2_W, L3_W, L4_W, L5_W }
+#define GOTAO_HW_CONTEXTS 1
 #endif

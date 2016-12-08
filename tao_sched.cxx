@@ -112,7 +112,7 @@ int gotao_push_init(PolyTask *pt, int queue)
   worker_ready_q[queue].push_front(pt);
 }
 
-// version that pushes to the back
+// alternative version that pushes to the back
 int gotao_push_back_init(PolyTask *pt, int queue)
 {
 #ifdef TAO_PLACES
@@ -149,14 +149,24 @@ long int r_rand(long int *s)
 
 int worker_loop(int _nthread)
 {
-    int phys_core = _nthread + gotao_thread_base;
+    // _nthread is an index into the virtualized topology
+    // Not all machines follow a hierarchical mapping of cores to core IDs
+    // For example, in KNL the OS groups the cores by hw context: 
+    //   first all cores of context 0, then all cores of context 1 etc
+    // We need to implement a hierarchical transformation here
+   
+    int nthread = _nthread + gotao_thread_base;
+    int hw_context_index = ((_nthread % GOTAO_HW_CONTEXTS) * (MAXTHREADS/GOTAO_HW_CONTEXTS));
+    int core_index = _nthread / GOTAO_HW_CONTEXTS;
+
+    int phys_core = hw_context_index + core_index;
+    std::cout << "_nthread: " << _nthread << " mapped to physical core: "<< phys_core;
     long int seed = 123456789;
 
-    // affinity
     cpu_set_t cpu_mask;
     CPU_ZERO(&cpu_mask);
     CPU_SET(phys_core, &cpu_mask);
-    
+
     sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask); 
 
     PolyTask *st = nullptr;
@@ -169,7 +179,7 @@ int worker_loop(int _nthread)
         AssemblyTask *assembly = nullptr;
         SimpleTask *simple = nullptr;
 #ifdef EXTRAE
-	bool stealing = false;
+        bool stealing = false;
 #endif
         
         // 0. If a task is already provided via forwarding then exeucute it (simple task)
@@ -178,11 +188,11 @@ int worker_loop(int _nthread)
             if(st->type == TASK_SIMPLE){
               SimpleTask *simple = (SimpleTask *) st;
 #ifdef EXTRAE
-	      Extrae_event(EXTRAE_SIMPLE_START, st->taskid);
+          Extrae_event(EXTRAE_SIMPLE_START, st->taskid);
 #endif
               simple->f(simple->args, phys_core);
 #ifdef EXTRAE
-	      Extrae_event(EXTRAE_SIMPLE_STOP, 0);
+          Extrae_event(EXTRAE_SIMPLE_STOP, 0);
 #endif
               st = simple->commit_and_wakeup(phys_core);
               simple->cleanup();
@@ -191,13 +201,9 @@ int worker_loop(int _nthread)
             else if(st->type == TASK_ASSEMBLY)
             {
               AssemblyTask *assembly = (AssemblyTask *) st;
-#if (NUMA_ALIGNMENT > 0)
-              int leader = ( phys_core / NUMA_ALIGNMENT) * NUMA_ALIGNMENT;
-#else
               int leader = ( phys_core / assembly->width) * assembly->width;
-#endif
               assembly->leader = leader;
-	 //     std::cout << "Assigned leader " << leader << " to assembly" << std::endl;
+ //           std::cout << "Assigned leader " << leader << " to assembly" << std::endl;
               int i;
   
               // take all locks in ascending order and insert assemblies
@@ -327,13 +333,13 @@ int worker_loop(int _nthread)
                } while(random_core == phys_core);
             
              {
-	       LOCK_ACQUIRE(worker_lock[random_core]);
+         LOCK_ACQUIRE(worker_lock[random_core]);
                if(!worker_ready_q[random_core].empty()){
                   st = worker_ready_q[random_core].back();  
                   worker_ready_q[random_core].pop_back();
                   tao_total_steals++;  // successful steals only
                }
- 	     LOCK_RELEASE(worker_lock[random_core]);
+         LOCK_RELEASE(worker_lock[random_core]);
              }
 
              
