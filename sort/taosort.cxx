@@ -179,6 +179,7 @@ int main ( int argc, char *argv[] )
         std::cout << "Total number of tasks is " <<  PolyTask::created_tasks << "\n";
 #endif
 
+        std::cout << "Calling gotao_start() " << std::endl;
    	goTAO_start();
 #ifdef DO_LOI 
         phase_profile_start();

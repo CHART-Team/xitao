@@ -178,16 +178,16 @@ class PolyTask{
                     affinity_queue = -1;
 #endif
 #if defined(DEBUG) || defined(EXTRAE)
-		    taskid = created_tasks += 1;
+                    taskid = created_tasks += 1;
 #endif
-		    if(task_pool[_nthread].tasks == 0){
-			pending_tasks += TASK_POOL;
-			task_pool[_nthread].tasks = TASK_POOL-1;
+                    if(task_pool[_nthread].tasks == 0){
+                        pending_tasks += TASK_POOL;
+                        task_pool[_nthread].tasks = TASK_POOL-1;
 #ifdef DEBUG
-			std::cout << "Requested: " << TASK_POOL << " tasks. Pending is now: " << pending_tasks << "\n";
+                        std::cout << "Requested: " << TASK_POOL << " tasks. Pending is now: " << pending_tasks << "\n";
 #endif
-			}
-		    else task_pool[_nthread].tasks--;
+                        }
+                    else task_pool[_nthread].tasks--;
                     threads_out_tao = 0;
             }
 
@@ -249,14 +249,14 @@ class PolyTask{
                 int refs = (*it)->refcount.fetch_sub(1);
                 if(refs == 1){
 #ifdef DEBUG
-			LOCK_ACQUIRE(output_lck);
-			std::cout << "Task " << (*it)->taskid << " became ready" << std::endl;
-			LOCK_RELEASE(output_lck);
+                        LOCK_ACQUIRE(output_lck);
+                        std::cout << "Task " << (*it)->taskid << " became ready" << std::endl;
+                        LOCK_RELEASE(output_lck);
 #endif 
                         if(!ret
 #ifdef TAO_PLACES
                            // check the case affinity_queue == -1
-				&& (((*it)->affinity_queue == -1) || (((*it)->affinity_queue/(*it)->width) == (_nthread/(*it)->width)))
+                                && (((*it)->affinity_queue == -1) || (((*it)->affinity_queue/(*it)->width) == (_nthread/(*it)->width)))
 #endif
 )
                            ret = *it; // forward locally only if affinity matches
@@ -267,7 +267,7 @@ class PolyTask{
                             if((ndx == -1) || (((*it)->affinity_queue/(*it)->width) == (_nthread/(*it)->width)))
                                  ndx = _nthread;
 #else
-			    int ndx = _nthread;
+                            int ndx = _nthread;
 #endif
 
                             // seems like we acquire and release the lock for each assembly. 
@@ -301,7 +301,7 @@ class AssemblyTask: public PolyTask{
         public:
                 AssemblyTask(int w, int nthread=0) : PolyTask(TASK_ASSEMBLY, nthread), leader(-1) 
                 {
-		    width = w;
+                    width = w;
 #ifdef NEED_BARRIER
                     barrier = new BARRIER(w);
 #endif
@@ -325,9 +325,9 @@ class AssemblyTask: public PolyTask{
 class SimpleTask: public PolyTask{
     public:
             SimpleTask(task fn, void *a, int nthread=0) : PolyTask(TASK_SIMPLE, nthread), args(a), f(fn) 
-	{ 
-	  width = 1; 
-	}
+        { 
+          width = 1; 
+        }
 
             void *args;
             task f;

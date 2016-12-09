@@ -20,7 +20,9 @@ GENERIC_LOCK(worker_lock[MAXTHREADS]);
 //aligned_lock worker_lock[MAXTHREADS];
 #endif
 
+#ifdef DEBUG
 GENERIC_LOCK(output_lck);
+#endif
 
 BARRIER *starting_barrier;
 
@@ -75,15 +77,11 @@ int gotao_fini()
 int gotao_push(PolyTask *pt, int queue)
 {
 
-// if queue has a value, we take that
-// however, we don't really want the user to do that, so should it be deprecated?
 #ifdef TAO_PLACES
-  // if no queue is specified, then the affinity has precedence
   if((queue == -1) && (pt->affinity_queue != -1))
           queue = pt->affinity_queue;
   else 
 #endif
-  // otherwise we go for local scheduling
      if (queue == -1)
           queue = sched_getcpu();
 
@@ -96,6 +94,7 @@ int gotao_push(PolyTask *pt, int queue)
 #endif // SUPERTASK_STEALING
 }
 
+
 // Push work when not yet running. This version does not require locks
 // Semantics are slightly different here
 // 1. the tid refers to the logical core, before adjusting with gotao_thread_base
@@ -103,7 +102,6 @@ int gotao_push(PolyTask *pt, int queue)
 int gotao_push_init(PolyTask *pt, int queue)
 {
 #ifdef TAO_PLACES
-  // if no queue is specified, then the affinity has precedence
   if((queue == -1) && (pt->affinity_queue != -1))
           queue = pt->affinity_queue;
   else 
@@ -111,15 +109,15 @@ int gotao_push_init(PolyTask *pt, int queue)
   if(queue == -1) 
           queue = gotao_thread_base;
 
- // std::cout << "Pushing task into Queue: " << queue << std::endl;
   worker_ready_q[queue].push_front(pt);
 }
+
+
 
 // alternative version that pushes to the back
 int gotao_push_back_init(PolyTask *pt, int queue)
 {
 #ifdef TAO_PLACES
-  // if no queue is specified, then the affinity has precedence
   if((queue == -1) && (pt->affinity_queue != -1))
           queue = pt->affinity_queue;
   else 
@@ -127,9 +125,10 @@ int gotao_push_back_init(PolyTask *pt, int queue)
   if(queue == -1) 
           queue = gotao_thread_base;
 
- // std::cout << "Pushing task into Queue: " << queue << std::endl;
   worker_ready_q[queue].push_back(pt);
 }
+
+
 
 #ifdef LOCK_FREE_QUEUE
 LFQueue<PolyTask *> worker_assembly_q[MAXTHREADS];
@@ -137,10 +136,10 @@ GENERIC_LOCK(worker_assembly_lock[MAXTHREADS]);
 //aligned_lock worker_assembly_lock[MAXTHREADS];
 #else
 std::list<PolyTask *> worker_assembly_q[MAXTHREADS]; // high prio queue for assemblies
-std::mutex             worker_assembly_lock[MAXTHREADS];
+std::mutex            worker_assembly_lock[MAXTHREADS];
 #endif
 
-// approximate number of steals (avoid using costly atomics here)
+// (approximate) number of steals (avoid using costly atomics here)
 long int tao_total_steals = 0;
 
 // http://stackoverflow.com/questions/3062746/special-simple-random-number-generator
@@ -150,22 +149,28 @@ long int r_rand(long int *s)
   return *s;
 }
 
+
 int worker_loop(int _nthread)
 {
-    // _nthread is an index into the virtualized topology
-    // Not all machines follow a hierarchical mapping of cores to core IDs
+    // _nthread is an index into the OS thread
+    // We first transform it into the TAO view, which is offset by thread_base
+    // Next: Not all machines follow a hierarchical mapping of cores to core IDs as required by TAO
     // For example, in KNL the OS groups the cores by hw context: 
     //   first all cores of context 0, then all cores of context 1 etc
-    // We need to implement a hierarchical transformation here
+    // Hence TAO requires an additional transformation between nthread and phys_core
+    // This just affects the mapping (set_affinity). After this step has been completed, 
+    // GO:TAO operates fully in the virtualized space of "nthread"
    
     int nthread = _nthread + gotao_thread_base;
     int hw_context_index = ((_nthread % gotao_ncontexts) * (MAXTHREADS/gotao_ncontexts));
     int core_index = _nthread / gotao_ncontexts;
 
     int phys_core = hw_context_index + core_index;
+#ifdef DEBUG
     LOCK_ACQUIRE(output_lck);
     std::cout << "_nthread: " << _nthread << " mapped to physical core: "<< phys_core << std::endl;
     LOCK_RELEASE(output_lck);
+#endif
 
     long int seed = 123456789;
 
@@ -177,7 +182,6 @@ int worker_loop(int _nthread)
 
     PolyTask *st = nullptr;
 
-  //  wait so that all start at the same time
     starting_barrier->wait();
 
     while(1){
@@ -194,46 +198,46 @@ int worker_loop(int _nthread)
             if(st->type == TASK_SIMPLE){
               SimpleTask *simple = (SimpleTask *) st;
 #ifdef EXTRAE
-          Extrae_event(EXTRAE_SIMPLE_START, st->taskid);
+              Extrae_event(EXTRAE_SIMPLE_START, st->taskid);
 #endif
-              simple->f(simple->args, phys_core);
+              simple->f(simple->args, nthread);
 #ifdef EXTRAE
-          Extrae_event(EXTRAE_SIMPLE_STOP, 0);
+              Extrae_event(EXTRAE_SIMPLE_STOP, 0);
 #endif
-              st = simple->commit_and_wakeup(phys_core);
+              st = simple->commit_and_wakeup(nthread);
               simple->cleanup();
               delete simple;
             }
             else if(st->type == TASK_ASSEMBLY)
             {
               AssemblyTask *assembly = (AssemblyTask *) st;
-              int leader = ( phys_core / assembly->width) * assembly->width;
+              int leader = ( _nthread / assembly->width) * assembly->width;
               assembly->leader = leader;
- //           std::cout << "Assigned leader " << leader << " to assembly" << std::endl;
               int i;
+
+#ifdef DEBUG
+              std::cout << "Distributeing assembly " << assembly->taskid << " with width " << assembly->width << " to workers " << leader << " and " << leader + assembly->width << std::endl;
+#endif
   
               // take all locks in ascending order and insert assemblies
               // only once all locks are taken we unlock all queues
               // NOTE: locks are needed even in the case of LFQ, given that
-              // out-of-order insertion can lead to deadlock. Instead of
-              // mutexes, could use spinlock to fully avoid OS stuff
+              // out-of-order insertion can lead to deadlock.
               for(i = leader; i < leader + assembly->width; i++) {
 #ifdef LOCK_FREE_QUEUE
-		    LOCK_ACQUIRE(worker_assembly_lock[i]);
-//                    while(worker_assembly_lock[i].lock.exchange(true)) {}              
+                    LOCK_ACQUIRE(worker_assembly_lock[i]);
 #else
                     worker_assembly_lock[i].lock();
 #endif
                     worker_assembly_q[i].push_back(st);
               }
  
-// Locks are released from lower to upper as well
-// Order is not important for correctness, but anecdotal evidence shows that 
-//   performance is better in lower to upper order
+              // Locks are released from lower to upper as well
+              // Order is not important for correctness, but anecdotal evidence shows that 
+              //   performance is better in lower to upper order
               for(i = leader; i < leader + assembly->width; i++) {
 #ifdef LOCK_FREE_QUEUE
-		    LOCK_RELEASE(worker_assembly_lock[i]);
-       //             worker_assembly_lock[i].lock = false;
+                    LOCK_RELEASE(worker_assembly_lock[i]);
 #else
                     worker_assembly_lock[i].unlock();
 #endif
@@ -250,14 +254,14 @@ int worker_loop(int _nthread)
 
         // 1. check for assemblies
 #ifdef LOCK_FREE_QUEUE
-        if(!worker_assembly_q[phys_core].pop_front(&st))
+        if(!worker_assembly_q[nthread].pop_front(&st))
                 st = nullptr;
 #else 
         {
-        std::unique_lock<std::mutex> locker(worker_assembly_lock[phys_core]);
-        if(!worker_assembly_q[phys_core].empty()){
-           st = worker_assembly_q[phys_core].front(); 
-           worker_assembly_q[phys_core].pop_front();
+        std::unique_lock<std::mutex> locker(worker_assembly_lock[nthread]);
+        if(!worker_assembly_q[nthread].empty()){
+           st = worker_assembly_q[nthread].front(); 
+           worker_assembly_q[nthread].pop_front();
            }
         }
 #endif
@@ -274,7 +278,7 @@ int worker_loop(int _nthread)
 #ifdef SYNCHRONOUS_TAO
             assembly->barrier->wait();
 #endif
-            assembly->execute(phys_core);
+            assembly->execute(nthread);
 #ifdef SYNCHRONOUS_TAO
             assembly->barrier->wait();
 #endif
@@ -288,10 +292,10 @@ int worker_loop(int _nthread)
             if(_final){ // the last exiting thread updates
 #ifdef DEBUG
 		LOCK_ACQUIRE(output_lck);
-		std::cout << "Thread " << phys_core << " completed assembly task " << assembly->taskid << std::endl;
+		std::cout << "Thread " << nthread << " completed assembly task " << assembly->taskid << std::endl;
 		LOCK_RELEASE(output_lck);
 #endif 
-               st = assembly->commit_and_wakeup(phys_core);
+               st = assembly->commit_and_wakeup(nthread);
                assembly->cleanup();
                delete assembly;
             }
@@ -303,21 +307,18 @@ int worker_loop(int _nthread)
         // 2. check own queue
         {
 #if defined(SUPERTASK_STEALING) || defined(TAO_PLACES)
-	  LOCK_ACQUIRE(worker_lock[phys_core]);
-       //   while(worker_lock[phys_core].lock.exchange(true)) {}              
+	  LOCK_ACQUIRE(worker_lock[nthread]);
 #endif
-          if(!worker_ready_q[phys_core].empty()){
-             st = worker_ready_q[phys_core].front(); 
-             worker_ready_q[phys_core].pop_front();
+          if(!worker_ready_q[nthread].empty()){
+             st = worker_ready_q[nthread].front(); 
+             worker_ready_q[nthread].pop_front();
 #if defined(SUPERTASK_STEALING) || defined(TAO_PLACES)
-	     LOCK_RELEASE(worker_lock[phys_core]);
-       //      worker_lock[phys_core].lock = false;
+	     LOCK_RELEASE(worker_lock[nthread]);
 #endif
              continue;
              }
 #if defined(SUPERTASK_STEALING) || defined(TAO_PLACES)
-             LOCK_RELEASE(worker_lock[phys_core]);
-             //worker_lock[phys_core].lock = false;
+             LOCK_RELEASE(worker_lock[nthread]);
 #endif
         }
 
@@ -325,27 +326,27 @@ int worker_loop(int _nthread)
         // TAO_WIDTH determines which threads participates in stealing
         // STEAL_ATTEMPTS determines number of steals before retrying the loop
 #if defined(SUPERTASK_STEALING)
-        if((phys_core % TAO_WIDTH == 0) && STEAL_ATTEMPTS) {
+        if((nthread % TAO_WIDTH == 0) && STEAL_ATTEMPTS) {
 #ifdef EXTRAE
-	  if(!stealing){
-		stealing = true;
-		Extrae_event(EXTRAE_STEALING, 1);
-		}
+          if(!stealing){
+            stealing = true;
+            Extrae_event(EXTRAE_STEALING, 1);
+            }
 #endif
           int attempts = STEAL_ATTEMPTS; 
           do{
              do{
                random_core = gotao_thread_base + (r_rand(&seed) % gotao_nthreads);
-               } while(random_core == phys_core);
+               } while(random_core == nthread);
             
              {
-         LOCK_ACQUIRE(worker_lock[random_core]);
+               LOCK_ACQUIRE(worker_lock[random_core]);
                if(!worker_ready_q[random_core].empty()){
                   st = worker_ready_q[random_core].back();  
                   worker_ready_q[random_core].pop_back();
                   tao_total_steals++;  // successful steals only
                }
-         LOCK_RELEASE(worker_lock[random_core]);
+               LOCK_RELEASE(worker_lock[random_core]);
              }
 
              
@@ -365,27 +366,27 @@ int worker_loop(int _nthread)
         //    this condition signals termination of the program
 
 	// First check the number of actual tasks that have completed
-        if(task_completions[phys_core].tasks > 0){
-                PolyTask::pending_tasks -= task_completions[phys_core].tasks;
+        if(task_completions[nthread].tasks > 0){
+                PolyTask::pending_tasks -= task_completions[nthread].tasks;
 #ifdef DEBUG
 		LOCK_ACQUIRE(output_lck);
-		std::cout << "Thread " << phys_core << " completed " << task_completions[phys_core].tasks << " tasks. " 
+		std::cout << "Thread " << nthread << " completed " << task_completions[nthread].tasks << " tasks. " 
  			"Pending tasks = " << PolyTask::pending_tasks << "\n";
 		LOCK_RELEASE(output_lck);
 #endif
-                task_completions[phys_core].tasks = 0;
+                task_completions[nthread].tasks = 0;
         }
 
 	// Next remove any virtual tasks from the per-thread task pool
-	if(task_pool[phys_core].tasks > 0){
-		PolyTask::pending_tasks -= task_pool[phys_core].tasks;
+	if(task_pool[nthread].tasks > 0){
+		PolyTask::pending_tasks -= task_pool[nthread].tasks;
 #ifdef DEBUG
 		LOCK_ACQUIRE(output_lck);
-		std::cout << "Thread " << phys_core << " removed " << task_pool[phys_core].tasks << " virtual tasks. " 
+		std::cout << "Thread " << nthread << " removed " << task_pool[nthread].tasks << " virtual tasks. " 
  			"Pending tasks = " << PolyTask::pending_tasks << "\n";
 		LOCK_RELEASE(output_lck);
 #endif
-		task_pool[phys_core].tasks = 0;
+		task_pool[nthread].tasks = 0;
 	}
         
 	// Finally check if the program has terminated
