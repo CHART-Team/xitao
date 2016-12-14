@@ -34,17 +34,26 @@ int worker_loop(int);
 
 std::thread *t[MAXTHREADS];
 
-
-int gotao_init(int nthr, int thrb, int nhwc)
+// Initialize the gotao runtime 
+int gotao_init_hw(int nthr, int thrb, int nhwc)
 {
    if(nthr>=0)  gotao_nthreads = nthr;
-   else         gotao_nthreads = GOTAO_NTHREADS;
+   else { 	if(getenv("GOTAO_NTHREADS"))
+			  gotao_nthreads = atoi(getenv("GOTAO_NTHREADS"));
+		else      gotao_nthreads = GOTAO_NTHREADS;
+	}
 
    if(nhwc>=0)  gotao_ncontexts = nhwc;
-   else         gotao_ncontexts = GOTAO_HW_CONTEXTS;
+   else { 	if(getenv("GOTAO_HW_CONTEXTS"))
+			  gotao_ncontexts = atoi(getenv("GOTAO_HW_CONTEXTS"));
+		else      gotao_ncontexts = GOTAO_HW_CONTEXTS;
+	}
 
    if(thrb>=0)  gotao_thread_base = thrb;
-   else         gotao_thread_base = GOTAO_THREAD_BASE;
+   else { 	if(getenv("GOTAO_THREAD_BASE"))
+			  gotao_thread_base = atoi(getenv("GOTAO_THREAD_BASE"));
+		else      gotao_thread_base = GOTAO_THREAD_BASE;
+	}
 
    starting_barrier = new BARRIER(gotao_nthreads + 1);
 
@@ -55,6 +64,13 @@ int gotao_init(int nthr, int thrb, int nhwc)
    Extrae_init();
 #endif
 }
+
+// Initialize gotao from environment vars or defaults
+int gotao_init()
+{
+  return gotao_init_hw(-1, -1, -1);
+}
+
 
 int gotao_start()
 {
@@ -158,16 +174,23 @@ int worker_loop(int _nthread)
     // For example, in KNL the OS groups the cores by hw context: 
     //   first all cores of context 0, then all cores of context 1 etc
     // Hence TAO requires an additional transformation between nthread and phys_core
-    // This just affects the mapping (set_affinity). After this step has been completed, 
+    // This just affects the mapping (setaffinity). After this step has been completed, 
     // GO:TAO operates fully in the virtualized space of "nthread"
    
+    // if we are using less threads than total, we reduce the #hardware contexts to better
+    // distribute the workload. This is a kind of hack
+
+    int virtual_ncontexts = gotao_ncontexts / (MAXTHREADS/gotao_nthreads);	
+    if(!virtual_ncontexts) virtual_ncontexts=1;
+
     int nthread = _nthread + gotao_thread_base;
-    int hw_context_index = ((_nthread % gotao_ncontexts) * (MAXTHREADS/gotao_ncontexts));
-    int core_index = _nthread / gotao_ncontexts;
+    int hw_context_index = ((_nthread % virtual_ncontexts) * (MAXTHREADS/virtual_ncontexts));
+    int core_index = _nthread / virtual_ncontexts;
 
     int phys_core = hw_context_index + core_index;
 #ifdef DEBUG
     LOCK_ACQUIRE(output_lck);
+    //std::cout << "gotao_ncontexts adjusted to " << virtual_ncontexts << std::endl;
     std::cout << "_nthread: " << _nthread << " mapped to physical core: "<< phys_core << std::endl;
     LOCK_RELEASE(output_lck);
 #endif
@@ -181,6 +204,13 @@ int worker_loop(int _nthread)
     sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask); 
 
     PolyTask *st = nullptr;
+    int in = 0; // counter for to reduce computational intensiveness of the idle loop
+    int idle_switch;
+
+    if(getenv("GOTAO_IDLE_SWITCH"))
+	idle_switch = atoi(getenv("GOTAO_IDLE_SWITCH"));
+    else 
+	idle_switch = IDLE_SWITCH;
 
     starting_barrier->wait();
 
@@ -205,6 +235,7 @@ int worker_loop(int _nthread)
               Extrae_event(EXTRAE_SIMPLE_STOP, 0);
 #endif
               st = simple->commit_and_wakeup(nthread);
+	      in = 0;
               simple->cleanup();
               delete simple;
             }
@@ -299,6 +330,7 @@ int worker_loop(int _nthread)
                assembly->cleanup();
                delete assembly;
             }
+	    in = 0;
            
             // proceed with next iteration to handle the forwarding case
             continue;
@@ -358,8 +390,33 @@ int worker_loop(int _nthread)
 #endif
              continue;
 	}
-        }
+        } 
 
+#endif
+
+	if(in < 10000)
+        	in+=1;
+
+// Based on the value of 'in' (idleness) we take some actions
+// 'in' identifies the number of iterations during which no work has been found
+// The higher this number, the less likely new work will be inserted, so we can start to 
+// sleep increasingly longer intervals. However, there has to be an upper limit, set to 
+// the time when the loop does no longer impact execution. There is no simple way to set this
+// time, so we use a value determined experimentally.
+//
+// Attempt one: if the architecture supportgs PAUSE then just reduce the speed
+//
+#define IN_DIV 100
+#ifdef PAUSE
+	if(in > idle_switch) 
+	        usleep(10*in/IN_DIV);
+	else {
+  	  for(int i = 0; i < in/IN_DIV; i++)
+		_mm_pause();
+	}
+#else
+	if(in > idle_switch)
+	        usleep(in/IN_DIV);
 #endif
 
         // 4. It may be that there are no more tasks in the flow

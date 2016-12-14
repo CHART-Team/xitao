@@ -673,7 +673,6 @@ int
 main(int argc, char* argv[])
 {
 
-   int thread_base; int nthreads; 
    int repetitions;
    bots_get_params(argc,argv);
    Node root; 
@@ -681,16 +680,6 @@ main(int argc, char* argv[])
 
    bots_set_info();
    
-   if(getenv("TAO_NTHREADS"))
-        nthreads = atoi(getenv("TAO_NTHREADS"));
-   else 
-        nthreads = GOTAO_NTHREADS;
-
-   if(getenv("TAO_THREAD_BASE"))
-        thread_base = atoi(getenv("TAO_THREAD_BASE"));
-   else
-        thread_base = GOTAO_THREAD_BASE;
-
    if(getenv("TAO_REPETITIONS"))
         repetitions = atoi(getenv("TAO_REPETITIONS"));
    else
@@ -717,8 +706,7 @@ main(int argc, char* argv[])
         exit(1);
         }
  
-
-   goTAO_init(nthreads, thread_base);
+   gotao_init();
 
    TAO_UTS *rblocks[nBlocks];
    for(int i = 0; i < nBlocks ; i++){
@@ -726,7 +714,7 @@ main(int argc, char* argv[])
                                         UTS_BLOCK_SIZE, 
                                         TAO_UTS1_WIDTH, 
                                         UTS_BLOCK_SIZE*i);
-           gotao_push_init(rblocks[i], i % nthreads);
+           gotao_push_init(rblocks[i], i % gotao_nthreads);
    }
 
   // bots_t_start = bots_usecs();
@@ -743,6 +731,7 @@ main(int argc, char* argv[])
    std::time_t end_time = std::chrono::system_clock::to_time_t(end);
  
    std::cout << "elapsed time: " << elapsed_seconds.count() << "s. " << "Total number of steals: " <<  tao_total_steals << "\n";
+   tao_total_steals=0;
 
    int uts_executions = 0;
    for(int j=0; j < MAXTHREADS; j++)

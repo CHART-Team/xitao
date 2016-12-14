@@ -79,17 +79,7 @@ main(int argc, char* argv[])
    awidth  = atoi(argv[2]);
    nas     = atoi(argv[3]);
 
-   if(getenv("GOTAO_NTHREADS"))
-        nthreads = atoi(getenv("GOTAO_NTHREADS"));
-   else 
-        nthreads = GOTAO_NTHREADS;
-
-   if(getenv("GOTAO_THREAD_BASE"))
-        thread_base = atoi(getenv("GOTAO_THREAD_BASE"));
-   else
-        thread_base = GOTAO_THREAD_BASE;
-
-   goTAO_init(nthreads, thread_base);
+   gotao_init();
 
    std::chrono::time_point<std::chrono::system_clock> start, end;
    start = std::chrono::system_clock::now();

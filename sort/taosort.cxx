@@ -60,6 +60,9 @@ int main ( int argc, char *argv[] )
 
 // just five levels of sorting
 // do not attempt generic depth for now
+//
+        std::cout << "gotao_init parameters are: " << nthreads <<"," << thread_base << ","<< nctx << std::endl;
+
 	gotao_init(nthreads,thread_base,nctx);
 
 #if LEVEL1 == 1
@@ -120,6 +123,13 @@ int main ( int argc, char *argv[] )
         TAOMerge4 *level5[1];
 #endif 
 
+// LOI instrumentation
+#if DO_LOI
+    loi_init(); // calc TSC freq and init data structures
+    printf(" TSC frequency has been measured to be: %g Hz\n", (double) TSCFREQ);
+    int maxthr = nthreads;
+#endif
+
         sort_buffer_size = 16384*BLOCKSIZE;
         insertion_thr    = 20;
 
@@ -167,12 +177,6 @@ int main ( int argc, char *argv[] )
         }
 
 
-// LOI instrumentation
-#if DO_LOI
-    loi_init(); // calc TSC freq and init data structures
-    printf(" TSC frequency has been measured to be: %g Hz\n", (double) TSCFREQ);
-    int maxthr = nthreads;
-#endif
 
       
 #ifdef EXTRAE
