@@ -56,7 +56,7 @@ void jacobi2D_tbb(void *i, void *o, int rows, int cols,
                     double *out = (double *) o;
 
                     // global rows and cols
-                    std::cout << "Jacobi 2D: " << offx << " " << offy << std::endl;
+                   // std::cout << "Jacobi 2D: " << offx << " " << offy << std::endl;
 
                     int xstart = (offx == 0)? 1 : offx;
                     int ystart = (offy == 0)? 1 : offy;
@@ -96,7 +96,7 @@ void copy2D_tbb(void *i,  void *o,  int rows,   int cols,
                     double *in  = (double *) i;
                     double *out = (double *) o;
 
-                    std::cout << "Copy 2D: " << offx << " " << offy << std::endl;
+                    //std::cout << "Copy 2D: " << offx << " " << offy << std::endl;
 
                     int xstart = (offx == 0)? 1 : offx;
                     int ystart = (offy == 0)? 1 : offy;
@@ -356,6 +356,8 @@ int main( int argc, char *argv[] )
     krd_save_traces();
 #endif
 #endif
+
+    if(getenv("TAO_NOPLOT")) return 0;
 
     // for plot...
     coarsen( param.u, np, np, param.padding,

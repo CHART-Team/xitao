@@ -198,8 +198,12 @@ int main( int argc, char *argv[] )
                              ceildiv(np, ixdecomp*exdecomp), // (np + ixdecomp*exdecomp -1) / (ixdecomp*exdecomp),
                              ceildiv(np, iydecomp*eydecomp), //(np + iydecomp*eydecomp -1) / (iydecomp*eydecomp), 
                              awidth);
-
+#ifndef NUMA_ALLOC
+          init1[x][y]->set_place(0);
+#else
           init1[x][y]->set_place((float) (x * eydecomp + y) / (float) (exdecomp*eydecomp));
+#endif
+//	  std::cout << "Seting place to " <<  init1[x][y]->affinity_queue << std::endl;
           gotao_push_init(init1[x][y]); // insert into affinity queue
        }
 
@@ -243,7 +247,11 @@ int main( int argc, char *argv[] )
                              ceildiv(np, iydecomp*eydecomp), //(np + iydecomp*eydecomp -1) / (iydecomp*eydecomp), 
                              awidth);
 
+#ifndef NUMA_ALLOC
+          stc[iter][x][y]->set_place((float) (x * eydecomp + y) / (float) (exdecomp*eydecomp));
+#else
           stc[iter][x][y]->clone_place(init2[x][y]);
+#endif
           init2[x][y]->make_edge(stc[iter][x][y]);
 
 
