@@ -35,6 +35,7 @@ typedef struct
   
     double *u, *uhelp;
     double *uvis;
+    double *ftmp;
 
     unsigned   numsrcs;     // number of heat sources
     heatsrc_t *heatsrcs;

@@ -150,6 +150,9 @@ int initialize( algoparam_t *param, int no_padding )
 	for( int i=0; i<psize; i++ )
 	    *putmp++ = *pu++;
 
+    // exchange parameters
+    param->ftmp = param->u;
+
     return 1;
 }
 

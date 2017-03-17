@@ -155,19 +155,76 @@ int main( int argc, char *argv[] )
 			           "\n\tInternal Y Decomposition = " << iydecomp << std::endl;
     
     // When using places, the runtime needs to be initialized before we start creating objects
-    gotao_init(nthreads, thread_base);
+    gotao_init();
 
     // first a single iteration of a stencil
     jacobi2D *stc[param.maxiter][exdecomp][eydecomp];
     copy2D   *cpb[param.maxiter][exdecomp][eydecomp];
+    copy2D   *init1[exdecomp][eydecomp];  // param->u
+    copy2D   *init2[exdecomp][eydecomp];  // param->uhelp
 
     // when specifying chunk sizes and offsets I use "ceil"-style division [a/b -> (a + b -1)/b] to 
     // avoid generating minichunks when the division (a/b) generates a remainder
     // Of course, the question now is: why not specify the parameters in terms of rational (a/b) partitions?
-    
+   
+    // the first task will be to initialize the memory in param.u using tasks, so that a NUMA aware organization is derived
+    // automatically from the virtual topology places
+
+
 #define ceildiv(a,b) ((a + b -1)/(b))
 
     iter = 0;
+    // allocate a large array to both param.u and param.uhelp but do not initialize yet
+    // we will use the first touch policy to make sure that the initialization is done close to where data is touched first time
+    //
+    // the below way of doing things is wasteful, but I for the while I don't want
+    // to create another copy2D with two outputs so I keep it like this
+
+    // create initial copy (this is intended to make this code NUMA-aware)
+    // The initialized data is stored in param.ftmp
+    param.u = (double*) malloc( sizeof(double)*np*np );
+    for(int x = 0; x < exdecomp; x++)
+       for(int y = 0; y < eydecomp; y++) 
+       {
+          init1[x][y] = new copy2D(
+                             param.ftmp, 
+                             param.u,
+                             np, np,
+                             x*ceildiv(np, exdecomp), // x*((np + exdecomp -1) / exdecomp),
+                             y*ceildiv(np, eydecomp), //y*((np + eydecomp -1) / eydecomp),
+                             ceildiv(np, exdecomp), //(np + exdecomp - 1) / exdecomp,
+                             ceildiv(np, eydecomp), //(np + eydecomp - 1) / eydecomp, 
+                             gotao_sched_2D_static,
+                             ceildiv(np, ixdecomp*exdecomp), // (np + ixdecomp*exdecomp -1) / (ixdecomp*exdecomp),
+                             ceildiv(np, iydecomp*eydecomp), //(np + iydecomp*eydecomp -1) / (iydecomp*eydecomp), 
+                             awidth);
+
+          init1[x][y]->set_place((float) (x * eydecomp + y) / (float) (exdecomp*eydecomp));
+          gotao_push_init(init1[x][y]); // insert into affinity queue
+       }
+
+    // create initial copy (this is intended to make this code NUMA-aware)
+    // The initialized data is stored in param.ftmp
+    param.uhelp = (double*) malloc( sizeof(double)*np*np );
+    for(int x = 0; x < exdecomp; x++)
+       for(int y = 0; y < eydecomp; y++) 
+       {
+          init2[x][y] = new copy2D(
+                             param.u, 
+                             param.uhelp,
+                             np, np,
+                             x*ceildiv(np, exdecomp), // x*((np + exdecomp -1) / exdecomp),
+                             y*ceildiv(np, eydecomp), //y*((np + eydecomp -1) / eydecomp),
+                             ceildiv(np, exdecomp), //(np + exdecomp - 1) / exdecomp,
+                             ceildiv(np, eydecomp), //(np + eydecomp - 1) / eydecomp, 
+                             gotao_sched_2D_static,
+                             ceildiv(np, ixdecomp*exdecomp), // (np + ixdecomp*exdecomp -1) / (ixdecomp*exdecomp),
+                             ceildiv(np, iydecomp*eydecomp), //(np + iydecomp*eydecomp -1) / (iydecomp*eydecomp), 
+                             awidth);
+
+          init2[x][y]->clone_place(init1[x][y]);
+          init1[x][y]->make_edge(init2[x][y]);
+       }
 
     // create initial stencils (prologue)
     for(int x = 0; x < exdecomp; x++)
@@ -186,8 +243,14 @@ int main( int argc, char *argv[] )
                              ceildiv(np, iydecomp*eydecomp), //(np + iydecomp*eydecomp -1) / (iydecomp*eydecomp), 
                              awidth);
 
-          stc[iter][x][y]->set_place((float) (x * eydecomp + y) / (float) (exdecomp*eydecomp));
-          gotao_push_init(stc[iter][x][y]); // insert into affinity queue
+          stc[iter][x][y]->clone_place(init2[x][y]);
+          init2[x][y]->make_edge(stc[iter][x][y]);
+
+
+          if((x-1)>=0)       init2[x-1][y]->make_edge(stc[iter][x][y]);
+          if((x+1)<exdecomp) init2[x+1][y]->make_edge(stc[iter][x][y]);
+          if((y-1)>=0)       init2[x][y-1]->make_edge(stc[iter][x][y]);
+          if((y+1)<eydecomp) init2[x][y+1]->make_edge(stc[iter][x][y]);
        }
 
     // from this point just creat "iter" copies of the loop
@@ -368,14 +431,14 @@ int main( int argc, char *argv[] )
     if(getenv("TAO_NOPLOT")) return 0;
 
     // for plot...
-//    coarsen( param.u, np, np, param.padding,
-//         param.uvis, param.visres+2, param.visres+2 );
-//  
-//    write_image( resfile, param.uvis, param.padding,
-//         param.visres+2, 
-//         param.visres+2 );
-//
-//    finalize( &param );
+    coarsen( param.u, np, np, param.padding,
+         param.uvis, param.visres+2, param.visres+2 );
+  
+    write_image( resfile, param.uvis, param.padding,
+         param.visres+2, 
+         param.visres+2 );
+
+    finalize( &param );
 
     return 0;
 }
