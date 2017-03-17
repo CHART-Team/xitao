@@ -246,7 +246,7 @@ ELM *binsplit(ELM val, ELM *low, ELM *high)
 }
 
 
-ELM *array, *tmp;
+ELM *array, *tmp, *array1;
 
 void scramble_array( void )
 {

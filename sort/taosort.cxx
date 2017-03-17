@@ -63,7 +63,7 @@ int main ( int argc, char *argv[] )
 //
         std::cout << "gotao_init parameters are: " << nthreads <<"," << thread_base << ","<< nctx << std::endl;
 
-	gotao_init(nthreads,thread_base,nctx);
+	gotao_init_hw(nthreads,thread_base,nctx);
 
 #if LEVEL1 == 1
 #define TAOQuickMerge TAOQuickMergeDyn
@@ -130,48 +130,60 @@ int main ( int argc, char *argv[] )
     int maxthr = nthreads;
 #endif
 
+        TAOinit *inits[256];
         sort_buffer_size = 16384*BLOCKSIZE;
         insertion_thr    = 20;
 
         array = (ELM *) malloc(sort_buffer_size * sizeof(ELM));
         tmp = (ELM *) malloc(sort_buffer_size * sizeof(ELM));
 
+        // the 
+        array1 = (ELM *) malloc(sort_buffer_size * sizeof(ELM));
+
         fill_array();
         scramble_array();
 
         std::chrono::time_point<std::chrono::system_clock> start, end;
         std::cout << "Sorting " << sort_buffer_size << " integers via 4-1 TAOSort " << std::endl;
-  	start = std::chrono::system_clock::now();
+  	    start = std::chrono::system_clock::now();
 
 	for(int i = 0; i < 256; i++){
-                level1[i] = new TAOQuickMerge(array + 64*i*BLOCKSIZE, tmp + 64*i*BLOCKSIZE, 64*BLOCKSIZE, DYNW1);
-                st1 = (PolyTask *) level1[i];
-#if defined(PLACEMENT_DISTRIBUTED) && defined(TAO_PLACES)
+                inits[i] = new TAOinit(array + 64*i*BLOCKSIZE, array1 + 64*i*BLOCKSIZE, 64*BLOCKSIZE, DYNW1);
+                st1 = (PolyTask *) inits[i];
+#ifdef NUMA_ALLOC
                 st1->set_place( ((float) i/ (float) 256));
+#else
+                st1->set_place(0.0);
 #endif
                 gotao_push(st1);
 	}
 
+	for(i = 0; i < 256; i++){
+                level1[i] = new TAOQuickMerge(array1 + 64*i*BLOCKSIZE, tmp + 64*i*BLOCKSIZE, 64*BLOCKSIZE, DYNW1);
+                
+                inits[i]->make_edge(level1[i]);
+	}
+
         for(i = 0; i < 64; i++){
-                level2[i] = new TAOMerge_2(array + 256*i*BLOCKSIZE, tmp + 256*i*BLOCKSIZE, 256*BLOCKSIZE, DYNW2);
+                level2[i] = new TAOMerge_2(array1 + 256*i*BLOCKSIZE, tmp + 256*i*BLOCKSIZE, 256*BLOCKSIZE, DYNW2);
                 for(j = i*4; j < (i+1)*4; j++)
                         level1[j]->make_edge(level2[i]);
         }
 
         for(i = 0; i < 16; i++){
-                level3[i] = new TAOMerge_3(array + 1024*i*BLOCKSIZE, tmp + 1024*i*BLOCKSIZE, 1024*BLOCKSIZE, DYNW3);
+                level3[i] = new TAOMerge_3(array1 + 1024*i*BLOCKSIZE, tmp + 1024*i*BLOCKSIZE, 1024*BLOCKSIZE, DYNW3);
                 for(j = i*4; j < (i+1)*4; j++)
                         level2[j]->make_edge(level3[i]);
         }
 
         for(i = 0; i < 4; i++){
-                level4[i] = new TAOMerge_4(array + 4096*i*BLOCKSIZE, tmp + 4096*i*BLOCKSIZE, 4096*BLOCKSIZE, DYNW4);
+                level4[i] = new TAOMerge_4(array1 + 4096*i*BLOCKSIZE, tmp + 4096*i*BLOCKSIZE, 4096*BLOCKSIZE, DYNW4);
                 for(j = i*4; j < (i+1)*4; j++)
                         level3[j]->make_edge(level4[i]);
         }
 
         for(i = 0; i < 1; i++){
-                level5[i] = new TAOMerge_5(array + 16384*i*BLOCKSIZE, tmp + 16384*i*BLOCKSIZE, 16384*BLOCKSIZE, DYNW5);
+                level5[i] = new TAOMerge_5(array1 + 16384*i*BLOCKSIZE, tmp + 16384*i*BLOCKSIZE, 16384*BLOCKSIZE, DYNW5);
                 for(j = i*4; j < (i+1)*4; j++)
                         level4[j]->make_edge(level5[i]);
         }
@@ -184,12 +196,12 @@ int main ( int argc, char *argv[] )
 #endif
 
         std::cout << "Calling gotao_start() " << std::endl;
-   	goTAO_start();
+        goTAO_start();
 #ifdef DO_LOI 
         phase_profile_start();
 #endif
 
-  	goTAO_fini();
+        goTAO_fini();
       
 #ifdef DO_LOI
         phase_profile_stop(0); 
@@ -201,6 +213,8 @@ int main ( int argc, char *argv[] )
       
         std::cout << "elapsed time: " << elapsed_seconds.count() << "s. " << "Total number of steals: " <<  tao_total_steals << "\n";
 
+        array = array1;
+        
         if(!sort_verify ( )) {
                 printf("Sort Failed!\n"); 
                 return 1;

@@ -57,7 +57,7 @@ struct idle_uow{ };
 
 extern int sort_buffer_size;
 extern int insertion_thr;
-extern ELM *array, *tmp;
+extern ELM *array, *tmp, *array1;
 
 //void idle(){};
 
@@ -113,6 +113,29 @@ struct quickmerge_uow{
         
 void print_array( int, ELM * );
 
+
+class TAOinit : public AssemblyTask
+{
+    public: 
+               TAOinit(ELM *i, ELM *o, int s, int w) : 
+                       AssemblyTask(w), size(s), in(i), out(o) {};
+               
+               int cleanup(){ 
+                    }
+
+               int execute(int threadid)
+               { 
+               int tid = threadid - leader;
+               if(!tid){ // only the leader will copy
+                 for(int i = 0; i < size; i++) 
+                   out[i] = in[i];
+                   }
+               }
+            
+                int size;
+                ELM *in, *out;
+};
+     
 class TAOQuickMerge4 : public AssemblyTask 
 {
         public: 
