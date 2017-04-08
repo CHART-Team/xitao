@@ -137,8 +137,9 @@ int main ( int argc, char *argv[] )
         array = (ELM *) malloc(sort_buffer_size * sizeof(ELM));
         tmp = (ELM *) malloc(sort_buffer_size * sizeof(ELM));
 
-        // the 
+#ifdef NUMA_ALLOC
         array1 = (ELM *) malloc(sort_buffer_size * sizeof(ELM));
+#endif
 
         fill_array();
         scramble_array();
@@ -147,21 +148,31 @@ int main ( int argc, char *argv[] )
         std::cout << "Sorting " << sort_buffer_size << " integers via 4-1 TAOSort " << std::endl;
   	    start = std::chrono::system_clock::now();
 
+#ifdef NUMA_ALLOC
 	for(int i = 0; i < 256; i++){
                 inits[i] = new TAOinit(array + 64*i*BLOCKSIZE, array1 + 64*i*BLOCKSIZE, 64*BLOCKSIZE, DYNW1);
                 st1 = (PolyTask *) inits[i];
-#ifdef NUMA_ALLOC
                 st1->set_place( ((float) i/ (float) 256));
-#else
-                st1->set_place(0.0);
-#endif
                 gotao_push(st1);
 	}
+#else
+    array1 = array;
+#endif
 
 	for(i = 0; i < 256; i++){
                 level1[i] = new TAOQuickMerge(array1 + 64*i*BLOCKSIZE, tmp + 64*i*BLOCKSIZE, 64*BLOCKSIZE, DYNW1);
-                
+#ifndef NUMA_ALLOC
+                st1 =  (PolyTask *) level1[i];
+#ifdef PLACEMENT_DISTRIBUTED
+                st1->set_place( ((float) i/ (float) 256));
+#else
+                st1->set_place( 0.0 );
+#endif  // PLACEMENT DISTRIBUTED
+                gotao_push(st1);
+#else
+
                 inits[i]->make_edge(level1[i]);
+#endif   // NUMA_ALLOC
 	}
 
         for(i = 0; i < 64; i++){
