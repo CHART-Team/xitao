@@ -182,6 +182,8 @@ int main( int argc, char *argv[] )
 
     // create initial copy (this is intended to make this code NUMA-aware)
     // The initialized data is stored in param.ftmp
+    //
+#ifdef NUMA_ALLOC
     param.u = (double*) malloc( sizeof(double)*np*np );
     for(int x = 0; x < exdecomp; x++)
        for(int y = 0; y < eydecomp; y++) 
@@ -198,18 +200,16 @@ int main( int argc, char *argv[] )
                              ceildiv(np, ixdecomp*exdecomp), // (np + ixdecomp*exdecomp -1) / (ixdecomp*exdecomp),
                              ceildiv(np, iydecomp*eydecomp), //(np + iydecomp*eydecomp -1) / (iydecomp*eydecomp), 
                              awidth);
-#ifndef NUMA_ALLOC
-          init1[x][y]->set_place(0);
-#else
           init1[x][y]->set_place((float) (x * eydecomp + y) / (float) (exdecomp*eydecomp));
-#endif
-//	  std::cout << "Seting place to " <<  init1[x][y]->affinity_queue << std::endl;
           gotao_push_init(init1[x][y]); // insert into affinity queue
        }
 
-    // create initial copy (this is intended to make this code NUMA-aware)
-    // The initialized data is stored in param.ftmp
     param.uhelp = (double*) malloc( sizeof(double)*np*np );
+
+    // why is this being done? it seems that the next jacoby 2D just overwrites this copy?
+    // ok -- we need it because the jacobi kernel updates the output, it does not copy it.
+    // but hasnt uhelp not already been copied during the initialization?
+    // ok -- yes, but not in a NUMA aware way. The following code ensures the NUMA-aware update
     for(int x = 0; x < exdecomp; x++)
        for(int y = 0; y < eydecomp; y++) 
        {
@@ -229,6 +229,8 @@ int main( int argc, char *argv[] )
           init2[x][y]->clone_place(init1[x][y]);
           init1[x][y]->make_edge(init2[x][y]);
        }
+    // when not using NUMA allocation, we do not need to run any of this code since both u and uhelp are already initialized
+#endif
 
     // create initial stencils (prologue)
     for(int x = 0; x < exdecomp; x++)
@@ -247,18 +249,24 @@ int main( int argc, char *argv[] )
                              ceildiv(np, iydecomp*eydecomp), //(np + iydecomp*eydecomp -1) / (iydecomp*eydecomp), 
                              awidth);
 
-#ifndef NUMA_ALLOC
-          stc[iter][x][y]->set_place((float) (x * eydecomp + y) / (float) (exdecomp*eydecomp));
-#else
+#ifdef NUMA_ALLOC
           stc[iter][x][y]->clone_place(init2[x][y]);
-#endif
           init2[x][y]->make_edge(stc[iter][x][y]);
-
 
           if((x-1)>=0)       init2[x-1][y]->make_edge(stc[iter][x][y]);
           if((x+1)<exdecomp) init2[x+1][y]->make_edge(stc[iter][x][y]);
           if((y-1)>=0)       init2[x][y-1]->make_edge(stc[iter][x][y]);
           if((y+1)<eydecomp) init2[x][y+1]->make_edge(stc[iter][x][y]);
+#else
+#ifdef TOPOPLACE
+          stc[iter][x][y]->set_place((float) (x * eydecomp + y) / (float) (exdecomp*eydecomp));
+#else // no topo
+          stc[iter][x][y]->set_place(0.0);
+#endif  // TOPOPLACE
+          gotao_push_init(stc[iter][x][y]);
+#endif  // NUMA_ALLOC
+
+
        }
 
     // from this point just creat "iter" copies of the loop
