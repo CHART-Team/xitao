@@ -93,12 +93,13 @@ void breadthFirst(Cell *C) {
   cellQueue.push(C);                                            // Push root into queue
 #ifdef TAO
   int ndx = 0, ins = 0;
-#define NA 256
+  int NA = 10 * (numWorkers / awidth);
   fmm_st  *fmms[NA];                                           // create a set of fmm_st assemblies
   std::cout << "numWorkers: " << numWorkers <<", awidth: " << awidth << std::endl;
   gotao_init_hw(numWorkers,0,1);                                     // initialize the gotao runtime
   for(int i = 0; i < NA; i++){
-    fmms[i] = new fmm_st(numWorkers);
+    fmms[i] = new fmm_st(awidth);
+    if(!fmms[i]) std::cout << "Initialization failed\n";
 #ifdef TOPOPLACES
     fmms[i]->set_place(((float)  i) / (( float) NA));
 #else
@@ -121,7 +122,7 @@ void breadthFirst(Cell *C) {
 #ifdef TAO
         fmms[ndx]->insert(C->CHILD[i]); 
 	ins++; 
-	if(ins == (awidth*AMULT)){
+	if(ins == (awidth*awidth*AMULT)){
 		ins = 0; 
 		ndx = (ndx + 1) % NA;
 		}

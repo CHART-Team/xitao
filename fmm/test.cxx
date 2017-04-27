@@ -40,10 +40,12 @@ int main(int argc, char ** argv) {                              // Main function
   if(argc == 2) 
 	awidth = numWorkers = atoi(argv[1]);
 
-  if(argc == 3){  
+  else if(argc == 3){  
 	numWorkers = atoi(argv[1]);
 	awidth = atoi(argv[2]);
 	}
+
+  else awidth= numWorkers;
 
   tbb::task_scheduler_init init(numWorkers);                    // Number of worker threads
 
@@ -144,7 +146,7 @@ int main(int argc, char ** argv) {                              // Main function
     for (int d=0; d<2; d++) bodies[b].F[d] = 0;                 //  Clear force
   }                                                             // End loop over bodies
   time = getTime();                                             // Start timer 
-  direct(numTargets, bodies, numBodies, jbodies);               // Direc N-body
+  //direct(numTargets, bodies, numBodies, jbodies);               // Direc N-body
   printf("%-20s : %lf s\n","Direct N-Body",getTime()-time);     // Stop timer 
 
   //! Evaluate relaitve L2 norm error
