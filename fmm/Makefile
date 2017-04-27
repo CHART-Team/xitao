@@ -1,25 +1,9 @@
 .SUFFIXES: .cxx .o
 
-#TARGET = OPENMP
-#TARGET=TBB
-TARGET=TAO
 
-
-ifeq ($(TARGET), OPENMP) 
-LIST_SCHEDULE := -DOPENMP -fopenmp 
-PROGRAM_OBJS = test.o 
-else ifeq ($(TARGET), TBB)
-PROGRAM_OBJS = test.o 
-LIST_SCHEDULE:=-DTASK_GROUP 
-else ifeq ($(TARGET), TAO)
-LIST_SCHEDULE := -DTAO -pthread -DTAO_PLACES -DLOCK_FREE_QUEUE -DSPINLOCK -DSUPERTASK_STEALING
-PROGRAM_OBJS = test.o ../tao_sched.o
-else
-$(info "Invalid TARGET selected. I saw " $TARGET)
-endif
+include makefile.fmm
 
 include ../makefile.inc
-CXX = icc -std=c++11 -O3 -g3 -ffast-math -DLIST $(LIST_SCHEDULE)
 include ../loi/loikrd.defs
 
 # options for LOI/KRD

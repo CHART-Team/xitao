@@ -9,7 +9,7 @@ typedef float real_t;                                           //!< Floating po
 typedef std::complex<real_t> complex_t;                         //!< Complex type
 
 // Multipole/local expansion coefficients
-const int P = 3;                                                //!< Order of expansions
+const int P = 10;                                                //!< Order of expansions
 
 //! Structure of bodies
 struct Body {

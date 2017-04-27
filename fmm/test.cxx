@@ -15,7 +15,7 @@ extern "C"
 #endif
 
 int numWorkers = 32;
-int awidth = numWorkers;
+int awidth;
 
 #include "types.h"
 #include "buildtree.h"
@@ -33,12 +33,12 @@ double getTime() {
 int main(int argc, char ** argv) {                              // Main function
   const int numBodies = 100000;                                 // Number of bodies
   const int numTargets = 10;                                    // Number of targets for checking answer
-  const int ncrit = 4;                                          // Number of bodies per leaf cell
+  const int ncrit = 20;                                          // Number of bodies per leaf cell
   theta = 0.2;                                                  // Multipole acceptance criterion
   nspawn = 1000;                                                // Threshold for spawning threads
 
   if(argc == 2) 
-	numWorkers = atoi(argv[1]);
+	awidth = numWorkers = atoi(argv[1]);
 
   if(argc == 3){  
 	numWorkers = atoi(argv[1]);

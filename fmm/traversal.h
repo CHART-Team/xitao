@@ -96,10 +96,14 @@ void breadthFirst(Cell *C) {
 #define NA 256
   fmm_st  *fmms[NA];                                           // create a set of fmm_st assemblies
   std::cout << "numWorkers: " << numWorkers <<", awidth: " << awidth << std::endl;
-  gotao_init(numWorkers,0);                                     // initialize the gotao runtime
+  gotao_init_hw(numWorkers,0,1);                                     // initialize the gotao runtime
   for(int i = 0; i < NA; i++){
     fmms[i] = new fmm_st(numWorkers);
+#ifdef TOPOPLACES
     fmms[i]->set_place(((float)  i) / (( float) NA));
+#else
+    fmms[i]->set_place(0.0);
+#endif
   //  std::cout << "affinity queue " << fmms[i]->affinity_queue << std::endl;
     }
 
@@ -117,7 +121,7 @@ void breadthFirst(Cell *C) {
 #ifdef TAO
         fmms[ndx]->insert(C->CHILD[i]); 
 	ins++; 
-	if(ins == (awidth*40000)){
+	if(ins == (awidth*AMULT)){
 		ins = 0; 
 		ndx = (ndx + 1) % NA;
 		}
