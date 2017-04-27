@@ -92,13 +92,13 @@ int main( int argc, char *argv[] )
     }
     print_params(&param);
 
-   if(getenv("TAO_NTHREADS"))
-        nthreads = atoi(getenv("TAO_NTHREADS"));
+   if(getenv("GOTAO_NTHREADS"))
+        nthreads = atoi(getenv("GOTAO_NTHREADS"));
    else 
         nthreads = GOTAO_NTHREADS;
 
-   if(getenv("TAO_THREAD_BASE"))
-        thread_base = atoi(getenv("TAO_THREAD_BASE"));
+   if(getenv("GOTAO_THREAD_BASE"))
+        thread_base = atoi(getenv("GOTAO_THREAD_BASE"));
    else
         thread_base = GOTAO_THREAD_BASE;
 
