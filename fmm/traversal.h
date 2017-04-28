@@ -96,7 +96,7 @@ void breadthFirst(Cell *C) {
   int NA = 10 * (numWorkers / awidth);
   fmm_st  *fmms[NA];                                           // create a set of fmm_st assemblies
   std::cout << "numWorkers: " << numWorkers <<", awidth: " << awidth << std::endl;
-  gotao_init_hw(numWorkers,0,1);                                     // initialize the gotao runtime
+  gotao_init_hw(numWorkers,-1,-1);
   for(int i = 0; i < NA; i++){
     fmms[i] = new fmm_st(awidth);
     if(!fmms[i]) std::cout << "Initialization failed\n";
