@@ -115,7 +115,7 @@ void breadthFirst(Cell *C) {
 #ifdef TAO
         fmms->insert(C->CHILD[i]); 
 	ins++; 
-	if(ins == (awidth*awidth*AMULT)){
+	if(ins == (awidth*AMULT)){
 		ins = 0; 
 		//gotao_push(fmms,(ndx? ndx : ndx+1) % numWorkers);
 		gotao_push(fmms);
