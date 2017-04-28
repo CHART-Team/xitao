@@ -31,7 +31,7 @@ double getTime() {
 }
 
 int main(int argc, char ** argv) {                              // Main function
-  const int numBodies = 100000;                                 // Number of bodies
+  const int numBodies = 1000000;                                 // Number of bodies
   const int numTargets = 10;                                    // Number of targets for checking answer
   const int ncrit = 20;                                          // Number of bodies per leaf cell
   theta = 0.2;                                                  // Multipole acceptance criterion
@@ -119,6 +119,9 @@ int main(int argc, char ** argv) {                              // Main function
 #ifdef LIST
 #ifdef DO_LOI 
   phase_profile_start();
+#endif
+#ifdef TAO
+  gotao_init_hw(numWorkers,-1,-1);
 #endif
   breadthFirst(C0);                                             // Traversal for M2L, P2P
 #ifdef DO_LOI

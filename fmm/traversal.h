@@ -92,27 +92,20 @@ void breadthFirst(Cell *C) {
   std::queue<Cell*> cellQueue;                                  // Queue of cells for breadth first traversal
   cellQueue.push(C);                                            // Push root into queue
 #ifdef TAO
+  fmm_st  *fmms;                                           // create a set of fmm_st assemblies
   int ndx = 0, ins = 0;
-  int NA = 10 * (numWorkers / awidth);
-  fmm_st  *fmms[NA];                                           // create a set of fmm_st assemblies
+ // int NA = 10 * (numWorkers / awidth);
   std::cout << "numWorkers: " << numWorkers <<", awidth: " << awidth << std::endl;
-  gotao_init_hw(numWorkers,-1,-1);
-  for(int i = 0; i < NA; i++){
-    fmms[i] = new fmm_st(awidth);
-    if(!fmms[i]) std::cout << "Initialization failed\n";
-#ifdef TOPOPLACES
-    fmms[i]->set_place(((float)  i) / (( float) NA));
-#else
-    fmms[i]->set_place(0.0);
-#endif
-  //  std::cout << "affinity queue " << fmms[i]->affinity_queue << std::endl;
-    }
 
-  fmms[ndx]->insert(C); 
+  fmms = new fmm_st(awidth);
+  fmms->insert(C); 
+  fmms->set_place(0.0);
+  //  std::cout << "affinity queue " << fmms[i]->affinity_queue << std::endl;
+  gotao_start();  // start with the computation as soon as possible
+
 #else
   std::vector<Cell*> cellVector;                                // Vector of cells
   cellVector.push_back(C);                                      // Push root into vector
-  // I delay this in the hope of not interfering with the DTT, which is based on TBB
 #endif
   while (!cellQueue.empty()) {                                  // While queue is not empty
     C = cellQueue.front();                                      //  Read front
@@ -120,21 +113,33 @@ void breadthFirst(Cell *C) {
     for (int i=0; i<4; i++) {                                   //  Loop over child cells
       if (C->CHILD[i]) {                                        //   If child exists
 #ifdef TAO
-        fmms[ndx]->insert(C->CHILD[i]); 
+        fmms->insert(C->CHILD[i]); 
 	ins++; 
 	if(ins == (awidth*awidth*AMULT)){
 		ins = 0; 
-		ndx = (ndx + 1) % NA;
+		//gotao_push(fmms,(ndx? ndx : ndx+1) % numWorkers);
+		gotao_push(fmms);
+#ifdef DEBUG
+		std::cout << "Pushing assembly ndx: " << ndx << " to: " << ndx % numWorkers << std::endl;
+#endif		
+		fmms = new fmm_st(awidth);
+		ndx++;
+#ifdef TOPOPLACES
+		fmms->set_place((float) (ndx % numWorkers) / (float) numWorkers);
+#else
+		fmms->set_place(0.0);
+#endif // TOPOPLACES
 		}
 #else
         cellVector.push_back(C->CHILD[i]);                      //    Push child to vector
-#endif
+#endif // TAO
         cellQueue.push(C->CHILD[i]);                            //    Push child to queue
       }                                                         //   End if child exists
     }                                                           //  End loop over child cells
   }                                                             // End while loop for non empty queue
 #ifdef TASK_GROUP
   tbb::task_group tg;                                           // Create task group
+  std::cout << "Vector size is " << cellVector.size() << std::endl;
   for (int c=0; c<cellVector.size(); c++) {                     // Loop over cells
     Cell * C = cellVector[c];                                   //  Current cell
     Evaluate evaluate(C);                                       //  Instantiate functor
@@ -150,10 +155,11 @@ void breadthFirst(Cell *C) {
   }                                                             // End loop over cells
 #elif TAO
 
-  for (int i=0; i < NA; i++)
-     gotao_push_init(fmms[i]);
+//  for (int i=0; i < NA; i++)
+  //gotao_push(fmms, ndx % numWorkers);   // push the last TAO
+  gotao_push(fmms);
+  std::cout << "Generated "<< ndx + 1  << " TAOs" << std::endl;
 
-  gotao_start();
   gotao_fini();
 
 #else // PARALLEL_FOR

@@ -29,6 +29,7 @@ BARRIER *starting_barrier;
 int gotao_nthreads;
 int gotao_ncontexts;
 int gotao_thread_base;
+bool gotao_can_exit = false;
 
 int worker_loop(int);
 
@@ -79,6 +80,7 @@ int gotao_start()
 
 int gotao_fini()
 {
+   gotao_can_exit = true;
    for(int i = 0; i < gotao_nthreads; i++)
      t[i]->join();
 #ifdef EXTRAE
@@ -358,7 +360,7 @@ int worker_loop(int _nthread)
         // TAO_WIDTH determines which threads participates in stealing
         // STEAL_ATTEMPTS determines number of steals before retrying the loop
 #if defined(SUPERTASK_STEALING)
-        if((nthread % TAO_WIDTH == 0) && STEAL_ATTEMPTS) {
+        if(STEAL_ATTEMPTS) {
 #ifdef EXTRAE
           if(!stealing){
             stealing = true;
@@ -393,7 +395,6 @@ int worker_loop(int _nthread)
         } 
 
 #endif
-
 	if(in < 10000)
         	in+=1;
 
@@ -404,7 +405,7 @@ int worker_loop(int _nthread)
 // the time when the loop does no longer impact execution. There is no simple way to set this
 // time, so we use a value determined experimentally.
 //
-// Attempt one: if the architecture supportgs PAUSE then just reduce the speed
+// Attempt #1: if the architecture supportgs PAUSE then just reduce the speed
 //
 #define IN_DIV 100
 #ifdef PAUSE
@@ -447,7 +448,7 @@ int worker_loop(int _nthread)
 	}
         
 	// Finally check if the program has terminated
-        if(PolyTask::pending_tasks <= 0) 
+        if(gotao_can_exit && (PolyTask::pending_tasks <= 0)) 
         {
                 break;
         }
