@@ -140,7 +140,8 @@ struct aligned_lock {
 
 // a PolyTask is either an assembly or a simple task 
 extern std::list<PolyTask *> worker_ready_q[MAXTHREADS];
-#if defined(SUPERTASK_STEALING) || defined(TAO_PLACES)
+
+#if defined(SUPERTASK_STEALING) || defined(TAO_STA)
 extern aligned_lock worker_lock[MAXTHREADS];
 #endif 
 
@@ -172,7 +173,7 @@ class PolyTask{
            PolyTask(int t, int _nthread=0) : type(t) 
            {
                     refcount = 0;
-#ifdef TAO_PLACES
+#ifdef TAO_STA
 #define GOTAO_NO_AFFINITY (1.0)
                     affinity_relative_index = GOTAO_NO_AFFINITY;
                     affinity_queue = -1;
@@ -204,14 +205,14 @@ class PolyTask{
            std::atomic<int> threads_out_tao;
            int width;  // number of resources that this assembly uses
 
-#ifdef TAO_PLACES
+#ifdef TAO_STA
            // PolyTasks can have affinity. Currently these are specified on a unidimensional vector
            // space [0,1) of type float
            float affinity_relative_index; // [0,1) are valid affinities, >=1.0 means no affinity
            int   affinity_queue;          // this is the particular queue. When cloning an affinity, we just copy this value
-                                          // Internally, GOTAO works only with queues, not places
+                                          // Internally, GOTAO works only with queues, not stas
 
-           int place_to_queue(float x){
+           int sta_to_queue(float x){
                  if(x >= GOTAO_NO_AFFINITY) 
                          affinity_queue = -1;
                  else if (x < 0.0) return 1;  // error, should it be reported?
@@ -219,14 +220,14 @@ class PolyTask{
                  return 0; 
            }
 
-           int set_place(float x) {    
-                 affinity_relative_index = x;  // whenever a place is changed, it triggers a translation
-                 return place_to_queue(x);
+           int set_sta(float x) {    
+                 affinity_relative_index = x;  // whenever a sta is changed, it triggers a translation
+                 return sta_to_queue(x);
            } 
 
-           float get_place() { return affinity_relative_index; }    // return place value
+           float get_sta() { return affinity_relative_index; }    // return sta value
 
-           int clone_place(PolyTask *pt) { 
+           int clone_sta(PolyTask *pt) { 
                 affinity_relative_index = pt->affinity_relative_index;    
                 affinity_queue = pt->affinity_queue; // make sure to copy the exact queue
                 return 0;
@@ -254,7 +255,7 @@ class PolyTask{
                         LOCK_RELEASE(output_lck);
 #endif 
                         if(!ret
-#ifdef TAO_PLACES
+#ifdef TAO_STA
                            // check the case affinity_queue == -1
                                 && (((*it)->affinity_queue == -1) || (((*it)->affinity_queue/(*it)->width) == (_nthread/(*it)->width)))
 #endif
@@ -262,7 +263,7 @@ class PolyTask{
                            ret = *it; // forward locally only if affinity matches
                         else{
                             // otherwise insert into affinity queue, or in local queue
-#ifdef TAO_PLACES
+#ifdef TAO_STA
                             int ndx = (*it)->affinity_queue;
                             if((ndx == -1) || (((*it)->affinity_queue/(*it)->width) == (_nthread/(*it)->width)))
                                  ndx = _nthread;
@@ -271,14 +272,14 @@ class PolyTask{
 #endif
 
                             // seems like we acquire and release the lock for each assembly. 
-                            // This is suboptimal, but given that TAO_PLACES makes the allocation
+                            // This is suboptimal, but given that TAO_STA makes the allocation
                             // somewhat random it simpifies the implementation. In the case that
-                            // TAO_PLACES is not defined, we could optimize it, but is it worth?
-#if defined(SUPERTASK_STEALING) || defined(TAO_PLACES)
+                            // TAO_STA is not defined, we could optimize it, but is it worth?
+#if defined(SUPERTASK_STEALING) || defined(TAO_STA)
                             LOCK_ACQUIRE(worker_lock[ndx]);
 #endif
                             worker_ready_q[ndx].push_front(*it);
-#if defined(SUPERTASK_STEALING) || defined(TAO_PLACES)
+#if defined(SUPERTASK_STEALING) || defined(TAO_STA)
                             LOCK_RELEASE(worker_lock[ndx]);
 #endif
                          } 

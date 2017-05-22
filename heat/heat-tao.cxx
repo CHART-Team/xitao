@@ -15,8 +15,8 @@
 #ifdef DO_LOI
 #include "loi.h"
 #endif
-#ifndef TAO_PLACES
-#error "./heat-tao requires TAO_PLACES"
+#ifndef TAO_STA
+#error "./heat-tao requires TAO_STA"
 #endif 
 
 // Use LOI instrumentation: 
@@ -154,7 +154,7 @@ int main( int argc, char *argv[] )
 			           "\n\tInternal X Decomposition = " << ixdecomp <<
 			           "\n\tInternal Y Decomposition = " << iydecomp << std::endl;
     
-    // When using places, the runtime needs to be initialized before we start creating objects
+    // When using stas, the runtime needs to be initialized before we start creating objects
     gotao_init();
 
     // first a single iteration of a stencil
@@ -168,7 +168,7 @@ int main( int argc, char *argv[] )
     // Of course, the question now is: why not specify the parameters in terms of rational (a/b) partitions?
    
     // the first task will be to initialize the memory in param.u using tasks, so that a NUMA aware organization is derived
-    // automatically from the virtual topology places
+    // automatically from the virtual topology stas
 
 
 #define ceildiv(a,b) ((a + b -1)/(b))
@@ -200,7 +200,7 @@ int main( int argc, char *argv[] )
                              ceildiv(np, ixdecomp*exdecomp), // (np + ixdecomp*exdecomp -1) / (ixdecomp*exdecomp),
                              ceildiv(np, iydecomp*eydecomp), //(np + iydecomp*eydecomp -1) / (iydecomp*eydecomp), 
                              awidth);
-          init1[x][y]->set_place((float) (x * eydecomp + y) / (float) (exdecomp*eydecomp));
+          init1[x][y]->set_sta((float) (x * eydecomp + y) / (float) (exdecomp*eydecomp));
           gotao_push_init(init1[x][y]); // insert into affinity queue
        }
 
@@ -226,7 +226,7 @@ int main( int argc, char *argv[] )
                              ceildiv(np, iydecomp*eydecomp), //(np + iydecomp*eydecomp -1) / (iydecomp*eydecomp), 
                              awidth);
 
-          init2[x][y]->clone_place(init1[x][y]);
+          init2[x][y]->clone_sta(init1[x][y]);
           init1[x][y]->make_edge(init2[x][y]);
        }
     // when not using NUMA allocation, we do not need to run any of this code since both u and uhelp are already initialized
@@ -250,7 +250,7 @@ int main( int argc, char *argv[] )
                              awidth);
 
 #ifdef NUMA_ALLOC
-          stc[iter][x][y]->clone_place(init2[x][y]);
+          stc[iter][x][y]->clone_sta(init2[x][y]);
           init2[x][y]->make_edge(stc[iter][x][y]);
 
           if((x-1)>=0)       init2[x-1][y]->make_edge(stc[iter][x][y]);
@@ -259,9 +259,9 @@ int main( int argc, char *argv[] )
           if((y+1)<eydecomp) init2[x][y+1]->make_edge(stc[iter][x][y]);
 #else
 #ifdef TOPOPLACE
-          stc[iter][x][y]->set_place((float) (x * eydecomp + y) / (float) (exdecomp*eydecomp));
+          stc[iter][x][y]->set_sta((float) (x * eydecomp + y) / (float) (exdecomp*eydecomp));
 #else // no topo
-          stc[iter][x][y]->set_place(0.0);
+          stc[iter][x][y]->set_sta(0.0);
 #endif  // TOPOPLACE
           gotao_push_init(stc[iter][x][y]);
 #endif  // NUMA_ALLOC
@@ -293,7 +293,7 @@ int main( int argc, char *argv[] )
 // this should ensure that we do not overwrite data which has not yet been fully processed
 // necessary because we do not do renaming
           stc[iter][x][y]->make_edge(cpb[iter][x][y]);
-          cpb[iter][x][y]->clone_place(stc[iter][x][y]);
+          cpb[iter][x][y]->clone_sta(stc[iter][x][y]);
 
           if((x-1)>=0)       stc[iter][x-1][y]->make_edge(cpb[iter][x][y]);
           if((x+1)<exdecomp) stc[iter][x+1][y]->make_edge(cpb[iter][x][y]);
@@ -321,7 +321,7 @@ int main( int argc, char *argv[] )
                              awidth);
 
           cpb[iter-1][x][y]->make_edge(stc[iter][x][y]);
-          stc[iter][x][y]->clone_place(cpb[iter-1][x][y]);
+          stc[iter][x][y]->clone_sta(cpb[iter-1][x][y]);
 
           if((x-1)>=0)       cpb[iter-1][x-1][y]->make_edge(stc[iter][x][y]);
           if((x+1)<exdecomp) cpb[iter-1][x+1][y]->make_edge(stc[iter][x][y]);
@@ -350,7 +350,7 @@ int main( int argc, char *argv[] )
 // this should ensure that we do not overwrite data which has not yet been fully processed
 // necessary because we do not do renaming
           stc[iter][x][y]->make_edge(cpb[iter][x][y]);
-          cpb[iter][x][y]->clone_place(stc[iter][x][y]);
+          cpb[iter][x][y]->clone_sta(stc[iter][x][y]);
 
           if((x-1)>=0)       stc[iter][x-1][y]->make_edge(cpb[iter][x][y]);
           if((x+1)<exdecomp) stc[iter][x+1][y]->make_edge(cpb[iter][x][y]);
@@ -375,7 +375,7 @@ int main( int argc, char *argv[] )
    start = std::chrono::system_clock::now();
    gotao_start();
 
-   // here the computation takes place
+   // here the computation takes sta
 
    gotao_fini();
    // wait for all threads to synchronize

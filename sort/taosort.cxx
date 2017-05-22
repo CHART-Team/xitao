@@ -152,7 +152,7 @@ int main ( int argc, char *argv[] )
 	for(int i = 0; i < 256; i++){
                 inits[i] = new TAOinit(array + 64*i*BLOCKSIZE, array1 + 64*i*BLOCKSIZE, 64*BLOCKSIZE, DYNW1);
                 st1 = (PolyTask *) inits[i];
-                st1->set_place( ((float) i/ (float) 256));
+                st1->set_sta( ((float) i/ (float) 256));
                 gotao_push(st1);
 	}
 #else
@@ -164,9 +164,9 @@ int main ( int argc, char *argv[] )
 #ifndef NUMA_ALLOC
                 st1 =  (PolyTask *) level1[i];
 #ifdef PLACEMENT_DISTRIBUTED
-                st1->set_place( ((float) i/ (float) 256));
+                st1->set_sta( ((float) i/ (float) 256));
 #else
-                st1->set_place( 0.0 );
+                st1->set_sta( 0.0 );
 #endif  // PLACEMENT DISTRIBUTED
                 gotao_push(st1);
 #else

@@ -15,7 +15,7 @@ int gotao_sys_topo[5] = TOPOLOGY;
 
 // a PolyTask is either an assembly or a simple task
 std::list<PolyTask *> worker_ready_q[MAXTHREADS];
-#if defined(SUPERTASK_STEALING) || defined(TAO_PLACES)
+#if defined(SUPERTASK_STEALING) || defined(TAO_STA)
 GENERIC_LOCK(worker_lock[MAXTHREADS]);
 //aligned_lock worker_lock[MAXTHREADS];
 #endif
@@ -95,7 +95,7 @@ int gotao_fini()
 int gotao_push(PolyTask *pt, int queue)
 {
 
-#ifdef TAO_PLACES
+#ifdef TAO_STA
   if((queue == -1) && (pt->affinity_queue != -1))
           queue = pt->affinity_queue;
   else 
@@ -103,11 +103,11 @@ int gotao_push(PolyTask *pt, int queue)
      if (queue == -1)
           queue = sched_getcpu();
 
-#if defined(SUPERTASK_STEALING) || defined(TAO_PLACES)
+#if defined(SUPERTASK_STEALING) || defined(TAO_STA)
   LOCK_ACQUIRE(worker_lock[queue]);
 #endif
   worker_ready_q[queue].push_front(pt);
-#if defined(SUPERTASK_STEALING) || defined(TAO_PLACES)
+#if defined(SUPERTASK_STEALING) || defined(TAO_STA)
   LOCK_RELEASE(worker_lock[queue]);
 #endif // SUPERTASK_STEALING
 }
@@ -119,7 +119,7 @@ int gotao_push(PolyTask *pt, int queue)
 // 2. if the queue is not specified, then put everything into the first queue
 int gotao_push_init(PolyTask *pt, int queue)
 {
-#ifdef TAO_PLACES
+#ifdef TAO_STA
   if((queue == -1) && (pt->affinity_queue != -1))
           queue = pt->affinity_queue;
   else 
@@ -135,7 +135,7 @@ int gotao_push_init(PolyTask *pt, int queue)
 // alternative version that pushes to the back
 int gotao_push_back_init(PolyTask *pt, int queue)
 {
-#ifdef TAO_PLACES
+#ifdef TAO_STA
   if((queue == -1) && (pt->affinity_queue != -1))
           queue = pt->affinity_queue;
   else 
@@ -340,18 +340,18 @@ int worker_loop(int _nthread)
 
         // 2. check own queue
         {
-#if defined(SUPERTASK_STEALING) || defined(TAO_PLACES)
+#if defined(SUPERTASK_STEALING) || defined(TAO_STA)
 	  LOCK_ACQUIRE(worker_lock[nthread]);
 #endif
           if(!worker_ready_q[nthread].empty()){
              st = worker_ready_q[nthread].front(); 
              worker_ready_q[nthread].pop_front();
-#if defined(SUPERTASK_STEALING) || defined(TAO_PLACES)
+#if defined(SUPERTASK_STEALING) || defined(TAO_STA)
 	     LOCK_RELEASE(worker_lock[nthread]);
 #endif
              continue;
              }
-#if defined(SUPERTASK_STEALING) || defined(TAO_PLACES)
+#if defined(SUPERTASK_STEALING) || defined(TAO_STA)
              LOCK_RELEASE(worker_lock[nthread]);
 #endif
         }

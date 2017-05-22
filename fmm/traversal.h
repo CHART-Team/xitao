@@ -99,7 +99,7 @@ void breadthFirst(Cell *C) {
 
   fmms = new fmm_st(awidth);
   fmms->insert(C); 
-  fmms->set_place(0.0);
+  fmms->set_sta(0.0);
   //  std::cout << "affinity queue " << fmms[i]->affinity_queue << std::endl;
   gotao_start();  // start with the computation as soon as possible
 
@@ -125,9 +125,9 @@ void breadthFirst(Cell *C) {
 		fmms = new fmm_st(awidth);
 		ndx++;
 #ifdef TOPOPLACES
-		fmms->set_place((float) (ndx % numWorkers) / (float) numWorkers);
+		fmms->set_sta((float) (ndx % numWorkers) / (float) numWorkers);
 #else
-		fmms->set_place(0.0);
+		fmms->set_sta(0.0);
 #endif // TOPOPLACES
 		}
 #else
