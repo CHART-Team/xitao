@@ -9,6 +9,8 @@
 #define TAO_WIDTH 1
 #define STEAL_ATTEMPTS 1
 #define TASK_POOL 100
+#define TAO_STA 1
+#define IDLE_SWITCH 4
 // #define TAO_PLACES 1
 
 #define L1_W   1
