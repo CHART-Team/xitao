@@ -26,7 +26,7 @@
 #include <chrono>
 #include <iostream>
 #include <atomic>
-#include "conifg-matrix.h"
+#include "config-matrix.h"
 
 extern "C" {
 
@@ -40,14 +40,6 @@ extern "C" {
  * main: 
  **********************************************************************/
 
-struct matrixmult_ouw{
-        //std::list <qmatrixmult_ouw *> out;
-        int range_start;
-	int range_stop;
-	int stpz;
-	int input_a[COL_SIZE][ROW_SIZE];
-	int input_b[COL_SIZE][ROW_SIZE];
-};
 
 
 
@@ -56,18 +48,16 @@ class TAO_matrix : public AssemblyTask
 {
         public: 
                 // initialize static parameters
-                TAO_matrix(int res, int mini, int maxi, int minj, int maxj, int steps,  int m_a[COL_SIZE][ROW_SIZE], int m_b[COL_SIZE][ROW_SIZE]) 
-                        : AssemblyTask(res) 
+                TAO_matrix(int res, int mini, int maxi, int minj, int maxj, int steps,  int m_a[COL_SIZE][ROW_SIZE], int m_b[COL_SIZE][ROW_SIZE], int m_c[COL_SIZE][ROW_SIZE]) 
+                        : _res(res), imax(maxi), jmin(minj), jmax(maxj), AssemblyTask(res) 
                 {   
-			for(int i=0; i<ROW_SIZE; i+=stepsize){
-				dow[i].range_start = i;
-				dow[i].range_stop = (i+stepsize-1);
-				dow[i].stpz = steps;
-				dow[i].input_a = m_a; //??
-				dow[i].input_b = m_b; //??
-				//Since there are no dependencies we should not need an out matrix_mult_ouw ??
-				readyq.push_front(&dow[i]);
-			}
+                  (int (*)[COL_SIZE])a = m_a;
+                  (int (*)[COL_SIZE])b = m_b;
+                  (int (*)[COL_SIZE])c = m_c;
+                  i = mini;
+                  j = minj;
+                  stop = 0;
+                
                 }
 
                 int cleanup(){ 
@@ -76,9 +66,42 @@ class TAO_matrix : public AssemblyTask
                 // this assembly can work totally asynchronously
                 int execute(int threadid)
                 {
-                }
-		matrixmult_ouw dow[MAX_CHUNK]; //How much should this be?
+                  while (stop == 0){
+                    if (_res > 1) {
+                      LOCK_ACQUIRE(ij_lock);
+                        if (++j >= jmax) {
+                          if (++i >= imax) {
+                            stop = 1;
+                            break;
+                          }
+                          else {
+                            j = jmin;
+                          }
+                        }
+                      int temp_i = i;
+                      int temp_j = j;
+                      LOCK_RELEASE(ij_lock);
 
+                    }
+                    else {
+                      int temp_i = i;
+                      int temp_j = j;
+                    }
+
+                    int temp_output = 0;
+                    for (int k = 0 ; k < ROW_SIZE ; k++){
+                      temp_output += (a[temp_i][k] * b[k][temp_j]);
+                    }
+                    c[i][j] = temp_output;
+
+                  }
+                }
+
+              GENERIC_LOCK(ij_lock);
+              int i, j, stop, jmin, jmax, imax, _res;
+              int a[COL_SIZE][ROW_SIZE];
+              int b[COL_SIZE][ROW_SIZE];
+              int c[COL_SIZE][ROW_SIZE];
 };
 
 
@@ -90,6 +113,12 @@ main(int argc, char* argv[])
    int c_size; int r_size; int stepsize;
    int nqueues;  // how many queues to fill: What is this??
    int nas;      // number of assemblies per queue: what is this??
+
+
+  
+  int a[4][4] = {{1,1,1,1},{1,1,1,1},{1,1,1,1},{1,1,1,1}};
+  int b[4][4] = {{1,1,1,1},{1,1,1,1},{1,1,1,1},{1,1,1,1}};
+  int c[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
 
 
 
@@ -152,7 +181,7 @@ main(int argc, char* argv[])
    int i=0;
    	for(int x=0; x<ROW_SIZE; x+=stepsize){
 		for(int y=0; y<COL_SIZE; y+=stepsize){
-         		ao[i] = new TAO_matrix(1, x, x+stepsize, y, y+stepsize, stepsize, m_a, m_b); //NOT SURE ABOUT WIDTH  also m_a, m_b not defined but should be matrixes
+         		ao[i] = new TAO_matrix(1, x, x+stepsize, y, y+stepsize, stepsize, a, i, c); //NOT SURE ABOUT WIDTH  also m_a, m_b not defined but should be matrixes
 	  	 	gotao_push_init(ao[i], i % nthreads);
 			i++;
 		}	
@@ -179,6 +208,11 @@ main(int argc, char* argv[])
    std::cout << "Assembly Throughput: " << total_assemblies / elapsed_seconds.count() << " A/sec\n";
    std::cout << "Assembly Cycle: " << elapsed_seconds.count() / total_assemblies  << " sec/A\n";
 
+
+  std::cout << c[0][0] << c[0][1] << c[0][2] << c[0][3] << "\n";
+  std::cout << c[1][0] << c[1][1] << c[1][2] << c[1][3] << "\n";
+  std::cout << c[2][0] << c[2][1] << c[2][2] << c[2][3] << "\n";
+  std::cout << c[3][0] << c[3][1] << c[3][2] << c[3][3] << "\n";
    return (0);
 }
 
