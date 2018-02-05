@@ -28,6 +28,7 @@
 #include <atomic>
 #include "config-matrix.h"
 
+
 extern "C" {
 
 #include <stdio.h>
@@ -48,12 +49,12 @@ class TAO_matrix : public AssemblyTask
 {
         public: 
                 // initialize static parameters
-                TAO_matrix(int res, int mini, int maxi, int minj, int maxj, int steps,  int m_a[COL_SIZE][ROW_SIZE], int m_b[COL_SIZE][ROW_SIZE], int m_c[COL_SIZE][ROW_SIZE]) 
+                TAO_matrix(int res, int mini, int maxi, int minj, int maxj, int steps,  int **m_a, int **m_b, int **m_c) 
                         : _res(res), imax(maxi), jmin(minj), jmax(maxj), AssemblyTask(res) 
                 {   
-                  (int (*)[COL_SIZE])a = m_a;
-                  (int (*)[COL_SIZE])b = m_b;
-                  (int (*)[COL_SIZE])c = m_c;
+                  a = m_a;
+                  b = m_b;
+                  c = m_c;
                   i = mini;
                   j = minj;
                   stop = 0;
@@ -67,43 +68,50 @@ class TAO_matrix : public AssemblyTask
                 int execute(int threadid)
                 {
                   while (stop == 0){
-                    if (_res > 1) {
+                    int temp_i, temp_j;
+                   // if (_res > 1) {
                       LOCK_ACQUIRE(ij_lock);
-                        if (++j >= jmax) {
+                        if (j >= jmax) {
                           if (++i >= imax) {
                             stop = 1;
+                            LOCK_RELEASE(ij_lock);
                             break;
                           }
                           else {
                             j = jmin;
+                            temp_i = i;
+                            temp_j = j;
+                            LOCK_RELEASE(ij_lock);
                           }
+                          
                         }
-                      int temp_i = i;
-                      int temp_j = j;
-                      LOCK_RELEASE(ij_lock);
+                      else {
+                        temp_i = i;
+                        temp_j = j;
+                        j++;
+                        LOCK_RELEASE(ij_lock);
+                      }
 
-                    }
-                    else {
-                      int temp_i = i;
-                      int temp_j = j;
-                    }
+
+                   // }
 
                     int temp_output = 0;
                     for (int k = 0 ; k < ROW_SIZE ; k++){
                       temp_output += (a[temp_i][k] * b[k][temp_j]);
                     }
-                    c[i][j] = temp_output;
+                    c[temp_i][temp_j] = temp_output;
 
                   }
                 }
 
               GENERIC_LOCK(ij_lock);
               int i, j, stop, jmin, jmax, imax, _res;
-              int a[COL_SIZE][ROW_SIZE];
-              int b[COL_SIZE][ROW_SIZE];
-              int c[COL_SIZE][ROW_SIZE];
+              int **a;
+              int **b;
+              int **c;
 };
 
+void fill_arrays(int **a, int **b, int **c);
 
 int
 main(int argc, char* argv[])
@@ -114,16 +122,23 @@ main(int argc, char* argv[])
    int nqueues;  // how many queues to fill: What is this??
    int nas;      // number of assemblies per queue: what is this??
 
-
+ std::cout << "lol" << std::endl;
   
-  int a[4][4] = {{1,1,1,1},{1,1,1,1},{1,1,1,1},{1,1,1,1}};
-  int b[4][4] = {{1,1,1,1},{1,1,1,1},{1,1,1,1},{1,1,1,1}};
-  int c[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
+  int **a = (int**) malloc(sizeof *a * ROW_SIZE);//[4][4] = {{1,1,1,1},{1,1,1,1},{1,1,1,1},{1,1,1,1}};
+  int **b = (int**) malloc(sizeof *a * ROW_SIZE);//[4][4] = {{1,1,1,1},{1,1,1,1},{1,1,1,1},{1,1,1,1}};
+  int **c = (int**) malloc(sizeof *a * ROW_SIZE);//[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
+  
 
-
+  if (a && b && c){
+    for (int i = 0; i < ROW_SIZE; i++){
+      a[i] = (int*) malloc(sizeof *a[i] * COL_SIZE);
+      b[i] = (int*) malloc(sizeof *a[i] * COL_SIZE);
+      c[i] = (int*) malloc(sizeof *a[i] * COL_SIZE); 
+    }
+  }
 
  // set the number of threads and thread_base
-/*
+
    if(getenv("GOTAO_NTHREADS"))
         nthreads = atoi(getenv("GOTAO_NTHREADS"));
    else
@@ -138,7 +153,7 @@ main(int argc, char* argv[])
         nctx = atoi(getenv("GOTAO_HW_CONTEXTS"));
    else
         nctx = GOTAO_HW_CONTEXTS;
-*/
+
    if(getenv("ROW_SIZE"))
 	r_size=atoi(getenv("ROW_SIZE"));
  
@@ -155,9 +170,9 @@ main(int argc, char* argv[])
    else
 	stepsize=STEP_SIZE;
 
-   if((COL_SIZE != ROW_SIZE) || (0!=(stepsize % COL_SIZE))){
+   if((COL_SIZE != ROW_SIZE) || (0!=(COL_SIZE % stepsize))){
 	std::cout << "Incompatible matrix parameters, please choose ROW_SIZE=COL_SIZE and a stepsize that is a divisior of the ROW_SIZE&&COL_SIZE";
-	break;
+	return 0;
    }
 
 
@@ -171,7 +186,7 @@ main(int argc, char* argv[])
 
 
    //We need lock on our output matrix??
-
+   fill_arrays(a, b , c);
 
    //Spawn TAOs for every seperately written too value, equivilent to for(i->i+stepsize){for(j->j+stepsize) generation}
    int total_assemblies = (c_size/stepsize)*(r_size/stepsize);
@@ -180,14 +195,15 @@ main(int argc, char* argv[])
    //i to keep track of spawned taos
    int i=0;
    	for(int x=0; x<ROW_SIZE; x+=stepsize){
-		for(int y=0; y<COL_SIZE; y+=stepsize){
-         		ao[i] = new TAO_matrix(1, x, x+stepsize, y, y+stepsize, stepsize, a, i, c); //NOT SURE ABOUT WIDTH  also m_a, m_b not defined but should be matrixes
-	  	 	gotao_push_init(ao[i], i % nthreads);
-			i++;
-		}	
-    	}
+  		for(int y=0; y<COL_SIZE; y+=stepsize){
+ 
+           		ao[i] = new TAO_matrix(1, x, x+stepsize, y, y+stepsize, stepsize, a, b, c); //NOT SURE ABOUT WIDTH  also m_a, m_b not defined but should be matrixes
+  	  	 	gotao_push_init(ao[i], i % nthreads);
+  			i++;
+  		}	
+    }
    
-   }
+   
    
 
    //Do we need to spawn a collector TAO? Should we have output?
@@ -209,10 +225,25 @@ main(int argc, char* argv[])
    std::cout << "Assembly Cycle: " << elapsed_seconds.count() / total_assemblies  << " sec/A\n";
 
 
-  std::cout << c[0][0] << c[0][1] << c[0][2] << c[0][3] << "\n";
+  std::cout << c[0][0]<< " " << c[0][1] << " " << c[0][2] << " " << c[0][3] << "\n";
   std::cout << c[1][0] << c[1][1] << c[1][2] << c[1][3] << "\n";
   std::cout << c[2][0] << c[2][1] << c[2][2] << c[2][3] << "\n";
   std::cout << c[3][0] << c[3][1] << c[3][2] << c[3][3] << "\n";
    return (0);
+}
+
+void fill_arrays(int **a, int **b, int **c)
+{
+    // unsigned long i;
+    // unsigned long j;
+
+     /* first, fill with integers 1..size */
+     for (int i = 0; i < ROW_SIZE; ++i) {
+        for (int j = 0; j  < COL_SIZE; j++){
+          a[i][j] = (rand() % 111);
+          b[i][j] = (rand() % 111);
+          c[i][j] = 0;
+        }
+     }
 }
 
