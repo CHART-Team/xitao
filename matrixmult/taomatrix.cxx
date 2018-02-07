@@ -52,12 +52,11 @@ class TAO_matrix : public AssemblyTask
                 TAO_matrix(int res, int mini, int maxi, int minj, int maxj, int steps,  int **m_a, int **m_b, int **m_c) 
                         : _res(res), imax(maxi), jmin(minj), jmax(maxj), AssemblyTask(res) 
                 {   
+
                   a = m_a;
                   b = m_b;
                   c = m_c;
                   i = mini;
-                  j = minj;
-                  stop = 0;
                 
                 }
 
@@ -67,18 +66,44 @@ class TAO_matrix : public AssemblyTask
                 // this assembly can work totally asynchronously
                 int execute(int threadid)
                 {
-                  while (stop == 0){
+
+                    int temp_j, temp_i;
+                      while (1){ 
+                        //mutex for i to make each Processing unit work on one row.
+                        LOCK_ACQUIRE(i_lock); //Maybe Test-and-set would be better
+                        temp_i = i++;
+                        LOCK_RELEASE(i_lock)
+                        
+                        if (temp_i >= imax) { // no more work to be done
+                          break;
+                        }
+                        
+                        //for each column, calculate the output of c[i][j]
+                        for(temp_j = jmin; temp_j < jmax; temp_j++){ 
+                          int temp_output = 0;
+                          for (int k = 0; k < ROW_SIZE ; k++){ 
+                            temp_output += (a[temp_i][k] * b[k][temp_j]);
+                          }
+                          c[temp_i][temp_j] = temp_output;
+                        }
+                  
+
+
+                    /* OLD IMPLEMENTATION
+                    while(1){
+
+                    
                     int temp_i, temp_j;
                    // if (_res > 1) {
                       LOCK_ACQUIRE(ij_lock);
-                        if (j >= jmax) {
-                          if (++i >= imax) {
+                        if (i >= imax) {
+                          if (++j >= jmax) {
                             stop = 1;
                             LOCK_RELEASE(ij_lock);
                             break;
                           }
                           else {
-                            j = jmin;
+                            i = imin;
                             temp_i = i;
                             temp_j = j;
                             LOCK_RELEASE(ij_lock);
@@ -88,10 +113,10 @@ class TAO_matrix : public AssemblyTask
                       else {
                         temp_i = i;
                         temp_j = j;
-                        j++;
+                        i++;
                         LOCK_RELEASE(ij_lock);
                       }
-
+                    
 
                    // }
 
@@ -100,12 +125,15 @@ class TAO_matrix : public AssemblyTask
                       temp_output += (a[temp_i][k] * b[k][temp_j]);
                     }
                     c[temp_i][temp_j] = temp_output;
-
+                    */
+                    
                   }
                 }
-
-              GENERIC_LOCK(ij_lock);
-              int i, j, stop, jmin, jmax, imax, _res;
+              
+              GENERIC_LOCK(i_lock);
+              
+              //Variable declaration
+              int i, jmin, jmax, imax, _res;
               int **a;
               int **b;
               int **c;
@@ -185,21 +213,20 @@ main(int argc, char* argv[])
    start = std::chrono::system_clock::now();
 
 
-   //We need lock on our output matrix??
+   // fill the input arrays and empty the output array
    fill_arrays(a, b , c);
 
    //Spawn TAOs for every seperately written too value, equivilent to for(i->i+stepsize){for(j->j+stepsize) generation}
    int total_assemblies = (c_size/stepsize)*(r_size/stepsize);
    TAO_matrix *ao[total_assemblies];
 
-   //i to keep track of spawned taos
-   int i=0;
+   //Spawn a number of TAOs depending on matrix size and step size
+   int i = 0;
    	for(int x=0; x<ROW_SIZE; x+=stepsize){
   		for(int y=0; y<COL_SIZE; y+=stepsize){
- 
-           		ao[i] = new TAO_matrix(1, x, x+stepsize, y, y+stepsize, stepsize, a, b, c); //NOT SURE ABOUT WIDTH  also m_a, m_b not defined but should be matrixes
+           		ao[i] = new TAO_matrix(2, x, x+stepsize, y, y+stepsize, stepsize, a, b, c); 
   	  	 	gotao_push_init(ao[i], i % nthreads);
-  			i++;
+          i++;
   		}	
     }
    
@@ -234,12 +261,10 @@ main(int argc, char* argv[])
 
 void fill_arrays(int **a, int **b, int **c)
 {
-    // unsigned long i;
-    // unsigned long j;
 
-     /* first, fill with integers 1..size */
-     for (int i = 0; i < ROW_SIZE; ++i) {
-        for (int j = 0; j  < COL_SIZE; j++){
+     //Fills the input matrices a and b with random integers and output matrix with 0
+     for (int i = 0; i < ROW_SIZE; ++i) { //each row
+        for (int j = 0; j  < COL_SIZE; j++){ //each column
           a[i][j] = (rand() % 111);
           b[i][j] = (rand() % 111);
           c[i][j] = 0;
