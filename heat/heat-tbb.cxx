@@ -30,6 +30,13 @@ using namespace tbb;
 // Use LOI instrumentation: 
 #ifdef DO_LOI
 
+#define JACOBI2D 0
+#define COPY2D 1
+#define KRDBLOCKX 128
+#define KRDBLOCKY 128
+
+#define min(a,b) ( ((a) < (b)) ? (a) : (b) )
+
 /* this structure describes the relationship between phases and kernels in the application */ 
 struct loi_kernel_info heat_kernels = {
         2,              // 2 kernels in total
@@ -82,8 +89,8 @@ void jacobi2D_tbb(void *i, void *o, int rows, int cols,
       {
       int krdblockx = ((x + KRDBLOCKX - 1) < xstop)? KRDBLOCKX : xstop - x;
       int krdblocky = ((y + KRDBLOCKY - 1) < ystop)? KRDBLOCKY : ystop - y;
-      kernel_trace1(JACOBI2D, &in[ndx(x,y)], KREAD(krdblockx*krdblocky)*sizeof(double));
-      kernel_trace1(JACOBI2D, &out[ndx(x,y)], KWRITE(krdblockx*krdblocky)*sizeof(double));
+      kernel_trace1(JACOBI2D, &in[ndx(x,y,cols)], KREAD(krdblockx*krdblocky)*sizeof(double));
+      kernel_trace1(JACOBI2D, &out[ndx(x,y,cols)], KWRITE(krdblockx*krdblocky)*sizeof(double));
       }
 #endif
 #endif
@@ -111,15 +118,15 @@ void copy2D_tbb(void *i,  void *o,  int rows,   int cols,
                             out[ndx(i,j,cols)]= in[ndx(i,j,cols)];
 
 #if DO_LOI
-    kernel_profile_stop(JACOBI2D);
+    kernel_profile_stop(COPY2D);
 #if DO_KRD
                     for(int x = xstart; x < xstop; x += KRDBLOCKX)
                       for(int y = ystart; y < ystop; y += KRDBLOCKY)
                       {
                       int krdblockx = ((x + KRDBLOCKX - 1) < xstop)? KRDBLOCKX : xstop - x;
                       int krdblocky = ((y + KRDBLOCKY - 1) < ystop)? KRDBLOCKY : ystop - y;
-                      kernel_trace1(JACOBI2D, &in[ndx(x,y)], KREAD(krdblockx*krdblocky)*sizeof(double));
-                      kernel_trace1(JACOBI2D, &out[ndx(x,y)], KWRITE(krdblockx*krdblocky)*sizeof(double));
+                      kernel_trace1(COPY2D, &in[ndx(x,y,cols)], KREAD(krdblockx*krdblocky)*sizeof(double));
+                      kernel_trace1(COPY2D, &out[ndx(x,y,cols)], KWRITE(krdblockx*krdblocky)*sizeof(double));
                       }
 #endif
 #endif
@@ -130,7 +137,7 @@ void copy2D_tbb(void *i,  void *o,  int rows,   int cols,
 
 int main( int argc, char *argv[] )
 {
-    int thread_base; int nthreads; 
+    int thread_base;
     unsigned iter;
     FILE *infile, *resfile;
     const char *resfilename;
@@ -350,7 +357,7 @@ int main( int argc, char *argv[] )
 
 #ifdef DO_LOI
 #ifdef LOI_TIMING
-    loi_statistics(&heat_kernels, maxthr);
+    loi_statistics(&heat_kernels, tbb_nthreads);
 #endif
 #ifdef DO_KRD
     krd_save_traces();
