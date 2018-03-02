@@ -1,28 +1,9 @@
-/******************************************************************************************/
-/*  This program is part of the Barcelona OpenMP Tasks Suite                              */
-/*  Copyright (C) 2009 Barcelona Supercomputing Center - Centro Nacional de Supercomputacion  */
-/*  Copyright (C) 2009 Universitat Politecnica de Catalunya                               */
-/*                                                                                        */
-/*  This program is free software; you can redistribute it and/or modify                  */
-/*  it under the terms of the GNU General Public License as published by                  */
-/*  the Free Software Foundation; either version 2 of the License, or                     */
-/*  (at your option) any later version.                                                   */
-/*                                                                                        */
-/*  This program is distributed in the hope that it will be useful,                       */
-/*  but WITHOUT ANY WARRANTY; without even the implied warranty of                        */
-/*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                         */
-/*  GNU General Public License for more details.                                          */
-/*                                                                                        */
-/*  You should have received a copy of the GNU General Public License                     */
-/*  along with this program; if not, write to the Free Software                           */
-/*  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA        */
-/******************************************************************************************/
-
-/***********************************************************************
- * main function & common behaviour of the benchmark.
- **********************************************************************/
+//
+//
+//
 
 #include "tao.h"
+#include "taomatrix.h"
 #include <chrono>
 #include <iostream>
 #include <atomic>
@@ -37,14 +18,11 @@ extern "C" {
 
 }
 
-/***********************************************************************
- * main: 
- **********************************************************************/
 
 
 
-
-// Matrix multiplication, tao groupation on written value
+/*
+// Matrix multiplication TAO
 class TAO_matrix : public AssemblyTask 
 {
         public: 
@@ -86,46 +64,7 @@ class TAO_matrix : public AssemblyTask
                           }
                           c[temp_i][temp_j] = temp_output;
                         }
-                  
-
-
-                    /* OLD IMPLEMENTATION
-                    while(1){
-
-                    
-                    int temp_i, temp_j;
-                   // if (_res > 1) {
-                      LOCK_ACQUIRE(ij_lock);
-                        if (i >= imax) {
-                          if (++j >= jmax) {
-                            stop = 1;
-                            LOCK_RELEASE(ij_lock);
-                            break;
-                          }
-                          else {
-                            i = imin;
-                            temp_i = i;
-                            temp_j = j;
-                            LOCK_RELEASE(ij_lock);
-                          }
-                          
-                        }
-                      else {
-                        temp_i = i;
-                        temp_j = j;
-                        i++;
-                        LOCK_RELEASE(ij_lock);
-                      }
-                    
-
-                   // }
-
-                    int temp_output = 0;
-                    for (int k = 0 ; k < ROW_SIZE ; k++){
-                      temp_output += (a[temp_i][k] * b[k][temp_j]);
-                    }
-                    c[temp_i][temp_j] = temp_output;
-                    */
+                
                     
                   }
                 }
@@ -138,9 +77,12 @@ class TAO_matrix : public AssemblyTask
               int **b;
               int **c;
 };
+*/
 
 void fill_arrays(int **a, int **b, int **c);
 
+
+// MAIN 
 int
 main(int argc, char* argv[])
 {
@@ -224,7 +166,7 @@ main(int argc, char* argv[])
    int i = 0;
    	for(int x=0; x<ROW_SIZE; x+=stepsize){
   		for(int y=0; y<COL_SIZE; y+=stepsize){
-           		ao[i] = new TAO_matrix(2, x, x+stepsize, y, y+stepsize, stepsize, a, b, c); 
+           		ao[i] = new TAO_matrix(1, x, x+stepsize, y, y+stepsize, stepsize, a, b, c); 
   	  	 	gotao_push_init(ao[i], i % nthreads);
           i++;
   		}	
@@ -232,9 +174,6 @@ main(int argc, char* argv[])
    
    
    
-
-   //Do we need to spawn a collector TAO? Should we have output?
-
 
 
    // measure execution time
