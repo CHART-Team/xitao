@@ -128,13 +128,13 @@ struct aligned_lock {
 #ifdef TTS
 #warning "Using Test and Test and Set (TTS) implementation"
 #define GENERIC_LOCK(l)  aligned_lock l;
-#define LOCK_ACQUIRE(l)  while(l.lock.exchange(true)) {while(l.lock.load(std::memory_order_relaxed)){ }}
-#define LOCK_RELEASE(l)  l.lock.store(false,std::memory_order_relaxed);
+#define LOCK_ACQUIRE(l)  while(l.lock.exchange(true)) {while(l.lock.load(){ }}
+#define LOCK_RELEASE(l)  l.lock.store(false);
 #else
 #warning "Using Test and Set (TS) Implementation"
 #define GENERIC_LOCK(l)  aligned_lock l;
 #define LOCK_ACQUIRE(l)  while(l.lock.exchange(true)) {}
-#define LOCK_RELEASE(l)  l.lock.store(false,std::memory_order_relaxed);
+#define LOCK_RELEASE(l)  l.lock.store(false);
 
 #endif
 

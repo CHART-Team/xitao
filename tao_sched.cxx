@@ -170,18 +170,15 @@ long int r_rand(long int *s)
 
 int worker_loop(int _nthread)
 {
-    // _nthread is an index into the OS thread
-    // We first transform it into the TAO view, which is offset by thread_base
-    // Next: Not all machines follow a hierarchical mapping of cores to core IDs as required by TAO
-    // For example, in KNL the OS groups the cores by hw context: 
-    //   first all cores of context 0, then all cores of context 1 etc
-    // Hence TAO requires an additional transformation between nthread and phys_core
-    // This just affects the mapping (setaffinity). After this step has been completed, 
-    // GO:TAO operates fully in the virtualized space of "nthread"
-   
-    // if we are using less threads than total, we reduce the #hardware contexts to better
-    // distribute the workload. This is a kind of hack
+// new version without the contexts which anyway doesn't seem to work very well. 
+// An alternative scheme for addressing hyperthreading to be developed later
 
+// _nthread is the index we get via c++
+// it identifies the virtual core in the XiTAO context (hence == nthread)
+// to get the os thread we offset with the thread_base. This should just be used for the thread pinning
+//            this thread is then called phys_core
+
+#if 0
     int virtual_ncontexts = gotao_ncontexts / (MAXTHREADS/gotao_nthreads);	
     if(!virtual_ncontexts) virtual_ncontexts=1;
 
@@ -190,6 +187,11 @@ int worker_loop(int _nthread)
     int core_index = _nthread / virtual_ncontexts;
 
     int phys_core = hw_context_index + core_index;
+#elif 1
+    int phys_core = gotao_thread_base + _nthread;
+    int nthread = _nthread;
+
+#endif
 #ifdef DEBUG
     LOCK_ACQUIRE(output_lck);
     //std::cout << "gotao_ncontexts adjusted to " << virtual_ncontexts << std::endl;
@@ -237,7 +239,7 @@ int worker_loop(int _nthread)
               Extrae_event(EXTRAE_SIMPLE_STOP, 0);
 #endif
               st = simple->commit_and_wakeup(nthread);
-	      in = 0;
+              in = 0; // executed work, reset counter
               simple->cleanup();
               delete simple;
             }
@@ -249,7 +251,10 @@ int worker_loop(int _nthread)
               int i;
 
 #ifdef DEBUG
-              std::cout << "Distributeing assembly " << assembly->taskid << " with width " << assembly->width << " to workers " << leader << " and " << leader + assembly->width << std::endl;
+    LOCK_ACQUIRE(output_lck);
+    //std::cout << "gotao_ncontexts adjusted to " << virtual_ncontexts << std::endl;
+              std::cout << "Distributing assembly " << assembly->taskid << " with width " << assembly->width << " to workers [" << leader << "," << leader + assembly->width << ")" << std::endl;
+    LOCK_RELEASE(output_lck);
 #endif
   
               // take all locks in ascending order and insert assemblies
@@ -332,7 +337,7 @@ int worker_loop(int _nthread)
                assembly->cleanup();
                delete assembly;
             }
-	    in = 0;
+            in = 0; // executed work, reset counter
            
             // proceed with next iteration to handle the forwarding case
             continue;
@@ -370,7 +375,7 @@ int worker_loop(int _nthread)
           int attempts = STEAL_ATTEMPTS; 
           do{
              do{
-               random_core = gotao_thread_base + (r_rand(&seed) % gotao_nthreads);
+               random_core = (r_rand(&seed) % gotao_nthreads);
                } while(random_core == nthread);
             
              {
@@ -395,6 +400,8 @@ int worker_loop(int _nthread)
         } 
 
 #endif
+
+// measure of idleness (how long until the loop did not find work?)
 	if(in < 10000)
         	in+=1;
 
@@ -407,6 +414,11 @@ int worker_loop(int _nthread)
 //
 // Attempt #1: if the architecture supportgs PAUSE then just reduce the speed
 //
+
+// again, this is mainly important for multithreading
+// in multicore we can use it to slightly reduce the interference due to stealing
+// but there is always a risk that the cores will not find a TAO in the AQ early enough
+#if 0
 #define IN_DIV 100
 #ifdef PAUSE
 	if(in > idle_switch) 
@@ -418,6 +430,7 @@ int worker_loop(int _nthread)
 #else
 	if(in > idle_switch)
 	        usleep(in/IN_DIV);
+#endif
 #endif
 
         // 4. It may be that there are no more tasks in the flow
