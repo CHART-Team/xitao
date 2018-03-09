@@ -25,7 +25,7 @@ extern "C" {
 #define BLOCKSIZE (2*1024)
 
 
-void fill_arrays(int **a, int **b, int **c, int ysize, int xsize);
+void fill_arrays(int **a, int **c, int ysize, int xsize);
 
 
 // MAIN 
@@ -161,17 +161,16 @@ main(int argc, char* argv[])
 
   int inputsize = std::max(heat_resolution, ROW_SIZE);
   int ysize = sort_width*2 + heat_resolution+2 + ROW_SIZE;
-  int xsize = std::max(std::max((heat_resolution*heat_resolution+2), (sort_size*BLOCKSIZE)), (ROW_SIZE * matrix_width));
+  int xsize = std::max(std::max((heat_resolution*heat_resolution+2), (sort_size*BLOCKSIZE)), (ROW_SIZE * matrix_width *2));
 
 
 int** matrix_input_a = new int* [ysize];
-int** matrix_input_b = new int* [ysize];
 int** matrix_output_c = new int* [ysize];
 
 for (int i = 0; i < ysize; ++i)
 {
   matrix_input_a[i] = new int[xsize];
-  matrix_input_b[i] = new int[xsize];
+  //matrix_input_b[i] = new int[xsize];
   matrix_output_c[i] = new int[xsize];
 }
 
@@ -226,7 +225,7 @@ for (int i = 0; i < ysize; ++i)
 
 
    // fill the input arrays and empty the output array
-   fill_arrays(matrix_input_a, matrix_input_b , matrix_output_c, ysize, xsize);
+   fill_arrays(matrix_input_a , matrix_output_c, ysize, xsize);
 
    //Spawn TAOs for every seperately written too value, equivilent to for(i->i+stepsize){for(j->j+stepsize) generation}
    int matrix_assemblies = dag_depth * matrix_width;
@@ -263,12 +262,11 @@ for (int i = 0; i < ysize; ++i)
       matrix_ao[i] = new TAO_matrix(ma_width, //taowidth
                                     0, //start y
                                     stepsize, //stop y
-                                    y*r_size, //start x
-                                    stepsize+y*r_size, //stop x
+                                    y*r_size*2, //start x
+                                    stepsize+y*r_size*2, //stop x
                                     0, //output offset (if needed)
                                     ROW_SIZE, 
                                     input,
-                                    matrix_input_b, 
                                     output);
       if (x == 0) {
         gotao_push_init(matrix_ao[i], i % nthreads);
@@ -360,23 +358,23 @@ std::cout << "starting \n";
   for (int i = 0; i < ysize; ++i)
 {
   delete matrix_input_a[i];
-  delete matrix_input_b[i];
+  //delete matrix_input_b[i];
   delete matrix_output_c[i];
 }
 delete[] matrix_input_a;
-delete[] matrix_input_b;
+//delete[] matrix_input_b;
 delete[] matrix_output_c;
    return (0);
 }
 
-void fill_arrays(int **a, int **b, int **c, int ysize, int xsize)
+void fill_arrays(int **a, int **c, int ysize, int xsize)
 {
 
      //Fills the input matrices a and b with random integers and output matrix with 0
      for (int i = 0; i < ysize; ++i) { //each row
         for (int j = 0; j  < ysize; j++){ //each column
           a[i][j] = (rand() % 111);
-          b[i][j] = (rand() % 111);
+         // b[i][j] = (rand() % 111);
           c[i][j] = (rand() % 111);
         }
      }

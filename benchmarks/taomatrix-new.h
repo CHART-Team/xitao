@@ -31,14 +31,13 @@ class TAO_matrix : public AssemblyTask
                  int maxj, //stop x
                  int matrix_width,
                  int r_size, //row size
-                 int *m_a, int *m_b, //input matrix
+                 int *m_a, //input matrix
                  int *m_c) //output matrix
                         : _res(res), imax(maxi), jmin(minj), jmax(maxj), AssemblyTask(res) 
                 {   
 
                   a = m_a;
                   c = m_c;
-                  b= m_b;
                   i = mini;
                   ROW_SIZE = r_size;
                   m_width = matrix_width;
@@ -67,10 +66,10 @@ class TAO_matrix : public AssemblyTask
                         for(temp_j = jmin; temp_j < jmax; temp_j++){ 
                           int temp_output = 0;
                           for (int k = 0; k < ROW_SIZE ; k++){ 
-                            {
-                              /* data */
-                            };
-                            temp_output += (a[temp_i*m_width+k] * b[k*m_width+temp_j]);
+                            
+                              temp_output += (a[temp_i*m_width+k] * a[k*m_width+ROW_SIZE+temp_j]);
+                            
+                            
                           }
                           c[temp_i*m_width+temp_j] = temp_output;
                         }
@@ -123,7 +122,7 @@ class TAO_matrix : public AssemblyTask
               //Variable declaration
               int i, jmin, jmax, imax, _res, ROW_SIZE, offset, m_width;
               int *a;
-              int *b;
+              
               int *c;
 };
 

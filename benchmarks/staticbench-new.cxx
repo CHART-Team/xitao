@@ -9,7 +9,7 @@
 #include <chrono>
 #include <iostream>
 #include <atomic>
-#include "config-bench.h"
+#include "config-static-bench.h"
 
 
 
@@ -161,10 +161,9 @@ main(int argc, char* argv[])
 
   int inputsize = std::max(heat_resolution, ROW_SIZE);
   int ysize = sort_width*2 + heat_resolution+2 + ROW_SIZE;
-  int xsize = std::max(std::max((heat_resolution+2*heat_width), (sort_size*BLOCKSIZE)), (ROW_SIZE * matrix_width));
+  int xsize = std::max(std::max((heat_resolution+2*heat_width), (sort_size*BLOCKSIZE)), (ROW_SIZE * matrix_width * 2));
 
   int* input_matrix = new int[ysize * xsize];
-    int* input_matrix_b = new int[ysize * xsize];
   int* output_matrix = new int[ysize * xsize];
 
 /*
@@ -252,7 +251,7 @@ std::cout << "filling arrays \n";
                                     stepsize+y*r_size*2, //stop x
                                     xsize,
                                     r_size, 
-                                    input, input_matrix_b,
+                                    input,
                                     output);
       if (x == 0) {
         gotao_push_init(matrix_ao[i], i % nthreads);

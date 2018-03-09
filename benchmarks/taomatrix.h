@@ -31,13 +31,12 @@ class TAO_matrix : public AssemblyTask
                  int maxj, //stop x
                  int c_offset, //offset to output (used to save output at a different destination)
                  int r_size, //row size
-                 int **m_a, int **m_b, //input matrices
+                 int **m_a, //input matrices
                  int **m_c) //output matrix
                         : _res(res), imax(maxi), jmin(minj), jmax(maxj), offset(c_offset), AssemblyTask(res) 
                 {   
 
                   a = m_a;
-                  b = m_b;
                   c = m_c;
                   i = mini;
                   ROW_SIZE = r_size;
@@ -68,51 +67,12 @@ class TAO_matrix : public AssemblyTask
                         for(temp_j = jmin; temp_j < jmax; temp_j++){ 
                           int temp_output = 0;
                           for (int k = 0; k < ROW_SIZE ; k++){ 
-                            temp_output += (a[temp_i][k] * b[k][temp_j]);
+                            temp_output += (a[temp_i][k] * a[k][temp_j+ROW_SIZE]);
                           }
 
                           c[temp_i][temp_j+offset] = temp_output;
                         }
                   
-
-
-                    /* OLD IMPLEMENTATION
-                    while(1){
-
-                    
-                    int temp_i, temp_j;
-                   // if (_res > 1) {
-                      LOCK_ACQUIRE(ij_lock);
-                        if (i >= imax) {
-                          if (++j >= jmax) {
-                            stop = 1;
-                            LOCK_RELEASE(ij_lock);
-                            break;
-                          }
-                          else {
-                            i = imin;
-                            temp_i = i;
-                            temp_j = j;
-                            LOCK_RELEASE(ij_lock);
-                          }
-                          
-                        }
-                      else {
-                        temp_i = i;
-                        temp_j = j;
-                        i++;
-                        LOCK_RELEASE(ij_lock);
-                      }
-                    
-
-                   // }
-
-                    int temp_output = 0;
-                    for (int k = 0 ; k < ROW_SIZE ; k++){
-                      temp_output += (a[temp_i][k] * b[k][temp_j]);
-                    }
-                    c[temp_i][temp_j] = temp_output;
-                    */
                     
                   }
                 }
@@ -122,7 +82,6 @@ class TAO_matrix : public AssemblyTask
               //Variable declaration
               int i, jmin, jmax, imax, _res, ROW_SIZE, offset;
               int **a;
-              int **b;
               int **c;
 };
 
