@@ -3,9 +3,9 @@
 //
 
 #include "../tao.h"
-#include "tabletest/taomatrix_table.h"
-#include "tabletest/solver-tao_table.h"
-#include "tabletest/taosort_table.h"
+#include "taomatrix.h"
+#include "solver-tao.h"
+#include "taosort.h"
 #include <chrono>
 #include <iostream>
 #include <atomic>
@@ -26,11 +26,7 @@ extern "C" {
 
 
 void fill_arrays(int **a, int **c, int ysize, int xsize);
-double TAO_matrix::time_table[GOTAO_NTHREADS][3];
-double TAOQuickMergeDyn::time_table[GOTAO_NTHREADS][3];
-double copy2D::time_table[GOTAO_NTHREADS][3];
-//double TAO_matrix::time_table[4] ={0.0,0.0,0.0,0.0};
-//double TAO_matrix::time_table[4] ={0.0,0.0,0.0,0.0};
+
 
 // MAIN 
 int
@@ -322,29 +318,7 @@ std::cout << "starting \n";
    std::cout << "elapsed time: " << elapsed_seconds.count() << "s. " << "Total number of steals: " <<  tao_total_steals << "\n";
    std::cout << "Assembly Throughput: " << (matrix_assemblies + heat_assemblies + sort_assemblies) / elapsed_seconds.count() << " A/sec\n";
    std::cout << "Assembly Cycle: " << elapsed_seconds.count() / (matrix_assemblies + heat_assemblies + sort_assemblies)  << " sec/A\n";
-   for(int count =0; count<3; count++){
-    std::cout <<"Tao Matrix: \n";
-   std::cout << "Time table content for core 0: " << TAO_matrix::time_table[0][count] << "\n";
-   std::cout << "Time table content for core 1: " << TAO_matrix::time_table[1][count] << "\n";
-   std::cout << "Time table content for core 2: " << TAO_matrix::time_table[2][count] << "\n";
-   std::cout << "Time table content for core 3: " << TAO_matrix::time_table[3][count] << "\n";
-   }
-   for(int count =0; count<3; count++){
-    std::cout <<"Tao Sort: \n";
 
-   std::cout << "Time table content for core 0: " << TAOQuickMergeDyn::time_table[0][count] << "\n";
-   std::cout << "Time table content for core 1: " << TAOQuickMergeDyn::time_table[1][count] << "\n";
-   std::cout << "Time table content for core 2: " << TAOQuickMergeDyn::time_table[2][count] << "\n";
-   std::cout << "Time table content for core 3: " << TAOQuickMergeDyn::time_table[3][count] << "\n";
-   }
-   for(int count =0; count<3; count++){
-        std::cout <<"Tao Copy: \n";
-
-   std::cout << "Time table content for core 0: " << copy2D::time_table[0][count] << "\n";
-   std::cout << "Time table content for core 1: " << copy2D::time_table[1][count] << "\n";
-   std::cout << "Time table content for core 2: " << copy2D::time_table[2][count] << "\n";
-   std::cout << "Time table content for core 3: " << copy2D::time_table[3][count] << "\n";
-   }
   /*
   std::cout << matrix_output_c[0][0]<< " " << matrix_output_c[0][1] << " " << matrix_output_c[0][2] << " " << matrix_output_c[0][3] << "\n";
   

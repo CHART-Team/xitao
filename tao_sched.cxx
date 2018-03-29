@@ -316,7 +316,23 @@ int worker_loop(int _nthread)
 #ifdef SYNCHRONOUS_TAO
             assembly->barrier->wait();
 #endif
-            assembly->execute(nthread);
+
+
+//CHANGE TIME TRACE WAY HERE LATER
+
+
+#ifdef TIME_TRACE
+                  std::chrono::time_point<std::chrono::system_clock> t1,t2;
+                  t1 = std::chrono::system_clock::now();
+#endif
+                        assembly->execute(nthread);
+#ifdef TIME_TRACE
+                  t2 = std::chrono::system_clock::now();
+                  std::chrono::duration<double> elapsed_seconds = t2-t1;
+                  double ticks = elapsed_seconds.count();
+                  assembly->set_timetable(nthread,ticks);         
+#endif
+
 #ifdef SYNCHRONOUS_TAO
             assembly->barrier->wait();
 #endif

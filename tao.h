@@ -315,7 +315,9 @@ class AssemblyTask: public PolyTask{
                 int leader;
 
                 virtual int execute(int thread) = 0;
-
+#ifdef TIME_TRACE
+                virtual int set_timetable(int thread, double t) = 0;
+#endif
                 ~AssemblyTask(){
 #ifdef NEED_BARRIER
                       delete barrier;
