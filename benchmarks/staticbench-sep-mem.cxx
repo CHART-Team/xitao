@@ -73,20 +73,20 @@ main(int argc, char* argv[])
         nctx = GOTAO_HW_CONTEXTS;
 
    if(getenv("ROW_SIZE"))
-	r_size=atoi(getenv("ROW_SIZE"));
+  r_size=atoi(getenv("ROW_SIZE"));
  
    else
-	r_size=ROW_SIZE;
+  r_size=ROW_SIZE;
 
    if(getenv("COL_SIZE"))
-	c_size=atoi(getenv("COL_SIZE"));
+  c_size=atoi(getenv("COL_SIZE"));
    else
-	c_size=COL_SIZE;
+  c_size=COL_SIZE;
 
    if(getenv("STEP_SIZE"))
-	stepsize=atoi(getenv("STEP_SIZE"));
+  stepsize=atoi(getenv("STEP_SIZE"));
    else
-	stepsize=STEP_SIZE;
+  stepsize=STEP_SIZE;
 
    if(getenv("DAG_DEPTH"))
   dag_depth=atoi(getenv("DAG_DEPTH"));
@@ -144,12 +144,9 @@ main(int argc, char* argv[])
   ha_width=H_ASSEMBLY_WIDTH;
 
    if((COL_SIZE != ROW_SIZE) || (0!=(COL_SIZE % stepsize))){
-	std::cout << "Incompatible matrix parameters, please choose ROW_SIZE=COL_SIZE and a stepsize that is a divisior of the ROW_SIZE&&COL_SIZE";
-	return 0;
+  std::cout << "Incompatible matrix parameters, please choose ROW_SIZE=COL_SIZE and a stepsize that is a divisior of the ROW_SIZE&&COL_SIZE";
+  return 0;
    }
-
-   #define ceildiv(a,b) ((a + b -1)/(b))
-
 
 
 
@@ -189,7 +186,7 @@ for (int i = 0; i < s_ysize; ++i)
 
 
   int h_ysize = heat_width+2;
-  int h_xsize = heat_resolution*heat_resolution+2+sort_size*BLOCKSIZE;
+  int h_xsize = heat_resolution*heat_resolution;
 
 
 int** heat_input_a = new int* [h_ysize];
@@ -204,31 +201,6 @@ for (int i = 0; i < h_ysize; ++i)
 
 
 
-/*
-  int **matrix_input_a = (int**) malloc(sizeof *matrix_input_a * xsize);
-  int **matrix_input_b = (int**) malloc(sizeof *matrix_input_a * xsize);
-  int **matrix_output_c = (int**) malloc(sizeof *matrix_output_c * xsize);
-
-  
-
-  if (matrix_input_a && matrix_input_b && matrix_output_c){
-    for (int i = 0; i < xsize; i++){
-      matrix_input_a[i] = (int*) malloc(sizeof *matrix_input_a[i] * ysize);
-      matrix_input_b[i] = (int*) malloc(sizeof *matrix_input_a[i] * ysize);
-      matrix_output_c[i] = (int*) malloc(sizeof *matrix_output_c[i] * ysize); 
-    }
-  }
-*/
-
-
-
-  array = (ELM *) malloc(sort_buffer_size * sizeof(ELM));
-  tmp = (ELM *) malloc(sort_buffer_size * sizeof(ELM));
-
-        fill_array();
-        scramble_array();
-
-
 
     std::cout << "gotao_init parameters are: " << nthreads <<"," << thread_base << ","<< nctx << std::endl;
 
@@ -239,14 +211,6 @@ for (int i = 0; i < h_ysize; ++i)
 
 
 
-/*
-           TAOinit *inits[256];
-        sort_buffer_size = 16384*2048;
-        insertion_thr    = 20;
-
-        array1 = (ELM *) malloc(sort_buffer_size * sizeof(ELM));
-        tmp = (ELM *) malloc(sort_buffer_size * sizeof(ELM));
-*/
 
 
    // fill the input arrays and empty the output array
@@ -297,8 +261,8 @@ for (int i = 0; i < h_ysize; ++i)
 
     for (int z = 0; z < sort_width; z++)
     {
-      sort_ao[j] = new TAOQuickMergeDyn(sort_output_c[z*2],
-                                        sort_output_c[z*2+1], 
+      sort_ao[j] = new TAOQuickMergeDyn(sort_input_a[z],
+                                        sort_output_c[z], 
                                         sort_size*BLOCKSIZE,
                                         sa_width);
       if (x == 0) {
@@ -335,21 +299,6 @@ for (int i = 0; i < h_ysize; ++i)
       
 
 
-
-
-      /*
-   	for(int x=0; x<ROW_SIZE; x+=stepsize){
-  		for(int y=0; y<COL_SIZE; y+=stepsize){
-              //level1[i] = new TAOMergeDyn(array1 + total_assemblies*i*2048, tmp + total_assemblies*i*2048, total_assemblies*2048, 2);
-
-           		ao[i] = new TAO_matrix(2, x, x+stepsize, y, y+stepsize, ROW_SIZE, a, b, c); 
-  	  	 	gotao_push_init(ao[i], i % nthreads);
-          i++;
-  		}	
-    }
-   
-   */
-   
 
 
    // measure execution time

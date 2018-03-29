@@ -64,14 +64,16 @@ class TAO_matrix : public AssemblyTask
                         }
                         
                         //for each column, calculate the output of c[i][j]
-                        for(temp_j = jmin; temp_j < jmax; temp_j++){ 
+                        for(temp_j = 0; temp_j < ROW_SIZE; temp_j++){ 
                           int temp_output = 0;
                           for (int k = 0; k < ROW_SIZE ; k++){ 
-                            temp_output += (a[temp_i][k] * a[k][temp_j+ROW_SIZE]);
+                            temp_output += (a[temp_i][k] * a[temp_j][k+jmin+ROW_SIZE]);
                           }
+
 
                           c[temp_i][temp_j+offset] = temp_output;
                         }
+
                   
                     
                   }

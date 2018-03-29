@@ -148,58 +148,57 @@ main(int argc, char* argv[])
 	return 0;
    }
 
-   #define ceildiv(a,b) ((a + b -1)/(b))
 
-
-  dag_width = matrix_width + sort_width + heat_width;
 
 
 
   //TAOSORT inits
-  sort_buffer_size = sort_size*BLOCKSIZE;
-  insertion_thr    = 20;
+  if (matrix_width == 0){
+    r_size = 0;
+  }
+  int m_ysize = r_size;
 
-  int inputsize = std::max(heat_resolution, ROW_SIZE);
-  int ysize = sort_width*2 + heat_resolution+2 + ROW_SIZE;
-  int xsize = std::max(std::max((heat_resolution*heat_resolution+2), (sort_size*BLOCKSIZE)), (ROW_SIZE * matrix_width *2));
+  int m_xsize = (r_size * matrix_width * 2);
 
+int** matrix_input_a = new int* [m_ysize];
+int** matrix_output_c = new int* [m_ysize];
 
-int** matrix_input_a = new int* [ysize];
-int** matrix_output_c = new int* [ysize];
-
-for (int i = 0; i < ysize; ++i)
+for (int i = 0; i < m_ysize; ++i)
 {
-  matrix_input_a[i] = new int[xsize];
-  //matrix_input_b[i] = new int[xsize];
-  matrix_output_c[i] = new int[xsize];
+  matrix_input_a[i] = new int[m_xsize];
+  matrix_output_c[i] = new int[m_xsize];
 }
 
 
 
+  int s_ysize = sort_width;
+  int s_xsize = sort_size*BLOCKSIZE;
 
-/*
-  int **matrix_input_a = (int**) malloc(sizeof *matrix_input_a * xsize);
-  int **matrix_input_b = (int**) malloc(sizeof *matrix_input_a * xsize);
-  int **matrix_output_c = (int**) malloc(sizeof *matrix_output_c * xsize);
+int** sort_input_a = new int* [s_ysize];
+int** sort_output_c = new int* [s_ysize];
 
-  
-
-  if (matrix_input_a && matrix_input_b && matrix_output_c){
-    for (int i = 0; i < xsize; i++){
-      matrix_input_a[i] = (int*) malloc(sizeof *matrix_input_a[i] * ysize);
-      matrix_input_b[i] = (int*) malloc(sizeof *matrix_input_a[i] * ysize);
-      matrix_output_c[i] = (int*) malloc(sizeof *matrix_output_c[i] * ysize); 
-    }
-  }
-*/
+for (int i = 0; i < s_ysize; ++i)
+{
+  sort_input_a[i] = new int[s_xsize];
+  sort_output_c[i] = new int[s_xsize];
+}
 
 
 
-  array = (ELM *) malloc(sort_buffer_size * sizeof(ELM));
-  tmp = (ELM *) malloc(sort_buffer_size * sizeof(ELM));
+  int h_ysize = heat_width+2;
+  int h_xsize = heat_resolution*heat_resolution;
 
-        fill_array();
-        scramble_array();
+
+int** heat_input_a = new int* [h_ysize];
+int** heat_output_c = new int* [h_ysize];
+
+for (int i = 0; i < h_ysize; ++i)
+{
+  heat_input_a[i] = new int[h_xsize];
+  heat_output_c[i] = new int[h_xsize];
+}
+
+
 
 
 
@@ -208,24 +207,16 @@ for (int i = 0; i < ysize; ++i)
    gotao_init();
 
 
-   std::chrono::time_point<std::chrono::system_clock> start, end;
-   start = std::chrono::system_clock::now();
 
 
 
-/*
-           TAOinit *inits[256];
-        sort_buffer_size = 16384*2048;
-        insertion_thr    = 20;
-
-        array1 = (ELM *) malloc(sort_buffer_size * sizeof(ELM));
-        tmp = (ELM *) malloc(sort_buffer_size * sizeof(ELM));
-*/
 
 
 
    // fill the input arrays and empty the output array
-   fill_arrays(matrix_input_a , matrix_output_c, ysize, xsize);
+   fill_arrays(matrix_input_a , matrix_output_c, m_ysize, m_xsize);
+      fill_arrays(sort_input_a , sort_output_c, s_ysize, s_xsize);
+         fill_arrays(heat_input_a , heat_output_c, h_ysize, h_xsize);
 
    //Spawn TAOs for every seperately written too value, equivilent to for(i->i+stepsize){for(j->j+stepsize) generation}
    int matrix_assemblies = dag_depth * matrix_width;
@@ -233,7 +224,7 @@ for (int i = 0; i < ysize; ++i)
    int sort_assemblies = dag_depth * sort_width;
    TAOQuickMergeDyn *sort_ao[sort_assemblies];
    int heat_assemblies = dag_depth * heat_width;
-   jacobi2D *heat_ao[heat_assemblies];
+   copy2D *heat_ao[heat_assemblies];
 
 
 
@@ -242,19 +233,11 @@ for (int i = 0; i < ysize; ++i)
   int j = 0;
   int k = 0;
 
-  int** input;
-  int** output;
+//  int** input;
+  //int** output;
   for (int x = 0; x < dag_depth; x++)
   {
     // alternate input and output between steps of the DAG to make heat and matrix mult data-dependent
-    if (x % 2)
-    {
-      input = matrix_input_a;
-      output = matrix_output_c;
-    } else {
-      input = matrix_input_a;
-      output = matrix_output_c;
-    }
      
      //spawn Matrix multiplication taos
     for (int y = 0; y < matrix_width; y++)
@@ -266,8 +249,8 @@ for (int i = 0; i < ysize; ++i)
                                     stepsize+y*r_size*2, //stop x
                                     0, //output offset (if needed)
                                     ROW_SIZE, 
-                                    input,
-                                    output);
+                                    matrix_input_a,
+                                    matrix_output_c);
       if (x == 0) {
         gotao_push_init(matrix_ao[i], i % nthreads);
       } else {
@@ -278,8 +261,8 @@ for (int i = 0; i < ysize; ++i)
 
     for (int z = 0; z < sort_width; z++)
     {
-      sort_ao[j] = new TAOQuickMergeDyn(matrix_output_c[z*2+r_size],
-                                        matrix_output_c[z*2+1+r_size], 
+      sort_ao[j] = new TAOQuickMergeDyn(sort_input_a[z],
+                                        sort_output_c[z], 
                                         sort_size*BLOCKSIZE,
                                         sa_width);
       if (x == 0) {
@@ -292,9 +275,9 @@ for (int i = 0; i < ysize; ++i)
 
     for (int z = 0; z < heat_width; z++)
     {
-      heat_ao[k] = new jacobi2D(
-                             input[z+1+r_size+sort_width],
-                             output[z+1+r_size+sort_width],
+      heat_ao[k] = new copy2D(
+                             heat_input_a[z+1],
+                             heat_output_c[z+1],
                              heat_resolution, heat_resolution,
                              0, // x*((np + exdecomp -1) / exdecomp),
                              0, //y*((np + eydecomp -1) / eydecomp),
@@ -318,23 +301,11 @@ for (int i = 0; i < ysize; ++i)
 
 
 
-      /*
-   	for(int x=0; x<ROW_SIZE; x+=stepsize){
-  		for(int y=0; y<COL_SIZE; y+=stepsize){
-              //level1[i] = new TAOMergeDyn(array1 + total_assemblies*i*2048, tmp + total_assemblies*i*2048, total_assemblies*2048, 2);
-
-           		ao[i] = new TAO_matrix(2, x, x+stepsize, y, y+stepsize, ROW_SIZE, a, b, c); 
-  	  	 	gotao_push_init(ao[i], i % nthreads);
-          i++;
-  		}	
-    }
-   
-   */
-   
-
-
    // measure execution time
 std::cout << "starting \n";
+   std::chrono::time_point<std::chrono::system_clock> start, end;
+   start = std::chrono::system_clock::now();
+
    goTAO_start();
 
    goTAO_fini();
@@ -345,8 +316,8 @@ std::cout << "starting \n";
    std::time_t end_time = std::chrono::system_clock::to_time_t(end);
  
    std::cout << "elapsed time: " << elapsed_seconds.count() << "s. " << "Total number of steals: " <<  tao_total_steals << "\n";
-   std::cout << "Assembly Throughput: " << matrix_assemblies / elapsed_seconds.count() << " A/sec\n";
-   std::cout << "Assembly Cycle: " << elapsed_seconds.count() / matrix_assemblies  << " sec/A\n";
+   std::cout << "Assembly Throughput: " << (matrix_assemblies + heat_assemblies + sort_assemblies) / elapsed_seconds.count() << " A/sec\n";
+   std::cout << "Assembly Cycle: " << elapsed_seconds.count() / (matrix_assemblies + heat_assemblies + sort_assemblies)  << " sec/A\n";
 
   /*
   std::cout << matrix_output_c[0][0]<< " " << matrix_output_c[0][1] << " " << matrix_output_c[0][2] << " " << matrix_output_c[0][3] << "\n";
@@ -355,7 +326,7 @@ std::cout << "starting \n";
   std::cout << c[2][0] << c[2][1] << c[2][2] << c[2][3] << "\n";
   std::cout << c[3][0] << c[3][1] << c[3][2] << c[3][3] << "\n";
   */
-  for (int i = 0; i < ysize; ++i)
+  for (int i = 0; i < m_ysize; ++i)
 {
   delete matrix_input_a[i];
   //delete matrix_input_b[i];
@@ -364,6 +335,30 @@ std::cout << "starting \n";
 delete[] matrix_input_a;
 //delete[] matrix_input_b;
 delete[] matrix_output_c;
+
+
+  for (int i = 0; i < s_ysize; ++i)
+{
+  delete sort_input_a[i];
+  //delete matrix_input_b[i];
+  delete sort_output_c[i];
+}
+delete[] sort_input_a;
+//delete[] matrix_input_b;
+delete[] sort_output_c;
+
+
+  for (int i = 0; i < h_ysize; ++i)
+{
+  delete heat_input_a[i];
+  //delete matrix_input_b[i];
+  delete heat_output_c[i];
+}
+delete[] heat_input_a;
+//delete[] matrix_input_b;
+delete[] heat_output_c;
+
+
    return (0);
 }
 
