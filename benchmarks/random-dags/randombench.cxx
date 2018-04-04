@@ -8,6 +8,7 @@
 #include <iostream>
 #include <atomic>
 #include <vector>
+#include <algorithm>
 #include "../../tao.h"
 #include "../taomatrix.h"
 #include "../solver-tao.h"
@@ -162,6 +163,9 @@ main(int argc, char* argv[])
    else
   ha_width=H_ASSEMBLY_WIDTH;
 
+  if(getenv("R_SEED"))
+    srand(R_SEED);
+
    if((COL_SIZE != ROW_SIZE) || (0!=(COL_SIZE % stepsize))){
 	std::cout << "Incompatible matrix parameters, please choose ROW_SIZE=COL_SIZE and a stepsize that is a divisior of the ROW_SIZE&&COL_SIZE";
 	return 0;
@@ -222,14 +226,16 @@ main(int argc, char* argv[])
                                 taonumber));
 
 
-      for (int y = 0; y<nodecount; y++){
+      for (int y = 1; y <= (min(30, nodecount)); y++){
         if ((rand() % 100) < edge_rate){
-          add_edge(nodes[nodecount+ic], //the newly created node
-                   nodes[y]); // the node to add
-          graphfile << "  " << y << " -> " << nodecount+ic << " ;\n";
+          if (!edge_check(nodes[nodecount-y].nodenr, nodes[nodecount+ic])){
+
+            add_edge(nodes[nodecount+ic], //the newly created node
+                     nodes[nodecount-y]); // the node to add
+            graphfile << "  " << nodecount-y << " -> " << nodecount+ic << " ;\n";
+          }
         } 
       }
-
 
       int a;
       switch(nodetype){
@@ -247,7 +253,6 @@ main(int argc, char* argv[])
       } 
 
 
-
       ic++;
 
     }
@@ -258,12 +263,26 @@ main(int argc, char* argv[])
     //std::cout <<"\nw: " << w << "\n";
     std::cout << "nodecount: " << nodecount << "\n";
   }
+  for (int i = 0; i < nodes.size(); i++){
+    switch(nodes[i].ttype) {
+      case matrix :
+        graphfile << nodes[i].nodenr << "  [fillcolor = red];\n";
+        break;
+      case sort_ : 
+        graphfile << nodes[i].nodenr << "  [fillcolor = blue];\n";
+        break;
+      case heat :
+        graphfile << nodes[i].nodenr << "  [fillcolor = green];\n";
+        break;
+    }
+  }
   graphfile << "}";
   graphfile.close();
-  std::cout << "postwhile" ;
 
 
-
+std::cout << "martix_mem size: " << matrix_mem.size() << "\n";
+std::cout << "sort_mem size:   " << sort_mem.size() << "\n";
+std::cout << "heat_mem size:   " << heat_mem.size() << "\n";
 
   if (matrix_mem.size() == 0){
     r_size = 0;
@@ -349,7 +368,7 @@ for (int i = 0; i < h_ysize; ++i)
 
   for (int x = 0; x < nodecount; x++)
   {
-    std::cout << "spawning node " << x << "\n";
+
     // alternate input and output between steps of the DAG to make heat and matrix mult data-dependent
      
      //spawn Matrix multiplication taos
@@ -564,24 +583,48 @@ void add_space(node &n, std::vector<int> &v, int a){
 }
 
 int find_mem(Taotype type, int nodenr, node const &n, std::vector<int> &v){
+  int minnr = nodenr;
   if (n.ttype == type) {
+    
     for (int i = 0; i < v.size(); i++) {
+      minnr = min(minnr, v[i]);
       if (n.nodenr == v[i]) {
         v[i] = nodenr;
         return i;
       }
     }
   }
-  //std::cout << "find mem part 2 edge size: " << (n.edges).size() << "\n";
+  //std::cout << "nodenr: " << n.nodenr << "    minnr: " << minnr << "\n";
   int x;
   for (int i = 0; i < (n.edges).size(); i++) {
-    x = find_mem(type, nodenr, nodes[n.edges[i]], v);
+    if (nodes[n.edges[i]].nodenr >= minnr) {
+      x = find_mem(type, nodenr, nodes[n.edges[i]], v);
     if (x > -1) {
       return x;
+    }
+    
     }
   }
 
   return -1;
 
+}
+
+
+bool edge_check(int edge, node const &n){
+  //std::cout << edge << " " << n.nodenr << "\n";
+  if (edge <= n.nodenr){
+    if (edge == n.nodenr){
+      return true;
+    }
+    else{
+      for (int i = 0; i < (n.edges).size(); i++) {
+        if (edge_check(edge, nodes[n.edges[i]])) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
 }
 
