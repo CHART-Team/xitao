@@ -196,7 +196,7 @@ main(int argc, char* argv[])
    graphfile << "digraph DAG{\n";
 
   while(nodecount < (heat_count + sort_count + matrix_count)){
-
+    int x;
     int w = (rand() % (level_width*2-1)+1);
     ic = 0;
 
@@ -204,13 +204,13 @@ main(int argc, char* argv[])
 
       Taotype nodetype;
       int taonumber;
-      int x = rand() % (currentheatcount + currentsortcount + currentmatrixcount);
-
-      if (0 <= x < currentheatcount){
+      x = rand() % (currentheatcount + currentsortcount + currentmatrixcount);
+      std::cout << "x = " << x << "\n" ;
+      if ((0 <= x) && (x < currentheatcount)){
         nodetype = heat;
         taonumber = heat_count - currentheatcount;
         currentheatcount--;
-      }else if (currentheatcount <= x <currentsortcount){
+      }else if ((currentheatcount <= x) && (x < (currentheatcount + currentsortcount))){
         nodetype = sort_;
         taonumber = sort_count - currentsortcount;
         currentsortcount--;
@@ -226,10 +226,10 @@ main(int argc, char* argv[])
                                 taonumber));
 
 
+
       for (int y = 1; y <= (min(30, nodecount)); y++){
         if ((rand() % 100) < edge_rate){
           if (!edge_check(nodes[nodecount-y].nodenr, nodes[nodecount+ic])){
-
             add_edge(nodes[nodecount+ic], //the newly created node
                      nodes[nodecount-y]); // the node to add
             graphfile << "  " << nodecount-y << " -> " << nodecount+ic << " ;\n";
@@ -266,13 +266,13 @@ main(int argc, char* argv[])
   for (int i = 0; i < nodes.size(); i++){
     switch(nodes[i].ttype) {
       case matrix :
-        graphfile << nodes[i].nodenr << "  [fillcolor = red];\n";
+        graphfile << nodes[i].nodenr << "  [fillcolor = lightpink, style = filled];\n";
         break;
       case sort_ : 
-        graphfile << nodes[i].nodenr << "  [fillcolor = blue];\n";
+        graphfile << nodes[i].nodenr << "  [fillcolor = skyblue, style = filled];\n";
         break;
       case heat :
-        graphfile << nodes[i].nodenr << "  [fillcolor = green];\n";
+        graphfile << nodes[i].nodenr << "  [fillcolor = palegreen, style = filled];\n";
         break;
     }
   }
@@ -302,7 +302,7 @@ for (int i = 0; i < m_ysize; ++i)
 
 
 
-  int s_ysize = (sort_mem.size()) + 2;
+  int s_ysize = (sort_mem.size()) + 4;
   int s_xsize = sort_size*BLOCKSIZE;
 
 int** sort_input_a = new int* [s_ysize];
@@ -565,8 +565,9 @@ node new_node(Taotype type, int nodenr, int taonr){
   n.ttype = type;
   n.nodenr = nodenr;
   n.taonr = taonr;
-  std::vector<int> v = {};
-  n.edges = v;
+  //std::vector<int> v = {};
+  //n.edges = v;
+  return n;
 }
 
 void add_edge(node &n, node const &e){
