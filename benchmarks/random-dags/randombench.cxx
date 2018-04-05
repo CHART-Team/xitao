@@ -53,7 +53,7 @@ main(int argc, char* argv[])
   int ha_width;
 
 
-  //int srand() = seed;
+  srand(R_SEED);
   int currentheatcount;
   int currentsortcount;
   int currentmatrixcount;
@@ -205,7 +205,7 @@ main(int argc, char* argv[])
       Taotype nodetype;
       int taonumber;
       x = rand() % (currentheatcount + currentsortcount + currentmatrixcount);
-      std::cout << "x = " << x << "\n" ;
+
       if ((0 <= x) && (x < currentheatcount)){
         nodetype = heat;
         taonumber = heat_count - currentheatcount;
@@ -481,8 +481,12 @@ for (int i = 0; i < h_ysize; ++i)
     }
    
    */
-   
-
+std::cout << "i = " <<  i << "\n";
+std::cout << "matrix_count = " << matrix_count << "\n";
+std::cout << "j = " <<  j << "\n";
+std::cout << "sort_count = " << sort_count << "\n";
+std::cout << "k = " <<  k << "\n";
+std::cout << "heat_count = " << heat_count << "\n";
 
    // measure execution time
 std::cout << "starting \n";
@@ -585,16 +589,16 @@ void add_space(node &n, std::vector<int> &v, int a){
 
 int find_mem(Taotype type, int nodenr, node const &n, std::vector<int> &v){
   int minnr = nodenr;
-  if (n.ttype == type) {
+  //if (n.ttype == type) {
     
     for (int i = 0; i < v.size(); i++) {
       minnr = min(minnr, v[i]);
-      if (n.nodenr == v[i]) {
+      if (n.nodenr == v[i] && n.ttype == type) {
         v[i] = nodenr;
         return i;
       }
     }
-  }
+  //}
   //std::cout << "nodenr: " << n.nodenr << "    minnr: " << minnr << "\n";
   int x;
   for (int i = 0; i < (n.edges).size(); i++) {
