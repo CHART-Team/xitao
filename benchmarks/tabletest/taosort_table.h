@@ -800,6 +800,9 @@ class TAOQuickMergeDyn : public AssemblyTask
 #ifdef  TIME_TRACE             
                 static double time_table[][3];
 #endif
+#ifdef  INT_SOL             
+                static uint64_t time_table[][3];
+#endif
 
                 // initialize static parameters
                 TAOQuickMergeDyn(ELM *array, ELM *tmp, int size, int res=2) : AssemblyTask(res) 
@@ -967,6 +970,17 @@ class TAOQuickMergeDyn : public AssemblyTask
                    }
 
                 }
+#ifdef  INT_SOL             
+              GENERIC_LOCK(ttable_lock);
+
+              int set_timetable(int threadid, uint64_t ticks){
+                  int index = (width == 4) ? (2) : ((width)-1);
+                  LOCK_ACQUIRE(ttable_lock);
+                  //  time_table[_res][threadid] = (d[_res][threadid] + ticks)/2;
+                  time_table[threadid][index] = ticks;
+                  LOCK_RELEASE(ttable_lock);
+              }
+#endif          
 #ifdef  TIME_TRACE             
               GENERIC_LOCK(ttable_lock);
 

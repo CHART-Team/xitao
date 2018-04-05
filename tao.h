@@ -318,6 +318,10 @@ class AssemblyTask: public PolyTask{
 #ifdef TIME_TRACE
                 virtual int set_timetable(int thread, double t) = 0;
 #endif
+#ifdef INT_SOL
+                virtual int set_timetable(int thread, uint64_t t) = 0;
+
+#endif
                 ~AssemblyTask(){
 #ifdef NEED_BARRIER
                       delete barrier;

@@ -90,6 +90,9 @@ class copy2D : public TAO_PAR_FOR_2D_BASE
 #ifdef  TIME_TRACE             
                 static double time_table[][3];
 #endif
+#ifdef  INT_SOL             
+                static uint64_t time_table[][3];
+#endif
 
             copy2D(void *a, void*c, int rows, int cols, int offx, int offy, int chunkx, int chunky, 
                          gotao_schedule_2D sched, int ichunkx, int ichunky, int width, float sta=GOTAO_NO_AFFINITY,
@@ -146,6 +149,17 @@ class copy2D : public TAO_PAR_FOR_2D_BASE
               GENERIC_LOCK(ttable_lock);
 
               int set_timetable(int threadid, double ticks){
+                  int index = (width == 4) ? (2) : ((width)-1);
+                  LOCK_ACQUIRE(ttable_lock);
+                  //  time_table[_res][threadid] = (d[_res][threadid] + ticks)/2;
+                  time_table[threadid][index] = ticks;
+                  LOCK_RELEASE(ttable_lock);
+              }
+#endif
+#ifdef  INT_SOL             
+              GENERIC_LOCK(ttable_lock);
+
+              int set_timetable(int threadid, uint64_t ticks){
                   int index = (width == 4) ? (2) : ((width)-1);
                   LOCK_ACQUIRE(ttable_lock);
                   //  time_table[_res][threadid] = (d[_res][threadid] + ticks)/2;

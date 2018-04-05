@@ -321,11 +321,27 @@ int worker_loop(int _nthread)
 //CHANGE TIME TRACE WAY HERE LATER
 
 
+#ifdef INT_SOL
+		 uint64_t t1,t2,freq,diff;
+		 asm("isb; mrs %0, cntvct_el0" : "=r" (t1));
+		 usleep(250);
+#endif
 #ifdef TIME_TRACE
-                  std::chrono::time_point<std::chrono::system_clock> t1,t2;
-                  t1 = std::chrono::system_clock::now();
+                 std::chrono::time_point<std::chrono::system_clock> t1,t2;
+                 t1 = std::chrono::system_clock::now();
 #endif
                         assembly->execute(nthread);
+#ifdef INT_SOL
+		  asm("isb; mrs %0, cntvct_el0" : "=r" (t2));
+		  asm("isb; mrs %0, cntfrq_el0" : "=r" (freq));
+		  diff = t2-t1;
+		  assembly->set_timetable(nthread,diff);
+		  //LOCK_ACQUIRE(output_lck);
+		 std::cout << "Thread " << nthread << "completed with long " << t1 << " AND " << t2  << " and freq" << freq << std::endl;
+		// LOCK_RELEASE(output_lck);
+		  
+			
+#endif		  
 #ifdef TIME_TRACE
                   t2 = std::chrono::system_clock::now();
                   std::chrono::duration<double> elapsed_seconds = t2-t1;
