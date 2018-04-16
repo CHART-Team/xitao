@@ -33,13 +33,15 @@ class TAO_matrix : public AssemblyTask
                  int r_size, //row size
                  int **m_a, //input matrices
                  int **m_c) //output matrix
-                        : _res(res), imax(maxi), jmin(minj), jmax(maxj), offset(c_offset), AssemblyTask(res) 
+                        : _res(res), imax(maxi), jmin(minj), jmax(maxj), offset(c_offset),  AssemblyTask(res) 
                 {   
 
                   a = m_a;
                   c = m_c;
                   i = mini;
                   ROW_SIZE = r_size;
+                  i_lock.lock = false;
+                  //std::atomic_init(&i_lock,false);  
                 
                 }
 

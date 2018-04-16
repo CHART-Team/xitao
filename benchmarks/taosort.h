@@ -800,8 +800,12 @@ class TAOQuickMergeDyn : public AssemblyTask
                 // initialize static parameters
                 TAOQuickMergeDyn(ELM *array, ELM *tmp, int size, int res=2) : AssemblyTask(res) 
                 {   
+                      //std::atomic_init(&assembly_lock,false);                  
                        int quarter = size / 4;
                        pending_tasks = 13;
+                       assembly_lock.lock = false;
+
+                       for(int i = 0; i < 13; i++) dow[i].refcount=0;
 
                        // STEP 0
                        // entry 0

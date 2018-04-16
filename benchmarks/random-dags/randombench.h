@@ -28,5 +28,25 @@ int find_mem(Taotype type, int nodenr, node const &n, std::vector<int> &v);
 bool edge_check(int edge, node const &n);
 
 
+class TAO_empty : public AssemblyTask 
+{
+        public: 
+                // initialize static parameters
+                TAO_empty(int width, int nthread=0) : AssemblyTask(width, nthread)
+                {   
+
+                }
+
+                int cleanup(){ 
+                    }
+
+                // this assembly can work totally asynchronously
+                int execute(int threadid)
+                {
+
+                }
+                
+
+};
 
 //}

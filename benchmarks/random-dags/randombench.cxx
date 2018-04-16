@@ -40,17 +40,17 @@ int
 main(int argc, char* argv[])
 {
 
-  int matrix_count;
-  int sort_count;
-  int heat_count;
-  int dag_width;
-  int sort_size;
+  int matrix_count; //number of matrix multiplication TAOs
+  int sort_count; //sort TAOs count
+  int heat_count; //heat/copy TAO count
+  int dag_width; 
+  int sort_size; 
   int heat_resolution;
   int xdecomp;
   int ydecomp;
   int ma_width; //matrix assembly width
-  int sa_width;
-  int ha_width;
+  int sa_width; //sort assembly width
+  int ha_width; //heat/copy assembly width
 
 
   srand(R_SEED);
@@ -59,7 +59,7 @@ main(int argc, char* argv[])
   int currentmatrixcount;
 
   int edge_rate;
-  int level_width;
+  int level_width; //average number of TAOs spawned in parallel
 
 
    int thread_base; int nthreads; int nctx; //Do we need the last parameter?
@@ -206,7 +206,9 @@ main(int argc, char* argv[])
       int taonumber;
       x = rand() % (currentheatcount + currentsortcount + currentmatrixcount);
 
-      if ((0 <= x) && (x < currentheatcount)){
+
+
+      if ( ((0 <= x) && (x < currentheatcount)) ){
         nodetype = heat;
         taonumber = heat_count - currentheatcount;
         currentheatcount--;
@@ -359,6 +361,9 @@ for (int i = 0; i < h_ysize; ++i)
 
 
 
+
+
+
    //infices to keep track of spawned TAOs
   int i = 0;
   int j = 0;
@@ -368,7 +373,6 @@ for (int i = 0; i < h_ysize; ++i)
 
   for (int x = 0; x < nodecount; x++)
   {
-
     // alternate input and output between steps of the DAG to make heat and matrix mult data-dependent
      
      //spawn Matrix multiplication taos
@@ -384,7 +388,7 @@ for (int i = 0; i < h_ysize; ++i)
                                     matrix_input_a,
                                     matrix_output_c);
       if (nodes[x].edges.size() == 0) {
-        gotao_push_init(matrix_ao[i], i % nthreads);
+        gotao_push(matrix_ao[i]);
       } else {
         for (int y = 0; y < (nodes[x].edges).size(); y++) {
           switch (nodes[((nodes[x]).edges[y])].ttype) {
@@ -410,7 +414,7 @@ for (int i = 0; i < h_ysize; ++i)
                                         sort_size*BLOCKSIZE,
                                         sa_width);
       if (nodes[x].edges.size() == 0) {
-        gotao_push_init(sort_ao[j], j % nthreads);
+        gotao_push(sort_ao[j]);
       } else {
         for (int y = 0; y < (nodes[x].edges).size(); y++) {
           switch (nodes[((nodes[x]).edges[y])].ttype) {
@@ -444,7 +448,7 @@ for (int i = 0; i < h_ysize; ++i)
                              heat_resolution/ydecomp, //(np + iydecomp*eydecomp -1) / (iydecomp*eydecomp), 
                              ha_width);
       if (nodes[x].edges.size() == 0) {
-        gotao_push_init(heat_ao[k], k % nthreads);
+        gotao_push(heat_ao[k]);
       } else {
         for (int y = 0; y < (nodes[x].edges).size(); y++) {
           switch (nodes[((nodes[x]).edges[y])].ttype) {
@@ -632,4 +636,5 @@ bool edge_check(int edge, node const &n){
   }
   return false;
 }
+
 
