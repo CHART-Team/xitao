@@ -148,8 +148,8 @@ class copy2D : public TAO_PAR_FOR_2D_BASE
 #ifdef  TIME_TRACE             
               GENERIC_LOCK(ttable_lock);
 
-              int set_timetable(int threadid, double ticks){
-                  int index = (width == 4) ? (2) : ((width)-1);
+              int set_timetable(int threadid, double ticks, int index){
+  //                int index = (width == 4) ? (2) : ((width)-1);
                   LOCK_ACQUIRE(ttable_lock);
                   //  time_table[_res][threadid] = (d[_res][threadid] + ticks)/2;
                   time_table[threadid][index] = ticks;
@@ -159,8 +159,8 @@ class copy2D : public TAO_PAR_FOR_2D_BASE
 #ifdef  INT_SOL             
               GENERIC_LOCK(ttable_lock);
 
-              int set_timetable(int threadid, uint64_t ticks){
-                  int index = (width == 4) ? (2) : ((width)-1);
+              int set_timetable(int threadid, uint64_t ticks, int index){
+//                  int index = (width == 4) ? (2) : ((width)-1);
                   LOCK_ACQUIRE(ttable_lock);
                   //  time_table[_res][threadid] = (d[_res][threadid] + ticks)/2;
                   time_table[threadid][index] = ticks;

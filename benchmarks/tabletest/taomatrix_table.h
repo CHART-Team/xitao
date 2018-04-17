@@ -91,10 +91,8 @@ class TAO_matrix : public AssemblyTask
 #ifdef  TIME_TRACE             
               GENERIC_LOCK(ttable_lock);
 
-              int set_timetable(int threadid, double ticks){
-                  int index = (_res == 4) ? (2) : ((_res)-1);
+              int set_timetable(int threadid, double ticks, int index){
                   LOCK_ACQUIRE(ttable_lock);
-                  //  time_table[_res][threadid] = (d[_res][threadid] + ticks)/2;
                   time_table[threadid][index] = ticks;
                   LOCK_RELEASE(ttable_lock);
               }
@@ -103,7 +101,7 @@ class TAO_matrix : public AssemblyTask
               GENERIC_LOCK(ttable_lock);
 
               int set_timetable(int threadid, uint64_t ticks){
-                  int index = (_res == 4) ? (2) : ((_res)-1);
+//                  int index = (_res == 4) ? (2) : ((_res)-1);
                   LOCK_ACQUIRE(ttable_lock);
                   //  time_table[_res][threadid] = (d[_res][threadid] + ticks)/2;
                   time_table[threadid][index] = ticks;

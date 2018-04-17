@@ -316,7 +316,7 @@ class AssemblyTask: public PolyTask{
 
                 virtual int execute(int thread) = 0;
 #ifdef TIME_TRACE
-                virtual int set_timetable(int thread, double t) = 0;
+                virtual int set_timetable(int thread, double t, int index) = 0;
 #endif
 #ifdef INT_SOL
                 virtual int set_timetable(int thread, uint64_t t) = 0;

@@ -317,9 +317,11 @@ int worker_loop(int _nthread)
             assembly->barrier->wait();
 #endif
 
-
+//
+//
 //CHANGE TIME TRACE WAY HERE LATER
-
+//
+//
 
 #ifdef INT_SOL
 		 uint64_t t1,t2,freq,diff;
@@ -327,15 +329,19 @@ int worker_loop(int _nthread)
 		 usleep(250);
 #endif
 #ifdef TIME_TRACE
-                 std::chrono::time_point<std::chrono::system_clock> t1,t2;
-                 t1 = std::chrono::system_clock::now();
+		
+                std::chrono::time_point<std::chrono::system_clock> t1,t2;
+		//If leader or assmebly width=1 start timing information
+		if((!(nthread-assembly->leader)) || (assembly->width == 1)){
+                	t1 = std::chrono::system_clock::now();
+		}
 #endif
                         assembly->execute(nthread);
 #ifdef INT_SOL
 		  asm("isb; mrs %0, cntvct_el0" : "=r" (t2));
 		  asm("isb; mrs %0, cntfrq_el0" : "=r" (freq));
 		  diff = t2-t1;
-		  assembly->set_timetable(nthread,diff);
+		  assembly->set_timetable(nthread,diff,assembly->width);
 		  //LOCK_ACQUIRE(output_lck);
 		 std::cout << "Thread " << nthread << "completed with long " << t1 << " AND " << t2  << " and freq" << freq << std::endl;
 		// LOCK_RELEASE(output_lck);
@@ -343,10 +349,17 @@ int worker_loop(int _nthread)
 			
 #endif		  
 #ifdef TIME_TRACE
-                  t2 = std::chrono::system_clock::now();
-                  std::chrono::duration<double> elapsed_seconds = t2-t1;
-                  double ticks = elapsed_seconds.count();
-                  assembly->set_timetable(nthread,ticks);         
+	
+		//If leader or assmebly width = 1 gather timing information
+		 if((!(nthread-assembly->leader)) || (assembly->width == 1)){
+			//System clocks read if TIME_TRACE
+                 	t2 = std::chrono::system_clock::now();
+                 	std::chrono::duration<double> elapsed_seconds = t2-t1;
+                 	double ticks = elapsed_seconds.count();
+			//Index table based on width
+		  	int tableind = (assembly->width == 4) ? (2) : ((assembly->width)-1); 
+                  	assembly->set_timetable(nthread,ticks,tableind);         
+		 }
 #endif
 
 #ifdef SYNCHRONOUS_TAO
