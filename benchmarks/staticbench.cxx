@@ -1,5 +1,7 @@
 //
-//
+//Synthetic Benchmark Testing of Table
+//INT_SOL --Counter solution
+//TIME_TRACE -- chrono time solution
 //
 
 #include "../tao.h"
@@ -36,8 +38,6 @@ uint64_t TAO_matrix::time_table[GOTAO_NTHREADS][3];
 uint64_t TAOQuickMergeDyn::time_table[GOTAO_NTHREADS][3];
 uint64_t copy2D::time_table[GOTAO_NTHREADS][3];
 #endif
-//double TAO_matrix::time_table[4] ={0.0,0.0,0.0,0.0};
-//double TAO_matrix::time_table[4] ={0.0,0.0,0.0,0.0};
 
 // MAIN 
 int
@@ -329,6 +329,7 @@ std::cout << "starting \n";
    std::cout << "elapsed time: " << elapsed_seconds.count() << "s. " << "Total number of steals: " <<  tao_total_steals << "\n";
    std::cout << "Assembly Throughput: " << (matrix_assemblies + heat_assemblies + sort_assemblies) / elapsed_seconds.count() << " A/sec\n";
    std::cout << "Assembly Cycle: " << elapsed_seconds.count() / (matrix_assemblies + heat_assemblies + sort_assemblies)  << " sec/A\n";
+
 #if defined(TIME_TRACE) || defined(INT_SOL)
    for(int count =0; count<3; count++){
     std::cout <<"Tao Matrix: \n";
@@ -355,6 +356,7 @@ std::cout << "starting \n";
    }
 
 #endif
+
   /*
   std::cout << matrix_output_c[0][0]<< " " << matrix_output_c[0][1] << " " << matrix_output_c[0][2] << " " << matrix_output_c[0][3] << "\n";
   
