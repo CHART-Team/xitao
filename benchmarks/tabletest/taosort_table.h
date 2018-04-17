@@ -991,6 +991,14 @@ class TAOQuickMergeDyn : public AssemblyTask
                   time_table[threadid][index] = ticks;
                   LOCK_RELEASE(ttable_lock);
               }
+	     double get_timetable(int threadid, int index){
+		 
+                  double time = 0;
+                  LOCK_ACQUIRE(ttable_lock);
+		  time = time_table[threadid][index];
+		  LOCK_RELEASE(ttable_lock);
+	          return time;
+	     }
 #endif          
                 std::atomic<int> pending_tasks;
                 std::list <quickmerge_uow_dyn *> readyq;

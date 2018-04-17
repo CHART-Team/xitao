@@ -326,13 +326,12 @@ int worker_loop(int _nthread)
 #ifdef INT_SOL
 		 uint64_t t1,t2,freq,diff;
 		 asm("isb; mrs %0, cntvct_el0" : "=r" (t1));
-		 usleep(250);
 #endif
 #ifdef TIME_TRACE
 		
                 std::chrono::time_point<std::chrono::system_clock> t1,t2;
 		//If leader or assmebly width=1 start timing information
-		if((!(nthread-assembly->leader)) || (assembly->width == 1)){
+		if((!(nthread-(assembly->leader))) || (assembly->width == 1)){
                 	t1 = std::chrono::system_clock::now();
 		}
 #endif
@@ -351,7 +350,7 @@ int worker_loop(int _nthread)
 #ifdef TIME_TRACE
 	
 		//If leader or assmebly width = 1 gather timing information
-		 if((!(nthread-assembly->leader)) || (assembly->width == 1)){
+		 if((!(nthread-(assembly->leader))) || (assembly->width == 1)){
 			//System clocks read if TIME_TRACE
                  	t2 = std::chrono::system_clock::now();
                  	std::chrono::duration<double> elapsed_seconds = t2-t1;
@@ -377,7 +376,8 @@ int worker_loop(int _nthread)
 		LOCK_ACQUIRE(output_lck);
 		std::cout << "Thread " << nthread << " completed assembly task " << assembly->taskid << std::endl;
 		LOCK_RELEASE(output_lck);
-#endif 
+#endif
+
                st = assembly->commit_and_wakeup(nthread);
                assembly->cleanup();
                delete assembly;
