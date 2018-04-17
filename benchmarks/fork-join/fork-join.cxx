@@ -27,7 +27,7 @@ extern "C" {
 
 #define BLOCKSIZE (2*1024)
 
-
+//used to fill input data with random values
 void fill_arrays(int **a, int **c, int ysize, int xsize);
 
 
@@ -39,18 +39,21 @@ main(int argc, char* argv[])
   int matrix_width;
   int sort_width;
   int heat_width;
+
   int dag_depth;
   int dag_width;
   int sort_size;
   int heat_resolution;
-  int xdecomp;
+  //internal x and y decompisition of copy
+  int xdecomp; 
   int ydecomp;
+
   int ma_width; //matrix assembly width
-  int sa_width;
-  int ha_width;
+  int sa_width; //sort assembly width
+  int ha_width; //copy/heat assembly width
 
    int thread_base; int nthreads; int nctx; //Do we need the last parameter?
-   int c_size; int r_size; int stepsize;
+   int r_size; //row size of matrix multiplication
    int nqueues;  // how many queues to fill: What is this??
    int nas;      // number of assemblies per queue: what is this??
 
@@ -80,16 +83,6 @@ main(int argc, char* argv[])
  
    else
 	r_size=ROW_SIZE;
-
-   if(getenv("COL_SIZE"))
-	c_size=atoi(getenv("COL_SIZE"));
-   else
-	c_size=COL_SIZE;
-
-   if(getenv("STEP_SIZE"))
-	stepsize=atoi(getenv("STEP_SIZE"));
-   else
-	stepsize=STEP_SIZE;
 
    if(getenv("DAG_DEPTH"))
   dag_depth=atoi(getenv("DAG_DEPTH"));
@@ -151,10 +144,6 @@ main(int argc, char* argv[])
    else
   ha_width=H_ASSEMBLY_WIDTH;
 
-   if((COL_SIZE != ROW_SIZE) || (0!=(COL_SIZE % stepsize))){
-	std::cout << "Incompatible matrix parameters, please choose ROW_SIZE=COL_SIZE and a stepsize that is a divisior of the ROW_SIZE&&COL_SIZE";
-	return 0;
-   }
 
    if(matrix_width+sort_width+heat_width != 1) {
     std::cout << "One and only one of MATRIX_WIDTH, SORT_WIDTH and HEAT_WIDTH must be selected by setting it to 1 \n";
@@ -162,9 +151,11 @@ main(int argc, char* argv[])
    }
 
 
+/////MEMORY allocation part /////
+   //1. Check which TAO class is selected, it should only be one
+   //2. Allocate data in a 2d array depending on DAG_WIDTH and size of the selected TAO class
 
-
-  //TAOSORT inits
+//if !matrix multiplication
   if (matrix_width == 0){
     r_size = 0;
   }
@@ -186,6 +177,8 @@ for (int i = 0; i < m_ysize; ++i)
   int s_ysize = dag_width;
   int s_xsize = sort_size*BLOCKSIZE;
 
+
+//if !sort
   if (sort_width == 0){
     s_ysize = 0;
   }
@@ -203,6 +196,9 @@ for (int i = 0; i < s_ysize; ++i)
   int h_ysize = dag_width+2;
   int h_xsize = heat_resolution*heat_resolution;
 
+
+
+//if !copy/heat
   if (heat_width == 0){
     h_ysize = 0;
   }
@@ -217,8 +213,7 @@ for (int i = 0; i < h_ysize; ++i)
   heat_output_c[i] = new int[h_xsize];
 }
 
-
-
+////MEMORY ALLOCATION DONE
 
 
     std::cout << "gotao_init parameters are: " << nthreads <<"," << thread_base << ","<< nctx << std::endl;
@@ -233,11 +228,13 @@ for (int i = 0; i < h_ysize; ++i)
 
 
    // fill the input arrays and empty the output array
-   fill_arrays(matrix_input_a , matrix_output_c, m_ysize, m_xsize);
-      fill_arrays(sort_input_a , sort_output_c, s_ysize, s_xsize);
-         fill_arrays(heat_input_a , heat_output_c, h_ysize, h_xsize);
+  fill_arrays(matrix_input_a , matrix_output_c, m_ysize, m_xsize);
+  fill_arrays(sort_input_a , sort_output_c, s_ysize, s_xsize);
+  fill_arrays(heat_input_a , heat_output_c, h_ysize, h_xsize);
 
-   //Spawn TAOs for every seperately written too value, equivilent to for(i->i+stepsize){for(j->j+stepsize) generation}
+
+
+   //Calcutation of how many TAOs we need to spawn
    int assembly_count = ( (dag_width + (dag_width-1) * 2 - 1) * (dag_depth / (log2(dag_width) * 2 )+1) );
 
    int matrix_assemblies = assembly_count * matrix_width;
@@ -249,26 +246,28 @@ for (int i = 0; i < h_ysize; ++i)
 
 
 
-   //infices to keep track of spawned TAOs
+   //indices to keep track of spawned TAOs
   int i = 0;
   int j = 0;
   int k = 0;
 
+  //variables used to control DAG generation: current width and growing.
   int curr_width = 1;
   int growing = 1;
 
+  //DOT graph printout
   std::ofstream graphfile;
   graphfile.open ("graph.txt");
   graphfile << "digraph DAG{\n";
-//  int** input;
-  //int** output;
+
+  //loop through all levels of the DAG
   for (int x = 0; x < dag_depth; x++)
   {
 
-    // alternate input and output between steps of the DAG to make heat and matrix mult data-dependent
+     // check how many TAOs to spawn this level
      for (int y = 0; y <curr_width; y++)
      {
-
+      //find in- and output data memory location
       int mem = (dag_width/curr_width)*y;
 
 
@@ -276,23 +275,28 @@ for (int i = 0; i < h_ysize; ++i)
       {
         matrix_ao[i] = new TAO_matrix(ma_width, //taowidth
                                       0, //start y
-                                      stepsize, //stop y
+                                      r_size, //stop y
                                       mem*r_size*2, //start x
-                                      stepsize+mem*r_size*2, //stop x
+                                      r_size+mem*r_size*2, //stop x
                                       0, //output offset (if needed)
                                       ROW_SIZE, 
                                       matrix_input_a,
                                       matrix_output_c);
-        if (i == 0) {
+        //if this is the first TAO -> no input edges
+        if (i == 0) { 
           gotao_push_init(matrix_ao[i], i % nthreads);
-        } else if (growing){
+        } 
+        //if the graph is growing -> one input edge
+        else if (growing){  
           matrix_ao[i-((curr_width+y)/2)]->make_edge(matrix_ao[i]);
-          graphfile << "  " << i-((curr_width+y+1)/2) << " -> " << i << " ;\n";
-        } else if (!growing){
+          graphfile << "  " << i-((curr_width+y+1)/2) << " -> " << i << " ;\n"; //DOT graph output
+        }
+        // if the graph is shrinking -> two input edges 
+        else if (!growing){ 
           matrix_ao[i-(curr_width*2-y+1)]->make_edge(matrix_ao[i]);
-          graphfile << "  " << i-(curr_width*2-y-1) << " -> " << i << " ;\n";
+          graphfile << "  " << i-(curr_width*2-y-1) << " -> " << i << " ;\n"; //DOT graph output 
           matrix_ao[i-(curr_width*2-y)]->make_edge(matrix_ao[i]);
-          graphfile << "  " << i-(curr_width*2-y) << " -> " << i << " ;\n";        
+          graphfile << "  " << i-(curr_width*2-y) << " -> " << i << " ;\n"; //DOT graph output
         }
         i++;
       }
@@ -304,12 +308,17 @@ for (int i = 0; i < h_ysize; ++i)
                                           sort_output_c[mem], 
                                           sort_size*BLOCKSIZE,
                                           sa_width);
-        if (j == 0) {
+        //if this is the first TAO -> no input edges
+        if (j == 0) { 
           gotao_push_init(sort_ao[j], j % nthreads);
-        } else if (growing){
+        }
+        //if the graph is growing -> one input edge
+        else if (growing){
           sort_ao[j-((curr_width+y)/2)]->make_edge(sort_ao[j]);
           graphfile << "  " << j-((curr_width+y+1)/2) << " -> " << j << " ;\n";
-        } else {
+        }
+        // if the graph is shrinking -> two input edges 
+        else {
           sort_ao[j-(curr_width*2-y+1)]->make_edge(sort_ao[j]);
           graphfile << "  " << j-(curr_width*2-y-1) << " -> " << j << " ;\n";
           sort_ao[j-(curr_width*2-y)]->make_edge(sort_ao[j]);
@@ -332,12 +341,17 @@ for (int i = 0; i < h_ysize; ++i)
                                heat_resolution/xdecomp, // (np + ixdecomp*exdecomp -1) / (ixdecomp*exdecomp),
                                heat_resolution/ydecomp, //(np + iydecomp*eydecomp -1) / (iydecomp*eydecomp), 
                                ha_width);
-        if (k == 0) {
+        //if this is the first TAO -> no input edges
+        if (k == 0) { 
           gotao_push_init(heat_ao[k], k % nthreads);
-        } else if (growing){
+        } 
+        //if the graph is growing -> one input edge
+        else if (growing){
           heat_ao[k-((curr_width+y)/2)]->make_edge(heat_ao[k]);
           graphfile << "  " << k-((curr_width+y+1)/2) << " -> " << k << " ;\n";
-        } else {
+        } 
+        // if the graph is shrinking -> two input edges
+        else {
           heat_ao[k-(curr_width*2-y+1)]->make_edge(heat_ao[k]);
           graphfile << "  " << k-(curr_width*2-y-1) << " -> " << k << " ;\n";
           heat_ao[k-(curr_width*2-y)]->make_edge(heat_ao[k]);
@@ -348,22 +362,32 @@ for (int i = 0; i < h_ysize; ++i)
 
 
     }
+
+    // if the graph is growing and current width is smaller than maximum width -> keep growing
     if (growing && (curr_width < dag_width)){
       curr_width = curr_width*2;
+      //if the current width now exceeds the maximum width -> set it to maxumum width
       if (curr_width > dag_width){
         curr_width = dag_width;
       }
     }
+
+    //if the graph is growing and current width is equal to maximum width -> start shrinking
     else if (growing && (curr_width == dag_width)){
       growing = 0;
       curr_width = curr_width/2;
     }
+
+    //if the graph is shrinking and current width is more than one (minimum width) -> keep shrinking
     else if (!growing && (curr_width > 1)){
       curr_width = curr_width/2;
+      //if the current width now is less than one (somehow?) -> set to one
       if (curr_width < 1) {
         curr_width == 1;
       }
     }
+
+    //if the graph is shrinking and current width is 1 -> start growing.
     else if (!growing && (curr_width ==1)){
       growing = 1;
       curr_width = curr_width *2;
@@ -372,6 +396,7 @@ for (int i = 0; i < h_ysize; ++i)
 
   }
 
+  //close output file for DOT graph
   graphfile << "}";
   graphfile.close();
 
@@ -396,57 +421,49 @@ std::cout << "starting \n";
    std::cout << "Assembly Throughput: " << (matrix_assemblies + heat_assemblies + sort_assemblies) / elapsed_seconds.count() << " A/sec\n";
    std::cout << "Assembly Cycle: " << elapsed_seconds.count() / (matrix_assemblies + heat_assemblies + sort_assemblies)  << " sec/A\n";
 
-  /*
-  std::cout << matrix_output_c[0][0]<< " " << matrix_output_c[0][1] << " " << matrix_output_c[0][2] << " " << matrix_output_c[0][3] << "\n";
-  
-  std::cout << c[1][0] << c[1][1] << c[1][2] << c[1][3] << "\n";
-  std::cout << c[2][0] << c[2][1] << c[2][2] << c[2][3] << "\n";
-  std::cout << c[3][0] << c[3][1] << c[3][2] << c[3][3] << "\n";
-  */
+
+
+//Free memory
+
   for (int i = 0; i < m_ysize; ++i)
 {
   delete matrix_input_a[i];
-  //delete matrix_input_b[i];
   delete matrix_output_c[i];
 }
 delete[] matrix_input_a;
-//delete[] matrix_input_b;
 delete[] matrix_output_c;
 
 
   for (int i = 0; i < s_ysize; ++i)
 {
   delete sort_input_a[i];
-  //delete matrix_input_b[i];
   delete sort_output_c[i];
 }
 delete[] sort_input_a;
-//delete[] matrix_input_b;
 delete[] sort_output_c;
 
 
   for (int i = 0; i < h_ysize; ++i)
 {
   delete heat_input_a[i];
-  //delete matrix_input_b[i];
   delete heat_output_c[i];
 }
 delete[] heat_input_a;
-//delete[] matrix_input_b;
 delete[] heat_output_c;
 
 
    return (0);
 }
 
+
+
 void fill_arrays(int **a, int **c, int ysize, int xsize)
 {
 
-     //Fills the input matrices a and b with random integers and output matrix with 0
+     //Fills the matrices a and c with random integer
      for (int i = 0; i < ysize; ++i) { //each row
         for (int j = 0; j  < ysize; j++){ //each column
           a[i][j] = (rand() % 111);
-         // b[i][j] = (rand() % 111);
           c[i][j] = (rand() % 111);
         }
      }

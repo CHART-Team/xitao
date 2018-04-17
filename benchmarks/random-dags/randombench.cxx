@@ -32,7 +32,7 @@ extern "C" {
 
 void fill_arrays(int **a, int **c, int ysize, int xsize);
 
-
+  //vector used to contain nodes
    std::vector<node> nodes;
 
 // MAIN 
@@ -43,27 +43,29 @@ main(int argc, char* argv[])
   int matrix_count; //number of matrix multiplication TAOs
   int sort_count; //sort TAOs count
   int heat_count; //heat/copy TAO count
-  int dag_width; 
+  int dag_width; //average width of the DAG
   int sort_size; 
-  int heat_resolution;
-  int xdecomp;
+  int heat_resolution; // size of copy/heat
+  int xdecomp; //internal decomposition of copy/heat
   int ydecomp;
   int ma_width; //matrix assembly width
   int sa_width; //sort assembly width
   int ha_width; //heat/copy assembly width
 
-
+  //SEED for randomization
   srand(R_SEED);
+
+  //used to keep track of number of generated TAOs of each class in the DAG generation
   int currentheatcount;
   int currentsortcount;
   int currentmatrixcount;
 
-  int edge_rate;
+  int edge_rate; //rate in % at which edges will be created between TAOs
   int level_width; //average number of TAOs spawned in parallel
 
 
    int thread_base; int nthreads; int nctx; //Do we need the last parameter?
-   int c_size; int r_size; int stepsize;
+   int r_size;  //size of matric multiplication
    int nqueues;  // how many queues to fill: What is this??
    int nas;      // number of assemblies per queue: what is this??
 
@@ -92,16 +94,6 @@ main(int argc, char* argv[])
  
    else
 	r_size=ROW_SIZE;
-
-   if(getenv("COL_SIZE"))
-	c_size=atoi(getenv("COL_SIZE"));
-   else
-	c_size=COL_SIZE;
-
-   if(getenv("STEP_SIZE"))
-	stepsize=atoi(getenv("STEP_SIZE"));
-   else
-	stepsize=STEP_SIZE;
 
    if(getenv("EDGE_RATE"))
   edge_rate=atoi(getenv("EDGE_RATE"));
@@ -166,11 +158,6 @@ main(int argc, char* argv[])
   if(getenv("R_SEED"))
     srand(R_SEED);
 
-   if((COL_SIZE != ROW_SIZE) || (0!=(COL_SIZE % stepsize))){
-	std::cout << "Incompatible matrix parameters, please choose ROW_SIZE=COL_SIZE and a stepsize that is a divisior of the ROW_SIZE&&COL_SIZE";
-	return 0;
-   }
-
    if(level_width<1){//cant have level width less than one
   std::cout << "level_width must be > 0";
   return 0;
@@ -180,34 +167,42 @@ main(int argc, char* argv[])
    currentsortcount   = sort_count;
    currentheatcount   = heat_count;
 
+   //nodecount to keep track of spwaned nodes
    int nodecount = 0;
    int ic = 0;
 
 
    std::cout << "prewhile \n";
 
-
+   //vectors used to keep track of which input and output data location is free and occupied.
    std::vector<int> matrix_mem;
    std::vector<int> sort_mem;
    std::vector<int> heat_mem;
 
+   //DOT graph output
    std::ofstream graphfile;
    graphfile.open ("graph.txt");
    graphfile << "digraph DAG{\n";
 
+  //lopp while created nodes is less than the amount to spawn
   while(nodecount < (heat_count + sort_count + matrix_count)){
-    int x;
+
+    //w is randomized number of TAOs to spawn for this level in the DAG
     int w = (rand() % (level_width*2-1)+1);
+    //current node in this level
     ic = 0;
 
+    //loop while ic < w (and we still have TAOs to spawn)
     while (ic<w && (currentmatrixcount+currentsortcount+currentheatcount)){
 
       Taotype nodetype;
       int taonumber;
-      x = rand() % (currentheatcount + currentsortcount + currentmatrixcount);
+
+      //generate a number which decides what TAO class curren node is.
+      int x = rand() % (currentheatcount + currentsortcount + currentmatrixcount);
 
 
-
+      //check x and set the correct TAO class to current node
       if ( ((0 <= x) && (x < currentheatcount)) ){
         nodetype = heat;
         taonumber = heat_count - currentheatcount;
@@ -222,24 +217,29 @@ main(int argc, char* argv[])
         currentmatrixcount--;
       }
 
-      std::cout << "creating node #" << nodecount+ic <<", w is: " << w << "\n" ;
+      //create the new node and add it to our nodes vector
       nodes.push_back (new_node(nodetype, //matrix, sort or heat
                                 nodecount+ic,
                                 taonumber));
 
 
-
+      //Check previous nodes(max 30 previous)
       for (int y = 1; y <= (min(30, nodecount)); y++){
+        //use edge rate and rand to decide whether to create edge or not
         if ((rand() % 100) < edge_rate){
+          //check if that edge is unnecessary to create(by checking if we already are a successor of the node)
           if (!edge_check(nodes[nodecount-y].nodenr, nodes[nodecount+ic])){
+            //Add the node to our edge vector
             add_edge(nodes[nodecount+ic], //the newly created node
                      nodes[nodecount-y]); // the node to add
+            //update DOT graph
             graphfile << "  " << nodecount-y << " -> " << nodecount+ic << " ;\n";
           }
         } 
       }
 
       int a;
+      //check our edges to find a input/output memory slot to reuse, if we can find it expand the vector with slots
       switch(nodetype){
         case matrix :
           a = find_mem(nodetype, nodecount+ic, nodes[nodecount+ic], matrix_mem);
@@ -265,6 +265,8 @@ main(int argc, char* argv[])
     //std::cout <<"\nw: " << w << "\n";
     std::cout << "nodecount: " << nodecount << "\n";
   }
+
+  //set colors of our nodes in the DOT graph
   for (int i = 0; i < nodes.size(); i++){
     switch(nodes[i].ttype) {
       case matrix :
@@ -278,6 +280,7 @@ main(int argc, char* argv[])
         break;
     }
   }
+  //close the output
   graphfile << "}";
   graphfile.close();
 
@@ -286,6 +289,10 @@ std::cout << "martix_mem size: " << matrix_mem.size() << "\n";
 std::cout << "sort_mem size:   " << sort_mem.size() << "\n";
 std::cout << "heat_mem size:   " << heat_mem.size() << "\n";
 
+
+//////Memory allocation
+// Creates a 2d array for each TAO class with a size depending on 
+// the size of the TAOs and the corresponding mem vector(matrix_mem, sort_mem, heat_mem)
   if (matrix_mem.size() == 0){
     r_size = 0;
   }
@@ -332,8 +339,7 @@ for (int i = 0; i < h_ysize; ++i)
 }
 
 
-
-
+////END memory alllocation
 
 
     std::cout << "gotao_init parameters are: " << nthreads <<"," << thread_base << ","<< nctx << std::endl;
@@ -345,18 +351,18 @@ for (int i = 0; i < h_ysize; ++i)
 
 
    // fill the input arrays and empty the output array
-   fill_arrays(matrix_input_a , matrix_output_c, m_ysize, m_xsize);
-      fill_arrays(sort_input_a , sort_output_c, s_ysize, s_xsize);
-         fill_arrays(heat_input_a , heat_output_c, h_ysize, h_xsize);
+    fill_arrays(matrix_input_a , matrix_output_c, m_ysize, m_xsize);
+    fill_arrays(sort_input_a , sort_output_c, s_ysize, s_xsize);
+    fill_arrays(heat_input_a , heat_output_c, h_ysize, h_xsize);
 
 
     std::cout <<"arrays filled\n";
-   //Spawn TAOs for every seperately written too value, equivilent to for(i->i+stepsize){for(j->j+stepsize) generation}
-   //int matrix_assemblies = dag_depth * matrix_width;
+
+   
    TAO_matrix *matrix_ao[matrix_count];
-   //int sort_assemblies = dag_depth * sort_width;
+
    TAOQuickMergeDyn *sort_ao[sort_count];
-   //int heat_assemblies = dag_depth * heat_width;
+
    copy2D *heat_ao[heat_count];
 
 
@@ -370,27 +376,30 @@ for (int i = 0; i < h_ysize; ++i)
   int k = 0;
 
 
-
+  //for each node in our nodes vector
   for (int x = 0; x < nodecount; x++)
   {
     // alternate input and output between steps of the DAG to make heat and matrix mult data-dependent
      
-     //spawn Matrix multiplication taos
+     //spawn Matrix multiplication tao
     if (nodes[x].ttype == matrix)
     {
       matrix_ao[i] = new TAO_matrix(ma_width, //taowidth
                                     0, //start y
-                                    stepsize, //stop y
+                                    r_size, //stop y
                                     (nodes[x].mem_space)*r_size*2, //start x
-                                    stepsize+(nodes[x].mem_space)*r_size*2, //stop x
+                                    r_size+(nodes[x].mem_space)*r_size*2, //stop x
                                     0, //output offset (if needed)
                                     ROW_SIZE, 
                                     matrix_input_a,
                                     matrix_output_c);
+      //if our node has no input edges
       if (nodes[x].edges.size() == 0) {
         gotao_push(matrix_ao[i]);
       } else {
+        //for each input edge of our node
         for (int y = 0; y < (nodes[x].edges).size(); y++) {
+          //create edge from corresponding TAO class
           switch (nodes[((nodes[x]).edges[y])].ttype) {
             case matrix :
               matrix_ao[nodes[((nodes[x]).edges[y])].taonr]->make_edge(matrix_ao[i]);
@@ -407,16 +416,20 @@ for (int i = 0; i < h_ysize; ++i)
       i++;
     }
 
+    //spawn sort TAO
     if (nodes[x].ttype == sort_)
     {
       sort_ao[j] = new TAOQuickMergeDyn(sort_input_a[nodes[x].mem_space],
                                         sort_output_c[nodes[x].mem_space], 
                                         sort_size*BLOCKSIZE,
                                         sa_width);
+      //if our node has no input edges
       if (nodes[x].edges.size() == 0) {
         gotao_push(sort_ao[j]);
       } else {
+        //for each input edge of our node
         for (int y = 0; y < (nodes[x].edges).size(); y++) {
+          //create edge from corresponding TAO class
           switch (nodes[((nodes[x]).edges[y])].ttype) {
             case matrix :
               matrix_ao[nodes[((nodes[x]).edges[y])].taonr]->make_edge(sort_ao[j]);
@@ -433,6 +446,7 @@ for (int i = 0; i < h_ysize; ++i)
       j++;
     }
 
+    //spawn copy TAO
     if (nodes[x].ttype == heat)
     {
       heat_ao[k] = new copy2D(
@@ -447,10 +461,13 @@ for (int i = 0; i < h_ysize; ++i)
                              heat_resolution/xdecomp, // (np + ixdecomp*exdecomp -1) / (ixdecomp*exdecomp),
                              heat_resolution/ydecomp, //(np + iydecomp*eydecomp -1) / (iydecomp*eydecomp), 
                              ha_width);
+      //if our node has no input edges
       if (nodes[x].edges.size() == 0) {
         gotao_push(heat_ao[k]);
       } else {
+        //for each input edge of our node
         for (int y = 0; y < (nodes[x].edges).size(); y++) {
+          //create edge from corresponding TAO class
           switch (nodes[((nodes[x]).edges[y])].ttype) {
             case matrix :
               matrix_ao[nodes[((nodes[x]).edges[y])].taonr]->make_edge(heat_ao[k]);
@@ -510,78 +527,73 @@ std::cout << "starting \n";
    std::cout << "Assembly Throughput: " << (nodecount) / elapsed_seconds.count() << " A/sec\n";
    std::cout << "Assembly Cycle: " << elapsed_seconds.count() / (nodecount)  << " sec/A\n";
 
-  /*
-  std::cout << matrix_output_c[0][0]<< " " << matrix_output_c[0][1] << " " << matrix_output_c[0][2] << " " << matrix_output_c[0][3] << "\n";
-  
-  std::cout << c[1][0] << c[1][1] << c[1][2] << c[1][3] << "\n";
-  std::cout << c[2][0] << c[2][1] << c[2][2] << c[2][3] << "\n";
-  std::cout << c[3][0] << c[3][1] << c[3][2] << c[3][3] << "\n";
-  */
+
+
+//Free memory
   for (int i = 0; i < m_ysize; ++i)
 {
   delete matrix_input_a[i];
-  //delete matrix_input_b[i];
   delete matrix_output_c[i];
 }
 delete[] matrix_input_a;
-//delete[] matrix_input_b;
 delete[] matrix_output_c;
 
 
   for (int i = 0; i < s_ysize; ++i)
 {
   delete sort_input_a[i];
-  //delete matrix_input_b[i];
   delete sort_output_c[i];
 }
 delete[] sort_input_a;
-//delete[] matrix_input_b;
 delete[] sort_output_c;
 
 
   for (int i = 0; i < h_ysize; ++i)
 {
   delete heat_input_a[i];
-  //delete matrix_input_b[i];
   delete heat_output_c[i];
 }
 delete[] heat_input_a;
-//delete[] matrix_input_b;
 delete[] heat_output_c;
 
 
    return (0);
 }
 
+
+
+
 void fill_arrays(int **a, int **c, int ysize, int xsize)
 {
 
-     //Fills the input matrices a and b with random integers and output matrix with 0
+     //Fills the matrices a and c with random integers
      for (int i = 0; i < ysize; ++i) { //each row
         for (int j = 0; j  < ysize; j++){ //each column
           a[i][j] = (rand() % 111);
-         // b[i][j] = (rand() % 111);
+
           c[i][j] = (rand() % 111);
         }
      }
 }
 
 
-
+//Creates and returns a node
 node new_node(Taotype type, int nodenr, int taonr){
   node n;
   n.ttype = type;
   n.nodenr = nodenr;
   n.taonr = taonr;
-  //std::vector<int> v = {};
-  //n.edges = v;
   return n;
 }
 
+
+//add edge to node
 void add_edge(node &n, node const &e){
   (n.edges).push_back (e.nodenr);
 }
 
+
+//add memory slot for input and output data to a node
 void add_space(node &n, std::vector<int> &v, int a){
   if (a == -1){
     v.push_back (n.nodenr);
@@ -591,49 +603,68 @@ void add_space(node &n, std::vector<int> &v, int a){
   }
 }
 
+
+//find a memory slot for input and output data amongst predecessors
+//nodenr is of the node we are trying find a memory slot for
+//node n is a predecessor of our node, we are searching node n to find if node n was the last node to use a memory slot
 int find_mem(Taotype type, int nodenr, node const &n, std::vector<int> &v){
+  //a minnr to make sure not to search too far
   int minnr = nodenr;
-  //if (n.ttype == type) {
-    
+    //for all entries in mem vector
     for (int i = 0; i < v.size(); i++) {
+      //set minnr to the lowest entry in mem vector, we dont need to search nodes with lower nodenr than this
       minnr = min(minnr, v[i]);
+      //if our the node we are searching matches one of the entries in the mem vector
       if (n.nodenr == v[i] && n.ttype == type) {
+        //set the new value of that index to the nodenr of the node we are looking to find a slot for.
         v[i] = nodenr;
+        //return the index of the mem vector, this corresponds to the memory slot we acquired
         return i;
       }
     }
-  //}
-  //std::cout << "nodenr: " << n.nodenr << "    minnr: " << minnr << "\n";
+
   int x;
+  //for all edges of node n
   for (int i = 0; i < (n.edges).size(); i++) {
+    //if the nodenr of the edges is more than minnr(else there is no possibility to find a match)
     if (nodes[n.edges[i]].nodenr >= minnr) {
+      //recursively call find_mem
       x = find_mem(type, nodenr, nodes[n.edges[i]], v);
-    if (x > -1) {
-      return x;
-    }
+      //if we found a memory slot
+      if (x > -1) {
+        //return the found slot
+        return x;
+      }
     
     }
   }
-
+  //if nothing is found, return -1
   return -1;
 
 }
 
 
+//check if the node we are trying to add as edge is already a predessecor of our node n
 bool edge_check(int edge, node const &n){
-  //std::cout << edge << " " << n.nodenr << "\n";
+  //check if edge is less or equal to nodenr, if its not -> no point in continuing
   if (edge <= n.nodenr){
+    //check if we have a match
     if (edge == n.nodenr){
+      //return true , It is a predecessor (or the same)
       return true;
     }
     else{
+      //for all edges of node n
       for (int i = 0; i < (n.edges).size(); i++) {
+        //recursively call edge_check
         if (edge_check(edge, nodes[n.edges[i]])) {
+          //return true if we found a match
           return true;
         }
       }
     }
   }
+  //return false if we could not find the node at all.
   return false;
 }
 

@@ -1,7 +1,5 @@
 //matrix mult configs
 #define ROW_SIZE 512
-#define COL_SIZE 512
-#define STEP_SIZE 512
 #define M_ASSEMBLY_WIDTH 1
 
 //sort config
@@ -21,10 +19,10 @@
 #define SORT_WIDTH 1
 #define HEAT_WIDTH 0
 
-
+//select maximum dag width
 #define DAG_WIDTH 8
 #define DAG_DEPTH 111
-//#define DAG_WIDTH 4
+
 
 
 

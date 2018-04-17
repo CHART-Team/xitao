@@ -1,7 +1,5 @@
 //matrix mult configs
 #define ROW_SIZE 64
-#define COL_SIZE 64
-#define STEP_SIZE 64
 #define M_ASSEMBLY_WIDTH 1
 
 //sort config
@@ -21,8 +19,7 @@
 #define HEAT_COUNT 50
 #define EDGE_RATE 25  //in %
 #define LEVEL_WIDTH 6 
-//#define DAG_DEPTH 10000
-//#define DAG_WIDTH 4
+
 
 #define R_SEED 123
 
