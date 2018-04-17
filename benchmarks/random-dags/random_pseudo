@@ -1,0 +1,77 @@
+
+
+typedef struct
+{
+  //taotype heat, sort or matrix
+  //nodenr
+  //taonr
+  //edges[]
+}node;
+
+int srand() = seed;
+int heatcount
+int sortcount
+int matrixcount
+
+int currenthcount
+int currentsortcount
+int currentmatrixcount
+
+int edge_rate
+int level_width
+if level_width < 1 
+	break
+
+int nr = 0;
+
+int nodes = 0;
+
+
+
+while(currentheatcount || currentsortcount || currentmatrixxount){
+ 	
+ 	int y = rand() % level_width*2-1
+ 	int z = 1
+ 	while nodes && z<=y
+
+
+		taotype nodetype;
+		int taonumber
+		int x = rand() % currentheatcount + currentsortcount + currentmatrixcount;
+		if 0 <= x <currentheatcount
+			nodetype = heat
+			taonumber = ++currentheatcount
+		else if currentheatcount <= x <currentsortcount
+			nodetype = sort
+			taonumber = ++currentsortcount
+		else 
+			nodetype = matrix
+			taonumber = ++currentmatrixcount
+
+
+		int y = rand() edge mean
+		if y > nodecount
+			y = nodecount
+
+		for (int z = 0; z < y; z++)
+		     rand() % nodecount
+		     if not member edgespush
+		     else z--
+		nodelist[nodes+y]new_node(nodetype, nodes, current, edges)
+		nodes++;
+	nodecount += nodecount
+}
+
+
+node new_node(taotype type, int nodenr, int taonr, int* edges)
+
+
+int find_mem(taotype nodetype, node)
+	if node.nodenr member 
+		return nodenr
+	else
+		for int x = 0; x<count(node.edges); x++)
+			int y = findmem(nodetype, node.edges[x]) 
+			if y > -1
+				return y
+		return -1;
