@@ -4,10 +4,10 @@
 //TIME_TRACE -- chrono time solution
 //
 
-#include "../tao.h"
-#include "tabletest/taomatrix_table.h"
-#include "tabletest/solver-tao_table.h"
-#include "tabletest/taosort_table.h"
+#include "../../tao.h"
+#include "taomatrix_table.h"
+#include "solver-tao_table.h"
+#include "taosort_table.h"
 #include <chrono>
 #include <iostream>
 #include <atomic>

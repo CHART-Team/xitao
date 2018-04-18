@@ -1,0 +1,27 @@
+//matrix mult configs
+#define ROW_SIZE 64
+#define COL_SIZE 64
+#define STEP_SIZE 64
+#define M_ASSEMBLY_WIDTH 1
+
+//sort config
+#define SORT_SIZE 32
+#define S_ASSEMBLY_WIDTH 4
+
+//heat configs
+#define HEAT_RESOLUTION 16
+#define INTERNAL_XDECOMP 4 //internal x decomposition
+#define INTERNAL_YDECOMP 1 //internal y decomposition
+#define H_ASSEMBLY_WIDTH 1
+
+//#define DEBUG
+
+//DAG configs
+#define MATRIX_WIDTH 10
+#define SORT_WIDTH 10
+#define HEAT_WIDTH 10
+#define DAG_DEPTH 100
+//#define DAG_WIDTH 4
+
+
+
