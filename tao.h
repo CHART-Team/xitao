@@ -11,7 +11,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <iostream>
-
+#include <cmath>
 #include "lfq-fifo.h"
 #include "config.h"
 
@@ -205,6 +205,7 @@ class PolyTask{
            std::atomic<int> threads_out_tao;
            int width;  // number of resources that this assembly uses
 
+           virtual double get_timetable(int thread, int index) = 0;
 #ifdef TAO_STA
            // PolyTasks can have affinity. Currently these are specified on a unidimensional vector
            // space [0,1) of type float
@@ -240,6 +241,29 @@ class PolyTask{
                t->refcount++;
            }
 
+#ifdef TIME_TRACE
+//Scheduling FUNCTION
+            int F(int _nthread, PolyTask &it){
+		int new_width=1;
+		double shortest_exec=5;
+
+		//0=w1, 1=w1, 2=w4
+		for(int i=0; i<3; i++){
+			int temp = std::pow(2,i);
+			//pow(2,i) gives width based of index
+			//nthread%width gives distance from group
+			//nthread-distance gives possible placement of X-width tao in group
+			if(it->get_timetable((_nthread-(_nthread%(temp))),i)<shortest_exec){
+				shortest_exec = it->get_timetable(_nthread%(temp),i);
+				new_width = temp;
+			}
+		}
+		//Return index to queueu and change width
+		it->width=new_width;	
+		return (_nthread-(_nthread%new_width));	
+	   }
+#endif
+
            PolyTask * commit_and_wakeup(int _nthread)
            {
              PolyTask *ret = nullptr;
@@ -270,7 +294,28 @@ class PolyTask{
 #else
                             int ndx = _nthread;
 #endif
+//CURRENT OVERRIDE OF POS§
+#ifdef TIME_TRACE
 
+		int new_width=1;
+		double shortest_exec=5;
+
+		//0=w1, 1=w1, 2=w4
+		for(int i=0; i<3; i++){
+			int temp = std::pow(2,i);
+			//pow(2,i) gives width based of index
+			//nthread%width gives distance from group
+			//nthread-distance gives possible placement of X-width tao in group
+			if(it->get_timetable((_nthread-(_nthread%(temp))),i)<shortest_exec){
+				shortest_exec = it->get_timetable(_nthread%(temp),i);
+				new_width = temp;
+			}
+		}
+		//Return index to queueu and change width
+		it->width=new_width;	
+	//	return (_nthread-(_nthread%new_width));	
+	 	ndx =  (_nthread-(_nthread%new_width));//F(_nthread,it);
+#endif
                             // seems like we acquire and release the lock for each assembly. 
                             // This is suboptimal, but given that TAO_STA makes the allocation
                             // somewhat random it simpifies the implementation. In the case that
@@ -317,7 +362,7 @@ class AssemblyTask: public PolyTask{
                 virtual int execute(int thread) = 0;
 #ifdef TIME_TRACE
                 virtual int set_timetable(int thread, double t, int index) = 0;
-                virtual double get_timetable(int thread, int index) = 0;
+//                virtual double get_timetable(int thread, int index) = 0;
 #endif
 #ifdef INT_SOL
                 virtual int set_timetable(int thread, uint64_t t) = 0;
