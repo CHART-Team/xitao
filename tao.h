@@ -270,10 +270,23 @@ class PolyTask{
 	   }
 
 	  int F2(int _nthread, PolyTask *it){
+		int children = out.size();
+		int ndx = _nthread;
+		if((current_tasks+children) < MAXTHREADS){
+			//Ceiling division of integeres (x+y-1)/y 
+			//Guards for 8 cores and 3 widths????
+			//Consider mod 4 as in F
+			int ce = (((current_tasks+children)+MAXTHREADS)-1)/(current_tasks+children);
+			it->width=ce;
+			
+			
+		}else{
+			ndx = F(_nthread,it);
 
+		}
+		return(ndx);
 
-
-	 }
+     	  }
 
 #endif
 
@@ -285,6 +298,7 @@ class PolyTask{
  	     //Increment value of tasks in the system
 	     //SHOULD THIS BE DONE, since processor still busy, but idk
              current_tasks.fetch_sub(1);
+	     
 #endif
              for(std::list<PolyTask *>::iterator it = out.begin();
                 it != out.end();
@@ -305,7 +319,7 @@ class PolyTask{
 ){
                           //CURRENT OVERRIDE OF POS§
 #ifdef TIME_TRACE
-                           F(_nthread,(*it)); //Since forward locally, we don't need the resulting nthread for now only width change
+                           F2(_nthread,(*it)); //Since forward locally, we don't need the resulting nthread for now only width change
 #endif
                            ret = *it; // forward locally only if affinity matches
                         }else{
@@ -319,7 +333,7 @@ class PolyTask{
 #endif
 
 #ifdef TIME_TRACE
-                            ndx = F(_nthread,(*it)); //Change width
+                            ndx = F2(_nthread,(*it)); //Change width
 #endif
                             // seems like we acquire and release the lock for each assembly. 
                             // This is suboptimal, but given that TAO_STA makes the allocation
