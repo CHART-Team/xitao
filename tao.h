@@ -204,8 +204,9 @@ class PolyTask{
            std::list <PolyTask *> out;
            std::atomic<int> threads_out_tao;
            int width;  // number of resources that this assembly uses
-
+#ifdef TIME_TRACE
            virtual double get_timetable(int thread, int index) = 0;
+#endif
 #ifdef TAO_STA
            // PolyTasks can have affinity. Currently these are specified on a unidimensional vector
            // space [0,1) of type float
@@ -243,8 +244,8 @@ class PolyTask{
 
 #ifdef TIME_TRACE
 //Scheduling FUNCTIONi
-/*
-            int F(int _nthread, PolyTask &it){
+
+            int F(int _nthread, PolyTask *it){
 		int new_width=1;
 		double shortest_exec=5;
 
@@ -262,7 +263,7 @@ class PolyTask{
 		//Return index to queueu and change width
 		it->width=new_width;	
 		return (_nthread-(_nthread%new_width));	
-	   }*/
+	   }
 #endif
 
            PolyTask * commit_and_wakeup(int _nthread)
@@ -284,9 +285,13 @@ class PolyTask{
                            // check the case affinity_queue == -1
                                 && (((*it)->affinity_queue == -1) || (((*it)->affinity_queue/(*it)->width) == (_nthread/(*it)->width)))
 #endif
-)
+){
+                          //CURRENT OVERRIDE OF POS§
+#ifdef TIME_TRACE
+                           F(_nthread,(*it));
+#endif
                            ret = *it; // forward locally only if affinity matches
-                        else{
+                        }else{
                             // otherwise insert into affinity queue, or in local queue
 #ifdef TAO_STA
                             int ndx = (*it)->affinity_queue;
@@ -295,28 +300,7 @@ class PolyTask{
 #else
                             int ndx = _nthread;
 #endif
-//CURRENT OVERRIDE OF POS§
-#ifdef TIME_TRACE
 
-		int new_width=1;
-		double shortest_exec=5;
-
-		//0=w1, 1=w1, 2=w4
-		for(int i=0; i<3; i++){
-			int temp = std::pow(2,i);
-			//pow(2,i) gives width based of index
-			//nthread%width gives distance from group
-			//nthread-distance gives possible placement of X-width tao in group
-			if((*it)->get_timetable((_nthread-(_nthread%(temp))),i)<shortest_exec){
-				shortest_exec = (*it)->get_timetable(_nthread%(temp),i);
-				new_width = temp;
-			}
-		}
-		//Return index to queueu and change width
-		(*it)->width=new_width;	
-	//	return (_nthread-(_nthread%new_width));	
-	 	ndx =  (_nthread-(_nthread%new_width));//F(_nthread,it);
-#endif
                             // seems like we acquire and release the lock for each assembly. 
                             // This is suboptimal, but given that TAO_STA makes the allocation
                             // somewhat random it simpifies the implementation. In the case that
