@@ -190,12 +190,12 @@ class PolyTask{
                         }
                     else task_pool[_nthread].tasks--;
                     threads_out_tao = 0;
-#ifdef TIME_TRACE
+#ifdef F3
 	 	    criticality=0;
 #endif
             }
 	
-#ifdef TIME_TRACE
+#ifdef F3
 	   //Ciritcality value to indicate critical path, higher value -> more critical
 	   int criticality;
 #endif
@@ -207,8 +207,10 @@ class PolyTask{
            static std::atomic<int> created_tasks;
 #endif
            static std::atomic<int> pending_tasks;
-#ifdef TIME_TRACE
+#ifdef F2
            static std::atomic<int> current_tasks;
+#endif
+#ifdef F3
            static std::atomic<int> prev_top_task;
 #endif
 
@@ -254,7 +256,7 @@ class PolyTask{
                t->refcount++;
            }
 
-#ifdef TIME_TRACE
+#if defined(F1)  || defined(F2)
 //Scheduling FUNCTIONs
 
             //Considers time table for new width, only resquedules among own "group" for new width
@@ -277,9 +279,11 @@ class PolyTask{
 		it->width=new_width;	
 		return (_nthread-(_nthread%new_width));	
 	   }
+#endif
 
+#ifdef F2
 	 //Change width according to system load
-	  int F2(int _nthread, PolyTask *it){
+	  int F_2(int _nthread, PolyTask *it){
 		int children = out.size();
 		int ndx = _nthread;
 		if((current_tasks+children) < MAXTHREADS){
@@ -297,7 +301,8 @@ class PolyTask{
 		return(ndx);
 
      	  }
-	
+#endif
+#ifdef F3	
           //Recursive function of CATS -criticality calculation
 	  int set_criticality(){
 		if((criticality)==0){
@@ -318,7 +323,7 @@ class PolyTask{
 	  }
 
 	 //Criticality-aware Functio scheduling
-	int F3(int _nthread, PolyTask * it){
+	int F_3(int _nthread, PolyTask * it){
 		int prio = 0;
  		if((it->criticality) >= (prev_top_task.load()-1)){
 			prev_top_task.store(it->criticality);
@@ -348,7 +353,7 @@ class PolyTask{
            {
              PolyTask *ret = nullptr;
 
-#ifdef TIME_TRACE
+#ifdef F2
  	     //Increment value of tasks in the system
 	     //SHOULD THIS BE DONE, since processor still busy, but idk
              current_tasks.fetch_sub(1);
@@ -366,9 +371,9 @@ class PolyTask{
                         LOCK_RELEASE(output_lck);
 #endif 
 
-#ifdef TIME_TRACE
+#ifdef F3
 			int ndx = _nthread;
-			int prio = F3(_nthread, (*it));
+			int prio = F_3(_nthread, (*it));
 			if (prio == 1){
 				ndx=find_thread(_nthread, (*it));	
 			  }
@@ -393,9 +398,13 @@ class PolyTask{
 #endif
 ){
                           //CURRENT OVERRIDE OF POS§
-//#ifdef TIME_TRACE
-                          //F2(_nthread,(*it)); //Since forward locally, we don't need the resulting nthread for now only width change
-//#endif
+#ifdef F2
+                          F_2(_nthread,(*it)); //Since forward locally, we don't need the resulting nthread for now only width change
+#endif
+
+#ifdef F1
+                           F(_nthread,(*it)); //Since forward locally, we don't need the resulting nthread for now only width change
+#endif
                            ret = *it; // forward locally only if affinity matches
                         }else{
                             // otherwise insert into affinity queue, or in local queue
@@ -407,9 +416,12 @@ class PolyTask{
 			    int ndx = _nthread;
 #endif
 
-//#ifdef TIME_TRACE
-                            //ndx = F2(_nthread,(*it)); //Change width
-//#endif
+#ifdef F2
+                            ndx = F_2(_nthread,(*it)); //Change width
+#endif
+#ifdef F1
+                            ndx = F(_nthread,(*it)); //Change width
+#endif
                             // seems like we acquire and release the lock for each assembly. 
                             // This is suboptimal, but given that TAO_STA makes the allocation
                             // somewhat random it simpifies the implementation. In the case that
@@ -428,7 +440,7 @@ class PolyTask{
 
 #endif
                     }
-#ifdef TIME_TRACE
+#ifdef F2
 		//increment the number of tasks in the system
 		current_tasks.fetch_add(1);
 #endif
