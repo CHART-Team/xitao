@@ -209,6 +209,7 @@ class PolyTask{
            static std::atomic<int> pending_tasks;
 #ifdef TIME_TRACE
            static std::atomic<int> current_tasks;
+           static std::atomic<int> prev_top_task;
 #endif
 
            std::atomic<int> refcount;
@@ -277,6 +278,7 @@ class PolyTask{
 		return (_nthread-(_nthread%new_width));	
 	   }
 
+	 //Change width according to system load
 	  int F2(int _nthread, PolyTask *it){
 		int children = out.size();
 		int ndx = _nthread;
@@ -296,6 +298,7 @@ class PolyTask{
 
      	  }
 	
+          //Recursive function of CATS -criticality calculation
 	  int set_criticality(){
 		if((criticality)==0){
 			int max=0;
@@ -314,6 +317,31 @@ class PolyTask{
 		return criticality;
 	  }
 
+	 //Criticality-aware Functio scheduling
+	int F3(int _nthread, PolyTask * it){
+		int prio = 0;
+ 		if((it->criticality) >= (prev_top_task.load()-1)){
+			prev_top_task.store(it->criticality);
+			prio=1;
+		} 
+		return prio;
+	}	
+
+	//For choosing "best" for prio
+	int find_thread(int _nthread, PolyTask * it){
+		int ndx = _nthread;
+		double shortest_exec=5;
+		for(int k=0; k<MAXTHREADS; k++){
+			if((it->get_timetable(k,0))<shortest_exec){
+				shortest_exec = (it->get_timetable(k,0));
+				ndx=k;
+			}
+		
+		}
+		
+		return ndx;
+	
+	}
 #endif
 
            PolyTask * commit_and_wakeup(int _nthread)
@@ -337,6 +365,27 @@ class PolyTask{
                         std::cout << "Task " << (*it)->taskid << " became ready" << std::endl;
                         LOCK_RELEASE(output_lck);
 #endif 
+
+#ifdef TIME_TRACE
+			int ndx = _nthread;
+			int prio = F3(_nthread, (*it));
+			if (prio == 1){
+				ndx=find_thread(_nthread, (*it));	
+			  }
+
+#if defined(SUPERTASK_STEALING) || defined(TAO_STA)
+                            LOCK_ACQUIRE(worker_lock[ndx]);
+#endif
+                            worker_ready_q[ndx].push_front(*it);
+#if defined(SUPERTASK_STEALING) || defined(TAO_STA)
+                            LOCK_RELEASE(worker_lock[ndx]);
+#endif
+
+
+
+
+#else
+
                         if(!ret
 #ifdef TAO_STA
                            // check the case affinity_queue == -1
@@ -344,9 +393,9 @@ class PolyTask{
 #endif
 ){
                           //CURRENT OVERRIDE OF POS§
-#ifdef TIME_TRACE
-                          F2(_nthread,(*it)); //Since forward locally, we don't need the resulting nthread for now only width change
-#endif
+//#ifdef TIME_TRACE
+                          //F2(_nthread,(*it)); //Since forward locally, we don't need the resulting nthread for now only width change
+//#endif
                            ret = *it; // forward locally only if affinity matches
                         }else{
                             // otherwise insert into affinity queue, or in local queue
@@ -358,9 +407,9 @@ class PolyTask{
 			    int ndx = _nthread;
 #endif
 
-#ifdef TIME_TRACE
-                            ndx = F2(_nthread,(*it)); //Change width
-#endif
+//#ifdef TIME_TRACE
+                            //ndx = F2(_nthread,(*it)); //Change width
+//#endif
                             // seems like we acquire and release the lock for each assembly. 
                             // This is suboptimal, but given that TAO_STA makes the allocation
                             // somewhat random it simpifies the implementation. In the case that
@@ -376,6 +425,8 @@ class PolyTask{
 
 
                          } 
+
+#endif
                     }
 #ifdef TIME_TRACE
 		//increment the number of tasks in the system

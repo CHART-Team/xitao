@@ -553,6 +553,7 @@ struct completions task_pool[MAXTHREADS];
 
 #ifdef TIME_TRACE
 std::atomic<int> PolyTask::current_tasks;
+std::atomic<int> PolyTask::prev_top_task;
 #endif
 
 // need to declare the static class memeber
