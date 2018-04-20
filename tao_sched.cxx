@@ -75,6 +75,18 @@ int gotao_init()
 
 int gotao_start()
 {
+#ifdef TIME_TRACE
+  //Set critiality
+  for(int j=0; j<GOTAO_NTHREADS; j++){
+	
+       for(std::list<PolyTask *>::iterator it = worker_ready_q[j].begin();
+                it != worker_ready_q[j].end();
+                ++it){
+		(*it)->set_criticality();
+  	}
+  }
+  std::cout << "Done analysing" << std::endl;
+#endif
   starting_barrier->wait();
 }
 

@@ -190,7 +190,15 @@ class PolyTask{
                         }
                     else task_pool[_nthread].tasks--;
                     threads_out_tao = 0;
+#ifdef TIME_TRACE
+	 	    criticality=0;
+#endif
             }
+	
+#ifdef TIME_TRACE
+	   //Ciritcality value to indicate critical path, higher value -> more critical
+	   int criticality;
+#endif
 
            int type;
 
@@ -287,6 +295,24 @@ class PolyTask{
 		return(ndx);
 
      	  }
+	
+	  int set_criticality(){
+		if((criticality)==0){
+			int max=0;
+             		for(std::list<PolyTask *>::iterator edges = out.begin();
+                	edges != out.end();
+                	++edges){
+				int new_max =((*edges)->set_criticality());
+				max = ((new_max>max) ? (new_max) : (max));
+			}
+
+
+			criticality=++max;
+
+		}
+	
+		return criticality;
+	  }
 
 #endif
 
@@ -319,7 +345,7 @@ class PolyTask{
 ){
                           //CURRENT OVERRIDE OF POS§
 #ifdef TIME_TRACE
-                           F2(_nthread,(*it)); //Since forward locally, we don't need the resulting nthread for now only width change
+                          F2(_nthread,(*it)); //Since forward locally, we don't need the resulting nthread for now only width change
 #endif
                            ret = *it; // forward locally only if affinity matches
                         }else{
