@@ -809,6 +809,12 @@ class TAOQuickMergeDyn : public AssemblyTask
                 {   
                        int quarter = size / 4;
                        pending_tasks = 13;
+#ifdef TIME_TRACE
+//		       ttable_lock.lock = false;
+#endif                       
+		       assembly_lock.lock = false;
+
+                       for(int i = 0; i < 13; i++) dow[i].refcount=0;
 
                        // STEP 0
                        // entry 0
@@ -982,21 +988,21 @@ class TAOQuickMergeDyn : public AssemblyTask
               }
 #endif          
 #ifdef  TIME_TRACE             
-              GENERIC_LOCK(ttable_lock);
+//              GENERIC_LOCK(ttable_lock);
 
               int set_timetable(int threadid, double ticks, int index){
 //                  int index = (width == 4) ? (2) : ((width)-1);
-                  LOCK_ACQUIRE(ttable_lock);
+//                  LOCK_ACQUIRE(ttable_lock);
                   //  time_table[_res][threadid] = (d[_res][threadid] + ticks)/2;
                   time_table[threadid][index] = ticks;
-                  LOCK_RELEASE(ttable_lock);
+//                  LOCK_RELEASE(ttable_lock);
               }
 	     double get_timetable(int threadid, int index){
 		 
                   double time = 0;
-                  LOCK_ACQUIRE(ttable_lock);
+//                  LOCK_ACQUIRE(ttable_lock);
 		  time = time_table[threadid][index];
-		  LOCK_RELEASE(ttable_lock);
+//		  LOCK_RELEASE(ttable_lock);
 	          return time;
 	     }
 #endif          
