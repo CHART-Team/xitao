@@ -207,7 +207,7 @@ class PolyTask{
            static std::atomic<int> created_tasks;
 #endif
            static std::atomic<int> pending_tasks;
-#ifdef F2
+#if defined(F2) || defined(F3)
            static std::atomic<int> current_tasks;
 #endif
 #ifdef F3
@@ -256,7 +256,7 @@ class PolyTask{
                t->refcount++;
            }
 
-#if defined(F1)  || defined(F2)
+#if defined(F1)  || defined(F2) || defined(F3) 
 //Scheduling FUNCTIONs
 
             //Considers time table for new width, only resquedules among own "group" for new width
@@ -281,16 +281,16 @@ class PolyTask{
 	   }
 #endif
 
-#ifdef F2
+#if defined(F2) || defined(F3)
 	 //Change width according to system load
 	  int F_2(int _nthread, PolyTask *it){
-		int children = out.size();
+		//int children = out.size();
 		int ndx = _nthread;
-		if((current_tasks+children) < MAXTHREADS){
+		if((current_tasks+1) < MAXTHREADS){
 			//Ceiling division of integeres (x+y-1)/y 
 			//Guards for 8 cores and 3 widths????
 			//Consider mod 4 as in F
-			int ce = (((current_tasks+children)+MAXTHREADS)-1)/(current_tasks+children);
+			int ce = (((current_tasks+1)+MAXTHREADS)-1)/(current_tasks+1);
 			it->width=ce;
 			
 			
@@ -343,6 +343,7 @@ class PolyTask{
 			}
 		
 		}
+		ndx = F_2(ndx, it);
 		
 		return ndx;
 	
@@ -353,7 +354,7 @@ class PolyTask{
            {
              PolyTask *ret = nullptr;
 
-#ifdef F2
+#if defined(F2) || defined(F3)
  	     //Increment value of tasks in the system
 	     //SHOULD THIS BE DONE, since processor still busy, but idk
              current_tasks.fetch_sub(1);
@@ -376,7 +377,9 @@ class PolyTask{
 			int prio = F_3(_nthread, (*it));
 			if (prio == 1){
 				ndx=find_thread(_nthread, (*it));	
-			  }
+			}else{
+			//	ndx=F(_nthread, (*it));
+			}
 
 #if defined(SUPERTASK_STEALING) || defined(TAO_STA)
                             LOCK_ACQUIRE(worker_lock[ndx]);
@@ -439,11 +442,12 @@ class PolyTask{
                          } 
 
 #endif
-                    }
-#ifdef F2
+
+#if defined(F2) || defined(F3)
 		//increment the number of tasks in the system
 		current_tasks.fetch_add(1);
 #endif
+                    }
               }
 
              task_completions[_nthread].tasks++;

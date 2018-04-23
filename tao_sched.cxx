@@ -122,7 +122,7 @@ int gotao_push(PolyTask *pt, int queue)
 #if defined(SUPERTASK_STEALING) || defined(TAO_STA)
   LOCK_RELEASE(worker_lock[queue]);
 #endif // SUPERTASK_STEALING
-#ifdef F2
+#if defined (F2) || defined(F3)
   //Increment value of tasks in the system
   PolyTask::current_tasks.fetch_add(1);
 #endif
@@ -145,7 +145,7 @@ int gotao_push_init(PolyTask *pt, int queue)
           queue = gotao_thread_base;
 
   worker_ready_q[queue].push_front(pt);
-#ifdef F2
+#if defined(F2) || defined(F3)
   //Increment value of tasks in the system
   PolyTask::current_tasks.fetch_add(1);
 #endif
@@ -165,7 +165,7 @@ int gotao_push_back_init(PolyTask *pt, int queue)
           queue = gotao_thread_base;
 
   worker_ready_q[queue].push_back(pt);
-#ifdef F2
+#if defined(F2) || defined(F3)
   //Increment value of tasks in the system
   PolyTask::current_tasks.fetch_add(1);
 #endif
@@ -400,7 +400,7 @@ int worker_loop(int _nthread)
 #ifdef DEBUG
 		LOCK_ACQUIRE(output_lck);
 		std::cout << "Thread " << nthread << " completed assembly task " << assembly->taskid << std::endl;
-#ifdef F2
+#if defined(F2) || defined(F3)
 		std::cout << "Current number of threads in the system" << PolyTask::current_tasks << std::endl;
 #endif
 		LOCK_RELEASE(output_lck);
@@ -553,7 +553,7 @@ std::atomic<int> PolyTask::pending_tasks;
 struct completions task_completions[MAXTHREADS];
 struct completions task_pool[MAXTHREADS];
 
-#ifdef F2
+#if defined(F2) || defined(F3)
 std::atomic<int> PolyTask::current_tasks;
 #endif
 #ifdef F3
