@@ -8,12 +8,22 @@
 #include <iostream>
 #include <atomic>
 #include <math.h>
+#ifdef TIME_TRACE
+#include "../../tao.h"
+#include "../tabletest/taomatrix_table.h"
+#include "../tabletest/solver-tao_table.h"
+#include "../tabletest/taosort_table.h"
+#include "../taocopy.h"
+#include "config-fork-join.h"
+#else
 #include "../../tao.h"
 #include "../taomatrix.h"
 #include "../solver-tao.h"
 #include "../taosort.h"
 #include "../taocopy.h"
 #include "config-fork-join.h"
+#endif
+
 
 
 
@@ -30,6 +40,11 @@ extern "C" {
 
 //used to fill input data with random values
 void fill_arrays(int **a, int **c, int ysize, int xsize);
+#ifdef TIME_TRACE
+double TAO_matrix::time_table[GOTAO_NTHREADS][3];
+double TAOQuickMergeDyn::time_table[GOTAO_NTHREADS][3];
+double TAO_Copy::time_table[GOTAO_NTHREADS][3];
+#endif
 
 
 // MAIN 

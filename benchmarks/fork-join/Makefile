@@ -5,7 +5,7 @@ include ../../makefile.inc
 CFLAGS := -std=gnu11 -g3 -O3 ${EXTRAEINC}
 CXXFLAGS = --std=c++11 -pthread  -g3 -O3 ${EXTRAEINC}
 
-include ../Makefile.bench
+include Makefile.forkjoin
 
 CXXFLAGS += -DLEVEL1=$(LEVEL1) -DLEVEL2=$(LEVEL2) -DLEVEL3=$(LEVEL3) -DLEVEL4=$(LEVEL4) -DLEVEL5=$(LEVEL5)  -DLEVEL6=$(LEVEL6) -DLEVEL7=$(LEVEL7) 
 CXXFLAGS += -DDYNW1=$(DYNW1)   -DDYNW2=$(DYNW2)   -DDYNW3=$(DYNW3)   -DDYNW4=$(DYNW4)   -DDYNW5=$(DYNW5) -DDYNW6=$(DYNW6)   -DDYNW7=$(DYNW7)
