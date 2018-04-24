@@ -13,6 +13,7 @@
 #include "../tabletest/taomatrix_table.h"
 #include "../tabletest/solver-tao_table.h"
 #include "../tabletest/taosort_table.h"
+#include "../taocopy.h"
 #include "randombench.h"
 #include "config-random-bench.h"
 
@@ -37,7 +38,7 @@ void fill_arrays(int **a, int **c, int ysize, int xsize);
 #ifdef TIME_TRACE
 double TAO_matrix::time_table[GOTAO_NTHREADS][3];
 double TAOQuickMergeDyn::time_table[GOTAO_NTHREADS][3];
-double copy2D::time_table[GOTAO_NTHREADS][3];
+double TAO_Copy::time_table[GOTAO_NTHREADS][3];
 #endif
 #ifdef INT_SOL
 uint64_t TAO_matrix::time_table[GOTAO_NTHREADS][3];
@@ -373,7 +374,7 @@ for (int i = 0; i < h_ysize; ++i)
 
    TAOQuickMergeDyn *sort_ao[sort_count];
 
-   copy2D *heat_ao[heat_count];
+   TAO_Copy *heat_ao[heat_count];
 
 
 
@@ -459,17 +460,10 @@ for (int i = 0; i < h_ysize; ++i)
     //spawn copy TAO
     if (nodes[x].ttype == heat)
     {
-      heat_ao[k] = new copy2D(
+      heat_ao[k] = new TAO_Copy(
                              heat_input_a[(nodes[x].mem_space)+1],
                              heat_output_c[(nodes[x].mem_space)+1],
-                             heat_resolution, heat_resolution,
-                             0, // x*((np + exdecomp -1) / exdecomp),
-                             0, //y*((np + eydecomp -1) / eydecomp),
-                             heat_resolution, //(np + exdecomp - 1) / exdecomp,
-                             heat_resolution, //(np + eydecomp - 1) / eydecomp, 
-                             gotao_sched_2D_static,
-                             heat_resolution/xdecomp, // (np + ixdecomp*exdecomp -1) / (ixdecomp*exdecomp),
-                             heat_resolution/ydecomp, //(np + iydecomp*eydecomp -1) / (iydecomp*eydecomp), 
+                             heat_resolution * heat_resolution,
                              ha_width);
       //if our node has no input edges
       if (nodes[x].edges.size() == 0) {

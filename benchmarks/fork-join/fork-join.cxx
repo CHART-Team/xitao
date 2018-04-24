@@ -12,6 +12,7 @@
 #include "../taomatrix.h"
 #include "../solver-tao.h"
 #include "../taosort.h"
+#include "../taocopy.h"
 #include "config-fork-join.h"
 
 
@@ -242,7 +243,7 @@ for (int i = 0; i < h_ysize; ++i)
    int sort_assemblies = assembly_count * sort_width;
    TAOQuickMergeDyn *sort_ao[sort_assemblies];
    int heat_assemblies = assembly_count * heat_width;
-   copy2D *heat_ao[heat_assemblies];
+   TAO_Copy *heat_ao[heat_assemblies];
 
 
 
@@ -329,17 +330,10 @@ for (int i = 0; i < h_ysize; ++i)
 
       if (heat_width == 1)
       {
-        heat_ao[k] = new copy2D(
+        heat_ao[k] = new TAO_Copy(
                                heat_input_a[mem+1],
                                heat_output_c[mem+1],
-                               heat_resolution, heat_resolution,
-                               0, // x*((np + exdecomp -1) / exdecomp),
-                               0, //y*((np + eydecomp -1) / eydecomp),
-                               heat_resolution, //(np + exdecomp - 1) / exdecomp,
-                               heat_resolution, //(np + eydecomp - 1) / eydecomp, 
-                               gotao_sched_2D_static,
-                               heat_resolution/xdecomp, // (np + ixdecomp*exdecomp -1) / (ixdecomp*exdecomp),
-                               heat_resolution/ydecomp, //(np + iydecomp*eydecomp -1) / (iydecomp*eydecomp), 
+                               heat_resolution * heat_resolution,
                                ha_width);
         //if this is the first TAO -> no input edges
         if (k == 0) { 

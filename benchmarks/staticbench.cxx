@@ -6,6 +6,7 @@
 #include "taomatrix.h"
 #include "solver-tao.h"
 #include "taosort.h"
+#include "taocopy.h"
 #include <chrono>
 #include <iostream>
 #include <atomic>
@@ -224,7 +225,7 @@ for (int i = 0; i < h_ysize; ++i)
    int sort_assemblies = dag_depth * sort_width;
    TAOQuickMergeDyn *sort_ao[sort_assemblies];
    int heat_assemblies = dag_depth * heat_width;
-   copy2D *heat_ao[heat_assemblies];
+   TAO_Copy *heat_ao[heat_assemblies];
 
 
 
@@ -275,17 +276,10 @@ for (int i = 0; i < h_ysize; ++i)
 
     for (int z = 0; z < heat_width; z++)
     {
-      heat_ao[k] = new copy2D(
+      heat_ao[k] = new TAO_Copy(
                              heat_input_a[z+1],
                              heat_output_c[z+1],
-                             heat_resolution, heat_resolution,
-                             0, // x*((np + exdecomp -1) / exdecomp),
-                             0, //y*((np + eydecomp -1) / eydecomp),
-                             heat_resolution, //(np + exdecomp - 1) / exdecomp,
-                             heat_resolution, //(np + eydecomp - 1) / eydecomp, 
-                             gotao_sched_2D_static,
-                             heat_resolution/xdecomp, // (np + ixdecomp*exdecomp -1) / (ixdecomp*exdecomp),
-                             heat_resolution/ydecomp, //(np + iydecomp*eydecomp -1) / (iydecomp*eydecomp), 
+                             h_xsize,
                              ha_width);
       if (x == 0) {
         gotao_push_init(heat_ao[k], k % nthreads);
