@@ -113,7 +113,7 @@ struct quickmerge_uow{
         
 void print_array( int, ELM * );
 
-
+/*
 class TAOinit : public AssemblyTask
 {
     public: 
@@ -623,7 +623,7 @@ class TAOMerge2 : public AssemblyTask
                 int steps;
                 quickmerge_uow dow[2][5]; // [threadid][step]
 };
-
+*/
 struct quickmerge_uow_dyn{
         int type; // SEQMERGE, SEQQUICK, BINSPLIT, IDLE
         union{
@@ -635,7 +635,7 @@ struct quickmerge_uow_dyn{
         std::list <quickmerge_uow_dyn *> out;
         std::atomic<int> refcount;
 };
-        
+  /*      
 // like TAOMerge but using a dependence based scheduler with variable width
 class TAOMergeDyn : public AssemblyTask 
 {
@@ -792,7 +792,7 @@ class TAOMergeDyn : public AssemblyTask
                 // assembly locks
                 GENERIC_LOCK(assembly_lock);
 };
-
+*/
 
 class TAOQuickMergeDyn : public AssemblyTask 
 {

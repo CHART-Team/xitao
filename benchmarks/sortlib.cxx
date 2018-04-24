@@ -2,9 +2,11 @@
 //
 //
 
-
+#ifdef TIME_TRACE
+#include "tabletest/taosort_table.h"
+#else
 #include "taosort.h"
-
+#endif
 // Use LOI instrumentation: 
 #ifdef DO_LOI
 
