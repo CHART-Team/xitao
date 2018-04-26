@@ -391,6 +391,7 @@ class PolyTask{
 			if (prio == 1){
 				ndx2=find_thread(_nthread, (*it));	
 			}else{
+				ndx2=F((rand()%4),(*it));
 
 
 			}
