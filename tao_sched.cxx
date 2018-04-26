@@ -75,6 +75,9 @@ int gotao_init()
 
 int gotao_start()
 {
+#ifdef BIAS
+PolyTask::bias.store(1.5);
+#endif
 #ifdef F3
   //Set critiality
   for(int j=0; j<GOTAO_NTHREADS; j++){
@@ -448,19 +451,16 @@ int worker_loop(int _nthread)
           int attempts = STEAL_ATTEMPTS; 
           do{
              do{
-              if ((attempts-1) > (STEAL_ATTEMPTS/2)) {
-                random_core = (r_rand(&seed) % 4) + (nthread/4) * 4;
-              }else {
                random_core = (r_rand(&seed) % gotao_nthreads);
-              }
                } while(random_core == nthread);
             
              {
+		     
                LOCK_ACQUIRE(worker_lock[random_core]);
                if(!worker_ready_q[random_core].empty()){
-                  st = worker_ready_q[random_core].back();  
-                  worker_ready_q[random_core].pop_back();
-                  tao_total_steals++;  // successful steals only
+                 	st = worker_ready_q[random_core].back(); 
+                  	worker_ready_q[random_core].pop_back();
+                  	tao_total_steals++;  // successful steals only
                }
                LOCK_RELEASE(worker_lock[random_core]);
              }
@@ -562,6 +562,9 @@ std::atomic<int> PolyTask::current_tasks;
 #endif
 #ifdef F3
 std::atomic<int> PolyTask::prev_top_task;
+#endif
+#ifdef BIAS
+std::atomic<double> PolyTask::bias;
 #endif
 
 // need to declare the static class memeber

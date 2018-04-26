@@ -200,6 +200,8 @@ class PolyTask{
 	   int criticality;
 #endif
 
+           //PRIO COMMENT
+	   int prio;
            int type;
 
 #if defined(DEBUG) || defined(EXTRAE)
@@ -213,6 +215,9 @@ class PolyTask{
 #ifdef F3
            static std::atomic<int> prev_top_task;
 #endif
+#ifdef BIAS
+	  static std::atomic<double> bias;
+#endif	   
 
            std::atomic<int> refcount;
            std::list <PolyTask *> out;
@@ -362,6 +367,33 @@ class PolyTask{
 	
 	}
 #endif
+#ifdef BIAS
+	int bias_sched(int _nthread, PolyTask * it){
+		int ndx=_nthread;
+		double newbias=bias;
+		double div = 1;
+		double little = it->get_timetable(0,2);
+		double big = it->get_timetable(4,2);
+		if(!big){
+			ndx=4;
+		}else if(!little){
+			ndx=0;
+		}else{
+			div = big/little;
+			if(div > newbias){
+				ndx=4;
+			}else{
+				ndx=0;
+			}
+		newbias=((9*newbias)+div)/10;
+		bias.store(newbias);
+		}
+
+
+		return ndx;
+	}	
+
+#endif
 
            PolyTask * commit_and_wakeup(int _nthread)
            {
@@ -385,17 +417,22 @@ class PolyTask{
                         LOCK_RELEASE(output_lck);
 #endif 
 
-#ifdef F3
+#if defined(F3) || defined(BIAS)
 			int ndx2 = _nthread;
-			int prio = F_3(_nthread, (*it));
-			if (prio == 1){
+#ifdef F3
+			int pr = F_3(_nthread, (*it));
+			(*it)->prio=pr;
+			if (pr == 1){
 				ndx2=find_thread(_nthread, (*it));	
 			}else{
-				ndx2=F((rand()%4),(*it));
+				ndx2=F_2((rand()%4),(*it));
 
 
 			}
-
+#endif
+#ifdef BIAS
+			ndx2 = bias_sched(_nthread, (*it));
+#endif
 
 #if defined(SUPERTASK_STEALING) || defined(TAO_STA)
                             LOCK_ACQUIRE(worker_lock[ndx2]);
