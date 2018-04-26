@@ -270,13 +270,16 @@ class PolyTask{
 			//pow(2,i) gives width based of index
 			//nthread%width gives distance from group
 			//nthread-distance gives possible placement of X-width tao in group
-			if(it->get_timetable((_nthread-(_nthread%(temp))),i)*temp<shortest_exec){
-				shortest_exec = it->get_timetable(_nthread%(temp),i)*temp;
+			if(temp*(it->get_timetable((_nthread-(_nthread%(temp))),i)) < shortest_exec){
+				shortest_exec = (it->get_timetable((_nthread-(_nthread%(temp))),i))*temp;
 				new_width = temp;
 			}
 		}
 		//Return index to queueu and change width
-		it->width=new_width;	
+		it->width=new_width;
+		//if(it->barrier != NULL){
+		//	(it->barrier)->nthreads=new_width;
+		//}	
 		return (_nthread-(_nthread%new_width));	
 	   }
 #endif
@@ -291,7 +294,16 @@ class PolyTask{
 			//Guards for 8 cores and 3 widths????
 			//Consider mod 4 as in F
 			int ce = (((current_tasks+1)+MAXTHREADS)-1)/(current_tasks+1);
-			it->width=ce;
+			if((ce!=3)){
+				if(ce!=8){
+					it->width=ce;
+				}
+				else{
+					it->width=4;
+				}
+			}else{
+				it->width=4;
+			}
 			
 			
 		}else{
@@ -343,6 +355,7 @@ class PolyTask{
 			}
 		
 		}
+		//This? F_2
 		ndx = F_2(ndx, it);
 		
 		return ndx;
@@ -373,22 +386,24 @@ class PolyTask{
 #endif 
 
 #ifdef F3
-			int ndx = _nthread;
+			int ndx2 = _nthread;
 			int prio = F_3(_nthread, (*it));
 			if (prio == 1){
-				ndx=find_thread(_nthread, (*it));	
+				ndx2=find_thread(_nthread, (*it));	
 			}else{
-			//	ndx=F(_nthread, (*it));
+				ndx2=F((rand()%4),(*it));
+
+
 			}
 
-#if defined(SUPERTASK_STEALING) || defined(TAO_STA)
-                            LOCK_ACQUIRE(worker_lock[ndx]);
-#endif
-                            worker_ready_q[ndx].push_front(*it);
-#if defined(SUPERTASK_STEALING) || defined(TAO_STA)
-                            LOCK_RELEASE(worker_lock[ndx]);
-#endif
 
+#if defined(SUPERTASK_STEALING) || defined(TAO_STA)
+                            LOCK_ACQUIRE(worker_lock[ndx2]);
+#endif
+                            worker_ready_q[ndx2].push_front(*it);
+#if defined(SUPERTASK_STEALING) || defined(TAO_STA)
+                            LOCK_RELEASE(worker_lock[ndx2]);
+#endif
 
 
 
