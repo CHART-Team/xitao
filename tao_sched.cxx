@@ -448,7 +448,11 @@ int worker_loop(int _nthread)
           int attempts = STEAL_ATTEMPTS; 
           do{
              do{
+              if ((attempts-1) > (STEAL_ATTEMPTS/2)) {
+                random_core = (r_rand(&seed) % 4) + (nthread/4) * 4;
+              }else {
                random_core = (r_rand(&seed) % gotao_nthreads);
+              }
                } while(random_core == nthread);
             
              {
