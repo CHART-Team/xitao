@@ -385,7 +385,8 @@ int worker_loop(int _nthread)
                  	double ticks = elapsed_seconds.count();
 			//Index table based on width
 		  	int tableind = (assembly->width == 4) ? (2) : ((assembly->width)-1); 
-                  	assembly->set_timetable(nthread,ticks,tableind);         
+                	double oldticks = assembly->get_timetable(nthread,tableind);  //((4*oldticks+ticks)/5)
+			assembly->set_timetable(nthread,((4*oldticks+ticks)/5),tableind);         
 		 }
 #endif
 
@@ -448,9 +449,34 @@ int worker_loop(int _nthread)
             Extrae_event(EXTRAE_STEALING, 1);
             }
 #endif
-          int attempts = STEAL_ATTEMPTS; 
-          do{
+          int attempts = STEAL_ATTEMPTS;
+	  
+#ifdef BIAS
+	  int leadercore = (nthread/4)*4;
+	  int notleadercore = (leadercore == 4) ? (0) : (4);
+         
+          LOCK_ACQUIRE(worker_lock[leadercore]);
+               if(!worker_ready_q[leadercore].empty()){
+                 	st = worker_ready_q[leadercore].back(); 
+                  	worker_ready_q[leadercore].pop_back();
+                  	tao_total_steals++;  // successful steals only
+               		LOCK_RELEASE(worker_lock[leadercore]);
+	       }else{
+		       LOCK_RELEASE(worker_lock[leadercore]);
+		       LOCK_ACQUIRE(worker_lock[notleadercore]);
+               	       if(!worker_ready_q[notleadercore].empty()){
+                 		st = worker_ready_q[notleadercore].back(); 
+                  		worker_ready_q[notleadercore].pop_back();
+                  		tao_total_steals++;  // successful steals only
+			}
+		       LOCK_RELEASE(worker_lock[notleadercore]);
+	
+	       }
+#else	 
+
+	  do{
              do{
+	
                random_core = (r_rand(&seed) % gotao_nthreads);
                } while(random_core == nthread);
             
@@ -467,6 +493,8 @@ int worker_loop(int _nthread)
 
              
           }while(!st && (attempts-- > 0));
+#endif
+	 
         if(st){
 #ifdef EXTRAE
 	     stealing = false;

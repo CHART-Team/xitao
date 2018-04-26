@@ -380,14 +380,15 @@ class PolyTask{
 			ndx=0;
 		}else{
 			div = little/big;
-			//std::cout << "This is div" << div << std::endl;
+			//§std::cout << "This is div" << div << std::endl;
 
 			if(div > newbias){
 				ndx=4;
 			}else{
 				ndx=0;
 			}
-		newbias=((4*newbias)+div)/5;
+		newbias=((6*newbias)+div)/7;
+		//std::cout << "This is newbias" << newbias << std::endl;
 		bias.store(newbias);
 		}
 
