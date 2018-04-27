@@ -209,7 +209,7 @@ class PolyTask{
            static std::atomic<int> created_tasks;
 #endif
            static std::atomic<int> pending_tasks;
-#if defined(F2) || defined(F3)
+#if defined(F2) || defined(F3) || defined(BIAS)
            static std::atomic<int> current_tasks;
 #endif
 #ifdef F3
@@ -289,7 +289,7 @@ class PolyTask{
 	   }
 #endif
 
-#if defined(F2) || defined(F3)
+#if defined(F2) || defined(F3) || defined(BIAS)
 	 //Change width according to system load
 	  int F_2(int _nthread, PolyTask *it){
 		//int children = out.size();
@@ -373,16 +373,16 @@ class PolyTask{
 		double newbias=bias;
 		double div = 1;
 		double little = it->get_timetable(0,2);
-		double big = it->get_timetable(2,2); //SHOULD BE FOUR
+		double big = it->get_timetable(4,2); //SHOULD BE FOUR
 		if(!big){
-			ndx=2; //SHOULD BE FOUR
+			ndx=4; //SHOULD BE FOUR
 		}else if(!little){
 			ndx=0;
 		}else{
 			div = little/big;
 
 			if(div > newbias){
-				ndx=2; //SHOULD BE FOUR
+				ndx=4; //SHOULD BE FOUR
 			}else{
 				ndx=0;
 			}
@@ -390,8 +390,8 @@ class PolyTask{
 		bias.store(newbias);
 		}
 
-		ndx=((rand()%2)+ndx); //SHOULD BE FOUR
-		F(ndx,it);
+		ndx=((rand()%4)+ndx); //SHOULD BE FOUR
+		//F_2(ndx,it);
 
 		return ndx;
 	}	
@@ -402,7 +402,7 @@ class PolyTask{
            {
              PolyTask *ret = nullptr;
 
-#if defined(F2) || defined(F3)
+#if defined(F2) || defined(F3) || defined(BIAS)
  	     //Increment value of tasks in the system
 	     //SHOULD THIS BE DONE, since processor still busy, but idk
              current_tasks.fetch_sub(1);
@@ -436,10 +436,10 @@ class PolyTask{
 #ifdef BIAS
 			ndx2 = bias_sched(_nthread, (*it));
 		
-			if(!ret && (((ndx2/2)*2)==((_nthread/2)*2))){
+		/*	if(!ret &&  ndx2==((_nthread/4)*4)){// (((ndx2/4)*4)==((_nthread/4)*4))){
 				ret= *it; //Forward locally, consider adding STA support
 
-			}else{
+			}else{ */ 
 
 #endif
 
@@ -452,7 +452,7 @@ class PolyTask{
 #endif
 
 #ifdef BIAS
-			}
+			//}
 #endif
 
 
@@ -509,7 +509,7 @@ class PolyTask{
 
 #endif
 
-#if defined(F2) || defined(F3)
+#if defined(F2) || defined(F3) || defined(BIAS)
 		//increment the number of tasks in the system
 		current_tasks.fetch_add(1);
 #endif

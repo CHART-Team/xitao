@@ -125,7 +125,7 @@ int gotao_push(PolyTask *pt, int queue)
 #if defined(SUPERTASK_STEALING) || defined(TAO_STA)
   LOCK_RELEASE(worker_lock[queue]);
 #endif // SUPERTASK_STEALING
-#if defined (F2) || defined(F3)
+#if defined (F2) || defined(F3) || defined(BIAS)
   //Increment value of tasks in the system
   PolyTask::current_tasks.fetch_add(1);
 #endif
@@ -148,7 +148,7 @@ int gotao_push_init(PolyTask *pt, int queue)
           queue = gotao_thread_base;
 
   worker_ready_q[queue].push_front(pt);
-#if defined(F2) || defined(F3)
+#if defined(F2) || defined(F3) || defined(BIAS)
   //Increment value of tasks in the system
   PolyTask::current_tasks.fetch_add(1);
 #endif
@@ -168,7 +168,7 @@ int gotao_push_back_init(PolyTask *pt, int queue)
           queue = gotao_thread_base;
 
   worker_ready_q[queue].push_back(pt);
-#if defined(F2) || defined(F3)
+#if defined(F2) || defined(F3) || defined(BIAS)
   //Increment value of tasks in the system
   PolyTask::current_tasks.fetch_add(1);
 #endif
@@ -451,9 +451,9 @@ int worker_loop(int _nthread)
 #endif
           int attempts = STEAL_ATTEMPTS;
 	  
-#ifdef BIAS
-	  /*int leadercore = (nthread/2)*2; //SHOULD BE FOUR
-	  int notleadercore = (leadercore == 2) ? (0) : (2); //SHOULD BE FOUR
+//#ifdef BIAS
+/*	  int leadercore = (nthread/4)*4; //SHOULD BE FOUR
+	  int notleadercore = (leadercore == 4) ? (0) : (4); //SHOULD BE FOUR
          
           LOCK_ACQUIRE(worker_lock[leadercore]);
                if(!worker_ready_q[leadercore].empty()){
@@ -472,13 +472,13 @@ int worker_loop(int _nthread)
 		       LOCK_RELEASE(worker_lock[notleadercore]);
 	
 	       }
-*/	
+	
 
 	  do{
              do{
 		if(attempts > (STEAL_ATTEMPTS/2)){
 		    //CHANGE TO FOUR?
-		    random_core = ((r_rand(&seed) % 2)+((nthread/2)*2));
+		    random_core = ((r_rand(&seed) % 4)+((nthread/4)*4));
 		}else{	
                	    random_core = (r_rand(&seed) % gotao_nthreads);
 		}
@@ -495,9 +495,10 @@ int worker_loop(int _nthread)
                LOCK_RELEASE(worker_lock[random_core]);
              }
 
-             
+            
           }while(!st && (attempts-- > 0)); 
-#else	 
+*/
+//#else	 
 
 	  do{
              do{
@@ -518,7 +519,7 @@ int worker_loop(int _nthread)
 
              
           }while(!st && (attempts-- > 0));
-#endif
+//#endif
 	 
         if(st){
 #ifdef EXTRAE
@@ -610,7 +611,7 @@ std::atomic<int> PolyTask::pending_tasks;
 struct completions task_completions[MAXTHREADS];
 struct completions task_pool[MAXTHREADS];
 
-#if defined(F2) || defined(F3)
+#if defined(F2) || defined(F3) || defined(BIAS)
 std::atomic<int> PolyTask::current_tasks;
 #endif
 #ifdef F3
