@@ -373,25 +373,24 @@ class PolyTask{
 		double newbias=bias;
 		double div = 1;
 		double little = it->get_timetable(0,2);
-		double big = it->get_timetable(4,2);
+		double big = it->get_timetable(2,2); //SHOULD BE FOUR
 		if(!big){
-			ndx=4;
+			ndx=2; //SHOULD BE FOUR
 		}else if(!little){
 			ndx=0;
 		}else{
 			div = little/big;
-			//§std::cout << "This is div" << div << std::endl;
 
 			if(div > newbias){
-				ndx=4;
+				ndx=2; //SHOULD BE FOUR
 			}else{
 				ndx=0;
 			}
 		newbias=((6*newbias)+div)/7;
-		//std::cout << "This is newbias" << newbias << std::endl;
 		bias.store(newbias);
 		}
 
+		ndx=((rand()%2)+ndx); //SHOULD BE FOUR
 
 		return ndx;
 	}	
@@ -435,6 +434,12 @@ class PolyTask{
 #endif
 #ifdef BIAS
 			ndx2 = bias_sched(_nthread, (*it));
+		
+			if(!ret && (((ndx2/2)*2)==((_nthread/2)*2))){
+				ret= *it; //Forward locally, consider adding STA support
+
+			}else{
+
 #endif
 
 #if defined(SUPERTASK_STEALING) || defined(TAO_STA)
@@ -444,6 +449,11 @@ class PolyTask{
 #if defined(SUPERTASK_STEALING) || defined(TAO_STA)
                             LOCK_RELEASE(worker_lock[ndx2]);
 #endif
+
+#ifdef BIAS
+			}
+#endif
+
 
 
 

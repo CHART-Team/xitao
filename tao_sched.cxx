@@ -452,8 +452,8 @@ int worker_loop(int _nthread)
           int attempts = STEAL_ATTEMPTS;
 	  
 #ifdef BIAS
-	  int leadercore = (nthread/4)*4;
-	  int notleadercore = (leadercore == 4) ? (0) : (4);
+	  /*int leadercore = (nthread/2)*2; //SHOULD BE FOUR
+	  int notleadercore = (leadercore == 2) ? (0) : (2); //SHOULD BE FOUR
          
           LOCK_ACQUIRE(worker_lock[leadercore]);
                if(!worker_ready_q[leadercore].empty()){
@@ -472,6 +472,31 @@ int worker_loop(int _nthread)
 		       LOCK_RELEASE(worker_lock[notleadercore]);
 	
 	       }
+*/	
+
+	  do{
+             do{
+		if(attempts > (STEAL_ATTEMPTS/2)){
+		    //CHANGE TO FOUR?
+		    random_core = ((r_rand(&seed) % 2)+((nthread/2)*2));
+		}else{	
+               	    random_core = (r_rand(&seed) % gotao_nthreads);
+		}
+               } while(random_core == nthread);
+            
+             {
+		     
+               LOCK_ACQUIRE(worker_lock[random_core]);
+               if(!worker_ready_q[random_core].empty()){
+                 	st = worker_ready_q[random_core].back(); 
+                  	worker_ready_q[random_core].pop_back();
+                  	tao_total_steals++;  // successful steals only
+               }
+               LOCK_RELEASE(worker_lock[random_core]);
+             }
+
+             
+          }while(!st && (attempts-- > 0)); 
 #else	 
 
 	  do{
