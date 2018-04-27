@@ -261,7 +261,7 @@ class PolyTask{
                t->refcount++;
            }
 
-#if defined(F1)  || defined(F2) || defined(F3) 
+#if defined(F1)  || defined(F2) || defined(F3) || defined(BIAS) 
 //Scheduling FUNCTIONs
 
             //Considers time table for new width, only resquedules among own "group" for new width
@@ -391,6 +391,7 @@ class PolyTask{
 		}
 
 		ndx=((rand()%2)+ndx); //SHOULD BE FOUR
+		F(ndx,it);
 
 		return ndx;
 	}	
