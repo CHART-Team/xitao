@@ -38,6 +38,8 @@ class TAO_Copy : public AssemblyTask
                   input = a;
                   output = b;
                   size = s;
+		  jobs = 0;
+                  job_lock.lock = false;
 
                 }
 
@@ -47,14 +49,29 @@ class TAO_Copy : public AssemblyTask
 
                 int execute(int threadid)
                 {
-                    int virt_id = leader - threadid;
-                    int i = (virt_id % width) * (size/width);
-                    memcpy(&input[i],&output[i], (size/width)*4);
-                }
+	           int slize = pow(width,2);
+		   int i;
+		   while(1){ 
+                   	LOCK_ACQUIRE(job_lock); //Maybe Test-and-set would be better
+			i = jobs++;
+			LOCK_RELEASE(job_lock)
+                     	
+			if (i >= slize) { // no more work to be don
+				break;
+                    	}
+
+                    	//int virt_id = leader - threadid;
+                    	//int i = (virt_id % width) * (size/width); 
+                    	//memcpy(&input[i],&output[i], (size/width)*4);
+                    	memcpy(&input[i*(size/slize)],&output[i*(size/slize)], (size/slize)*4);
+                	}
+	      }
               
               int *input;
               int *output;
               int size;
+	      int jobs;
+              GENERIC_LOCK(job_lock);
 #ifdef  TIME_TRACE             
   //            GENERIC_LOCK(ttable_lock);
 
