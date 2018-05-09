@@ -27,9 +27,6 @@ class TAO_matrix : public AssemblyTask
 #ifdef  TIME_TRACE             
                 static double time_table[][3];
 #endif
-#ifdef  INT_SOL            
-                static uint64_t time_table[][3];
-#endif
                 TAO_matrix(int res, //TAO width
                  int mini, //start y (used for segmenting the matrix into blocks)
                  int maxi, //stop y
@@ -93,33 +90,17 @@ class TAO_matrix : public AssemblyTask
               
               GENERIC_LOCK(i_lock);
 #ifdef  TIME_TRACE             
-  //            GENERIC_LOCK(ttable_lock);
 
               int set_timetable(int threadid, double ticks, int index){
-    //              LOCK_ACQUIRE(ttable_lock);
                   time_table[threadid][index] = ticks;
-      //            LOCK_RELEASE(ttable_lock);
               }
 
 	     double get_timetable(int threadid, int index){
 		 
                   double time=0;
-        //          LOCK_ACQUIRE(ttable_lock);
 		  time = time_table[threadid][index];
-	//	  LOCK_RELEASE(ttable_lock);
 	          return time;
 	     }
-#endif                            
-#ifdef  INT_SOL            
-              GENERIC_LOCK(ttable_lock);
-
-              int set_timetable(int threadid, uint64_t ticks){
-//                  int index = (_res == 4) ? (2) : ((_res)-1);
-                  LOCK_ACQUIRE(ttable_lock);
-                  //  time_table[_res][threadid] = (d[_res][threadid] + ticks)/2;
-                  time_table[threadid][index] = ticks;
-                  LOCK_RELEASE(ttable_lock);
-              }
 #endif                            
               //Variable declaration
               int i, jmin, jmax, imax, _res, ROW_SIZE, offset;
