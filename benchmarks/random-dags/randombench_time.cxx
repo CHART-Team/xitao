@@ -11,7 +11,6 @@
 #include <algorithm>
 #include "../../tao.h"
 #include "../tabletest/taomatrix_table.h"
-#include "../tabletest/solver-tao_table.h"
 #include "../tabletest/taosort_table.h"
 #include "../taocopy.h"
 #include "randombench.h"
@@ -28,6 +27,7 @@ extern "C" {
 }
 
 
+#define min(a,b) ( ((a) < (b)) ? (a) : (b) )
 #define BLOCKSIZE (2*1024)
 
 
@@ -39,11 +39,6 @@ void fill_arrays(int **a, int **c, int ysize, int xsize);
 double TAO_matrix::time_table[GOTAO_NTHREADS][3];
 double TAOQuickMergeDyn::time_table[GOTAO_NTHREADS][3];
 double TAO_Copy::time_table[GOTAO_NTHREADS][3];
-#endif
-#ifdef INT_SOL
-uint64_t TAO_matrix::time_table[GOTAO_NTHREADS][3];
-uint64_t TAOQuickMergeDyn::time_table[GOTAO_NTHREADS][3];
-uint64_t copy2D::time_table[GOTAO_NTHREADS][3];
 #endif
 
 // MAIN 
@@ -532,6 +527,27 @@ std::cout << "starting \n";
    std::cout << "Assembly Cycle: " << elapsed_seconds.count() / (nodecount)  << " sec/A\n";
 
 
+#ifdef TIME_TRACE
+   for(int threads =0; threads< GOTAO_NTHREADS; threads++){
+	   std::cout <<"Tao Matrix: \n";
+	   for (int count=0; count < 3; count++){
+   		std::cout << "Time table content for core " << threads  <<": " << TAO_matrix::time_table[threads][count] << "\n";
+   	   }
+   }
+   for(int threads =0; threads< GOTAO_NTHREADS; threads++){
+	   std::cout <<"Tao Sort: \n";
+	   for (int count=0; count < 3; count++){
+   		std::cout << "Time table content for core " << threads  <<": " << TAOQuickMergeDyn::time_table[threads][count] << "\n";
+   	   }
+   }
+   for(int threads =0; threads< GOTAO_NTHREADS; threads++){
+	   std::cout <<"Tao Copy: \n";
+	   for (int count=0; count < 3; count++){
+   		std::cout << "Time table content for core " << threads  <<": " << TAO_Copy::time_table[threads][count] << "\n";
+   	   }
+   }
+
+#endif
 
 //Free memory
   for (int i = 0; i < m_ysize; ++i)

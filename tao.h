@@ -298,7 +298,7 @@ class PolyTask{
 			//Ceiling division of integeres (x+y-1)/y 
 			//Guards for 8 cores and 3 widths????
 			//Consider mod 4 as in F
-			int ce = (((current_tasks+1)+MAXTHREADS)-1)/(current_tasks+1);
+			/*int ce = (((current_tasks+1)+MAXTHREADS)-1)/(current_tasks+1);
 			if((ce!=3)){
 				if(ce!=8){
 					it->width=ce;
@@ -309,10 +309,12 @@ class PolyTask{
 			}else{
 				it->width=4;
 			}
+			*/
+			(it->width)=4;
 			
 			
 		}else{
-			ndx = F(_nthread,it);
+			//ndx = F(_nthread,it);
 
 		}
 		return(ndx);
@@ -353,16 +355,28 @@ class PolyTask{
 	int find_thread(int _nthread, PolyTask * it){
 		int ndx = _nthread;
 		double shortest_exec=5;
+		//Looking at w=1 for choosing
+		double index = 0;
+		index = log2(it->width);
 		for(int k=0; k<MAXTHREADS; k++){
+			if((it->get_timetable(k,((int)index)))<shortest_exec){
+				shortest_exec = (it->get_timetable(k,((int)index)));
+				ndx=k;
+			}
+		
+		}
+
+		/*for(int k=0; k<MAXTHREADS; k++){
 			if((it->get_timetable(k,0))<shortest_exec){
 				shortest_exec = (it->get_timetable(k,0));
 				ndx=k;
 			}
 		
-		}
-		//This? F_2
-		ndx = F_2(ndx, it);
+		}*/
+
+		//ndx = F_2(ndx, it);
 		
+		//ndx=((rand()%4)+((ndx/4)*4));
 		return ndx;
 	
 	}
@@ -426,9 +440,15 @@ class PolyTask{
 			int pr = F_3(_nthread, (*it));
 			(*it)->prio=pr;
 			if (pr == 1){
-				ndx2=find_thread(_nthread, (*it));	
+				//FINDING FASTEST
+				ndx2=find_thread(_nthread, (*it));
+
+				//ndx2=((rand()%4)+4); //CHOOSE A BIG CORE
+
 			}else{
-				ndx2=F_2((rand()%4),(*it));
+				//ndx2=((rand()%4)+((_nthread/4)*4)); //CHOOSE A LITTLE CORE
+				//ndx2=((rand()%4)); //CHOOSE A LITTLE CORE
+				//ndx2=F_2((rand()%4),(*it));
 
 
 			}
@@ -548,10 +568,6 @@ class AssemblyTask: public PolyTask{
 #ifdef TIME_TRACE
                 virtual int set_timetable(int thread, double t, int index) = 0;
 //                virtual double get_timetable(int thread, int index) = 0;
-#endif
-#ifdef INT_SOL
-                virtual int set_timetable(int thread, uint64_t t) = 0;
-
 #endif
                 ~AssemblyTask(){
 #ifdef NEED_BARRIER
