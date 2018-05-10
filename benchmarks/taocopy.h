@@ -3,6 +3,9 @@
 #include <iostream>
 #include <atomic>
 
+#ifdef TIME_TRACE
+#define TABLEWIDTH (int)((std::log2(GOTAO_NTHREADS))+1)
+#endif
 
 extern "C" {
 
@@ -26,7 +29,7 @@ class TAO_Copy : public AssemblyTask
 
 
 #ifdef  TIME_TRACE             
-                static double time_table[][3];
+                static double time_table[][TABLEWIDTH];
 #endif
 
                 TAO_Copy(int *a, //input
@@ -73,20 +76,15 @@ class TAO_Copy : public AssemblyTask
 	      int jobs;
               GENERIC_LOCK(job_lock);
 #ifdef  TIME_TRACE             
-  //            GENERIC_LOCK(ttable_lock);
 
               int set_timetable(int threadid, double ticks, int index){
-    //              LOCK_ACQUIRE(ttable_lock);
                   time_table[threadid][index] = ticks;
-      //            LOCK_RELEASE(ttable_lock);
               }
 
        double get_timetable(int threadid, int index){
      
                   double time=0;
-        //          LOCK_ACQUIRE(ttable_lock);
       time = time_table[threadid][index];
-  //    LOCK_RELEASE(ttable_lock);
             return time;
        }
 #endif    

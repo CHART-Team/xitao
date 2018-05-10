@@ -11,7 +11,6 @@
 #ifdef TIME_TRACE
 #include "../../tao.h"
 #include "../tabletest/taomatrix_table.h"
-#include "../tabletest/solver-tao_table.h"
 #include "../tabletest/taosort_table.h"
 #include "../taocopy.h"
 #include "config-fork-join.h"
@@ -41,9 +40,10 @@ extern "C" {
 //used to fill input data with random values
 void fill_arrays(int **a, int **c, int ysize, int xsize);
 #ifdef TIME_TRACE
-double TAO_matrix::time_table[GOTAO_NTHREADS][3];
-double TAOQuickMergeDyn::time_table[GOTAO_NTHREADS][3];
-double TAO_Copy::time_table[GOTAO_NTHREADS][3];
+#define TABLEWIDTH (int)((std::log2(GOTAO_NTHREADS))+1)
+double TAO_matrix::time_table[GOTAO_NTHREADS][TABLEWIDTH];
+double TAOQuickMergeDyn::time_table[GOTAO_NTHREADS][TABLEWIDTH];
+double TAO_Copy::time_table[GOTAO_NTHREADS][TABLEWIDTH];
 #endif
 
 

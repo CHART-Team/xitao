@@ -17,6 +17,10 @@
 #define SORT_TASK_SIZE (2*1024)
 #define INSERTION_THR (20)
 
+#ifdef TIME_TRACE
+#define TABLEWIDTH (int)((std::log2(GOTAO_NTHREADS))+1)
+#endif
+
 // hereby you define what barrier you want to use
 //#define BARRIER cxx_barrier
 #define BARRIER spin_barrier
@@ -798,7 +802,7 @@ class TAOQuickMergeDyn : public AssemblyTask
 {
         public: 
 #ifdef  TIME_TRACE             
-                static double time_table[][3];
+                static double time_table[][TABLEWIDTH];
 #endif
 
                 // initialize static parameters

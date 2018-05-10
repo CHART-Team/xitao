@@ -25,12 +25,12 @@ extern "C" {
 
 #define BLOCKSIZE (2*1024)
 
-
 void fill_arrays(int **a, int **c, int ysize, int xsize);
 #ifdef TIME_TRACE
-double TAO_matrix::time_table[GOTAO_NTHREADS][3];
-double TAOQuickMergeDyn::time_table[GOTAO_NTHREADS][3];
-double TAO_Copy::time_table[GOTAO_NTHREADS][3];
+#define TABLEWIDTH (int)((std::log2(GOTAO_NTHREADS))+1)
+double TAO_matrix::time_table[GOTAO_NTHREADS][TABLEWIDTH];
+double TAOQuickMergeDyn::time_table[GOTAO_NTHREADS][TABLEWIDTH];
+double TAO_Copy::time_table[GOTAO_NTHREADS][TABLEWIDTH];
 #endif
 
 // MAIN 
@@ -319,19 +319,19 @@ std::cout << "starting \n";
 #ifdef TIME_TRACE
    for(int threads =0; threads< GOTAO_NTHREADS; threads++){
 	   std::cout <<"Tao Matrix: \n";
-	   for (int count=0; count < 3; count++){
+	   for (int count=0; count < TABLEWIDTH; count++){
    		std::cout << "Time table content for core " << threads  <<": " << TAO_matrix::time_table[threads][count] << "\n";
    	   }
    }
    for(int threads =0; threads< GOTAO_NTHREADS; threads++){
 	   std::cout <<"Tao Sort: \n";
-	   for (int count=0; count < 3; count++){
+	   for (int count=0; count < TABLEWIDTH; count++){
    		std::cout << "Time table content for core " << threads  <<": " << TAOQuickMergeDyn::time_table[threads][count] << "\n";
    	   }
    }
    for(int threads =0; threads< GOTAO_NTHREADS; threads++){
 	   std::cout <<"Tao Copy: \n";
-	   for (int count=0; count < 3; count++){
+	   for (int count=0; count < TABLEWIDTH; count++){
    		std::cout << "Time table content for core " << threads  <<": " << TAO_Copy::time_table[threads][count] << "\n";
    	   }
    }

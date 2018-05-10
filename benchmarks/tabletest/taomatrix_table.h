@@ -3,7 +3,9 @@
 #include <iostream>
 #include <atomic>
 
-
+#ifdef TIME_TRACE
+#define TABLEWIDTH (int)((std::log2(GOTAO_NTHREADS))+1)
+#endif
 extern "C" {
 
 #include <stdio.h>
@@ -11,7 +13,6 @@ extern "C" {
 #include <unistd.h>
 
 }
-
 /***********************************************************************
  * main: 
  **********************************************************************/
@@ -25,7 +26,7 @@ class TAO_matrix : public AssemblyTask
         public: 
                 // initialize static parameters
 #ifdef  TIME_TRACE             
-                static double time_table[][3];
+                static double time_table[][TABLEWIDTH];
 #endif
                 TAO_matrix(int res, //TAO width
                  int mini, //start y (used for segmenting the matrix into blocks)
