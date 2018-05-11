@@ -296,6 +296,10 @@ std::cout << "martix_mem size: " << matrix_mem.size() << "\n";
 std::cout << "sort_mem size:   " << sort_mem.size() << "\n";
 std::cout << "heat_mem size:   " << heat_mem.size() << "\n";
 
+double critical_path = find_criticality(nodes[nodecount-1]);
+
+std::cout << "critical path is: " << critical_path << "\n";
+std::cout << "degree of prallelism (number of TAOs/critical path): " << nodecount/critical_path << "\n";
 
 //////Memory allocation
 // Creates a 2d array for each TAO class with a size depending on 
@@ -604,6 +608,7 @@ node new_node(Taotype type, int nodenr, int taonr){
   n.ttype = type;
   n.nodenr = nodenr;
   n.taonr = taonr;
+  n.criticality = 0;
   return n;
 }
 
@@ -687,6 +692,24 @@ bool edge_check(int edge, node const &n){
   }
   //return false if we could not find the node at all.
   return false;
+}
+
+
+int find_criticality(node &n){
+  if((n.criticality)==0){
+    int max=0;
+             for (int i = 0; i < (n.edges).size(); i++) 
+             {
+                 int new_max =find_criticality(nodes[n.edges[i]]);
+                 max = ((new_max>max) ? (new_max) : (max));
+             }
+
+
+  n.criticality=++max;
+
+  }
+  
+  return n.criticality;
 }
 
 

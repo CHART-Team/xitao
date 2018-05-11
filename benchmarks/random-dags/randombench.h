@@ -19,6 +19,7 @@ typedef struct
   int taonr; //TAO number of the node, unique within nodes of the same class (example 14:th sort TAO)
   std::vector<int> edges; //vector with nodenr of input edges
   int mem_space; //allocated memory slot of the nodes input and output data
+  int criticality;
 }node;
 
 
@@ -27,6 +28,7 @@ void add_edge(node &n, node const &e);
 void add_space(node &n, std::vector<int> &v, int a);
 int find_mem(Taotype type, int nodenr, node const &n, std::vector<int> &v);
 bool edge_check(int edge, node const &n);
+int find_criticality(node &n);
 
 
 //}
