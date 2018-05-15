@@ -2,8 +2,8 @@
 #
 
 include ../../makefile.inc
-CFLAGS := -std=gnu11 -g3 -O3 ${EXTRAEINC}
-CXXFLAGS = --std=c++11 -pthread  -g3 -O3 ${EXTRAEINC}
+CFLAGS := -std=gnu11 -g3 -O0 ${EXTRAEINC}
+CXXFLAGS = --std=c++11 -pthread  -g3 -O0 ${EXTRAEINC}
 
 include Makefile.forkjoin
 

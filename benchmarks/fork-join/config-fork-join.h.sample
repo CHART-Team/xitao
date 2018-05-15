@@ -1,27 +1,27 @@
 //matrix mult configs
-#define ROW_SIZE 512
+#define ROW_SIZE 64
 #define M_ASSEMBLY_WIDTH 1
 
 //sort config
-#define SORT_SIZE 16384/16
+#define SORT_SIZE 32
 #define S_ASSEMBLY_WIDTH 1
 
 //heat configs
-#define HEAT_RESOLUTION 1024/4
+#define HEAT_RESOLUTION 2048
 #define INTERNAL_XDECOMP 4 //internal x decomposition
 #define INTERNAL_YDECOMP 1 //internal y decomposition
 #define H_ASSEMBLY_WIDTH 1
 
 
 //DAG configs
-//Select one of the TAOs by setting it to 1
-#define MATRIX_WIDTH 0
-#define SORT_WIDTH 1
-#define HEAT_WIDTH 0
+#define MATRIX_COUNT 100
+#define SORT_COUNT 100
+#define HEAT_COUNT 100
 
 //select maximum dag width
 #define DAG_WIDTH 8
-#define DAG_DEPTH 111
+
+#define R_SEED 123
 
 
 
