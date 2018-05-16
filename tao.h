@@ -265,7 +265,7 @@ class PolyTask{
 //Scheduling FUNCTIONs
 
             //Considers time table for new width, only resquedules among own "group" for new width
-            int F(int _nthread, PolyTask *it){
+             int F(int _nthread, PolyTask *it){
 		int new_width=1;
 		double shortest_exec=5;
 
@@ -279,14 +279,13 @@ class PolyTask{
 				shortest_exec = (it->get_timetable((_nthread-(_nthread%(temp))),i))*temp;
 				new_width = temp;
 			}
-		}
+		}  
 		//Return index to queueu and change width
 		it->width=new_width;
-		//if(it->barrier != NULL){
-		//	(it->barrier)->nthreads=new_width;
-		//}	
-		return (_nthread-(_nthread%new_width));	
-	   }
+		//Change to own queuue?
+		//return (_nthread-(_nthread%new_width));
+		return _nthread;	
+	   } 
 #endif
 
 #if defined(F2) || defined(F3) || defined(BIAS)
@@ -298,7 +297,7 @@ class PolyTask{
 			//Ceiling division of integeres (x+y-1)/y 
 			//Guards for 8 cores and 3 widths????
 			//Consider mod 4 as in F
-			/*int ce = (((current_tasks+1)+MAXTHREADS)-1)/(current_tasks+1);
+			int ce = (((current_tasks+1)+MAXTHREADS)-1)/(current_tasks+1);
 			if((ce!=3)){
 				if(ce!=8){
 					it->width=ce;
@@ -309,17 +308,16 @@ class PolyTask{
 			}else{
 				it->width=4;
 			}
-			*/
-			(it->width)=4;
+			
 			
 			
 		}else{
-			//ndx = F(_nthread,it);
+			ndx = F(_nthread,it);
 
 		}
 		return(ndx);
 
-     	  }
+     	  } 
 #endif
 #ifdef F3	
           //Recursive function of CATS -criticality calculation
@@ -352,42 +350,47 @@ class PolyTask{
 	}	
 
 	//For choosing "best" for prio
-	int find_thread(int _nthread, PolyTask * it){
+	 int find_thread(int _nthread, PolyTask * it){
 		int ndx = _nthread;
 		double shortest_exec=5;
 		//Looking at w=1 for choosing
 		double index = 0;
 		index = log2(it->width);
-		for(int k=0; k<MAXTHREADS; k++){
-			if((it->get_timetable(k,((int)index)))<shortest_exec){
-				shortest_exec = (it->get_timetable(k,((int)index)));
+	
+
+
+		for(int k=0; k<MAXTHREADS; (k=k+(it->width))){
+			if((it->get_timetable(k,index))<shortest_exec){
+				shortest_exec = (it->get_timetable(k,index));
 				ndx=k;
 			}
 		
 		}
 
-		/*for(int k=0; k<MAXTHREADS; k++){
-			if((it->get_timetable(k,0))<shortest_exec){
-				shortest_exec = (it->get_timetable(k,0));
-				ndx=k;
-			}
+		ndx = F_2(ndx, it);
 		
-		}*/
-
-		//ndx = F_2(ndx, it);
-		
-		//ndx=((rand()%4)+((ndx/4)*4));
 		return ndx;
 	
-	}
+	} 
+
+	
 #endif
 #ifdef BIAS
 	int bias_sched(int _nthread, PolyTask * it){
 		int ndx=_nthread;
 		double newbias=bias;
 		double div = 1;
-		double little = it->get_timetable(0,2);
-		double big = it->get_timetable(4,2); //SHOULD BE FOUR
+		double index = 0;
+		double little = 0;
+		double big = 0;
+		index = log2(it->width);
+		/*for(int j=0; j<4; (j=j+(it->width))){
+			little += it->get_timetable(j,index);
+			big += it->get_timetable(j+4,index); //SHOULD BE FOUR
+		}*/
+		
+		little = it->get_timetable(0,index);
+		big = it->get_timetable(4,index); //SHOULD BE FOUR
 		if(!big){
 			ndx=4; //SHOULD BE FOUR
 		}else if(!little){
@@ -401,11 +404,14 @@ class PolyTask{
 				ndx=0;
 			}
 		newbias=((6*newbias)+div)/7;
+		//std::cout << "New bias: " << newbias << "and div: " << div << std::endl;
 		bias.store(newbias);
 		}
-
+		
 		ndx=((rand()%4)+ndx); //SHOULD BE FOUR
-		//F_2(ndx,it);
+		
+		//ndx=((rand()%8)); //SHOULD BE FOUR
+		F_2(ndx,it);
 
 		return ndx;
 	}	
@@ -439,16 +445,17 @@ class PolyTask{
 #ifdef F3
 			int pr = F_3(_nthread, (*it));
 			(*it)->prio=pr;
+			//ndx2 = F_2(_nthread, (*it));
 			if (pr == 1){
 				//FINDING FASTEST
 				ndx2=find_thread(_nthread, (*it));
+				//ndx2=find_thread(ndx2, (*it));
 
 				//ndx2=((rand()%4)+4); //CHOOSE A BIG CORE
 
 			}else{
-				//ndx2=((rand()%4)+((_nthread/4)*4)); //CHOOSE A LITTLE CORE
 				//ndx2=((rand()%4)); //CHOOSE A LITTLE CORE
-				//ndx2=F_2((rand()%4),(*it));
+				ndx2=F_2((rand()%8),(*it));
 
 
 			}
