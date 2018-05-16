@@ -6,6 +6,7 @@
 #ifdef TIME_TRACE
 #define TABLEWIDTH (int)((std::log2(GOTAO_NTHREADS))+1)
 #endif
+
 extern "C" {
 
 #include <stdio.h>

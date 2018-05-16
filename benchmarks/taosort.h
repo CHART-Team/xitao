@@ -804,6 +804,8 @@ class TAOQuickMergeDyn : public AssemblyTask
                        int quarter = size / 4;
                        pending_tasks = 13;
                        assembly_lock.lock = false;
+		       //Is this necessary
+		       readyq.clear();
 
                        for(int i = 0; i < 13; i++) dow[i].refcount=0;
 
