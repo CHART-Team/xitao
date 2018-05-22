@@ -231,7 +231,7 @@ main(int argc, char* argv[])
 
 
       //Check previous nodes(max 30 previous)
-      for (int y = 1; y <= (min(30, nodecount)); y++){
+      for (int y = 1; y <= (min(200, nodecount)); y++){
         //use edge rate and rand to decide whether to create edge or not
         if ((rand() % 100) < edge_rate){
           //check if that edge is unnecessary to create(by checking if we already are a successor of the node)
@@ -695,16 +695,22 @@ bool edge_check(int edge, node const &n){
 }
 
 
+
+//used to find critical path of the DAG, which is used to calculate parallelism of the DAG
+///Disclaimer! does not set acutal criticality values, it searched the DAG bottom-up giving
+///the last nodes the highest criticality.
 int find_criticality(node &n){
+  //criticality == 0 means that we have not calculated criticality for this node before
   if((n.criticality)==0){
     int max=0;
+             //search successors for the highest criticality value
              for (int i = 0; i < (n.edges).size(); i++) 
              {
                  int new_max =find_criticality(nodes[n.edges[i]]);
                  max = ((new_max>max) ? (new_max) : (max));
              }
 
-
+  //set criticality of the node to maximum of its edges +1
   n.criticality=++max;
 
   }

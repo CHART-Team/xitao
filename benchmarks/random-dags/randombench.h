@@ -19,7 +19,7 @@ typedef struct
   int taonr; //TAO number of the node, unique within nodes of the same class (example 14:th sort TAO)
   std::vector<int> edges; //vector with nodenr of input edges
   int mem_space; //allocated memory slot of the nodes input and output data
-  int criticality;
+  int criticality; //criticality used to calculate parallelism of the generated DAG
 }node;
 
 
