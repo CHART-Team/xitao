@@ -11,7 +11,6 @@
 #include <algorithm>
 #include "../../tao.h"
 #include "../taomatrix.h"
-#include "../solver-tao.h"
 #include "../taosort.h"
 #include "../taocopy.h"
 #include "randombench.h"
@@ -28,6 +27,7 @@ extern "C" {
 }
 
 
+#define min(a,b) ( ((a) < (b)) ? (a) : (b) )
 #define BLOCKSIZE (2*1024)
 
 
@@ -35,6 +35,12 @@ void fill_arrays(int **a, int **c, int ysize, int xsize);
 
   //vector used to contain nodes
    std::vector<node> nodes;
+#ifdef TIME_TRACE
+#define TABLEWIDTH (int)((std::log2(GOTAO_NTHREADS))+1)
+double TAO_matrix::time_table[GOTAO_NTHREADS][TABLEWIDTH];
+double TAOQuickMergeDyn::time_table[GOTAO_NTHREADS][TABLEWIDTH];
+double TAO_Copy::time_table[GOTAO_NTHREADS][TABLEWIDTH];
+#endif
 
 // MAIN 
 int
@@ -225,7 +231,7 @@ main(int argc, char* argv[])
 
 
       //Check previous nodes(max 30 previous)
-      for (int y = 1; y <= (min(30, nodecount)); y++){
+      for (int y = 1; y <= (min(200, nodecount)); y++){
         //use edge rate and rand to decide whether to create edge or not
         if ((rand() % 100) < edge_rate){
           //check if that edge is unnecessary to create(by checking if we already are a successor of the node)
@@ -290,6 +296,10 @@ std::cout << "martix_mem size: " << matrix_mem.size() << "\n";
 std::cout << "sort_mem size:   " << sort_mem.size() << "\n";
 std::cout << "heat_mem size:   " << heat_mem.size() << "\n";
 
+double critical_path = find_criticality(nodes[nodecount-1]);
+
+std::cout << "critical path is: " << critical_path << "\n";
+std::cout << "degree of prallelism (number of TAOs/critical path): " << nodecount/critical_path << "\n";
 
 //////Memory allocation
 // Creates a 2d array for each TAO class with a size depending on 
@@ -453,7 +463,7 @@ for (int i = 0; i < h_ysize; ++i)
       heat_ao[k] = new TAO_Copy(
                              heat_input_a[(nodes[x].mem_space)+1],
                              heat_output_c[(nodes[x].mem_space)+1],
-                             h_xsize,
+                             heat_resolution * heat_resolution,
                              ha_width);
       //if our node has no input edges
       if (nodes[x].edges.size() == 0) {
@@ -522,6 +532,27 @@ std::cout << "starting \n";
    std::cout << "Assembly Cycle: " << elapsed_seconds.count() / (nodecount)  << " sec/A\n";
 
 
+#ifdef TIME_TRACE
+   for(int threads =0; threads< GOTAO_NTHREADS; threads++){
+	   std::cout <<"Tao Matrix: \n";
+	   for (int count=0; count < TABLEWIDTH; count++){
+   		std::cout << "Time table content for core " << threads  <<": " << TAO_matrix::time_table[threads][count] << "\n";
+   	   }
+   }
+   for(int threads =0; threads< GOTAO_NTHREADS; threads++){
+	   std::cout <<"Tao Sort: \n";
+	   for (int count=0; count < TABLEWIDTH; count++){
+   		std::cout << "Time table content for core " << threads  <<": " << TAOQuickMergeDyn::time_table[threads][count] << "\n";
+   	   }
+   }
+   for(int threads =0; threads< GOTAO_NTHREADS; threads++){
+	   std::cout <<"Tao Copy: \n";
+	   for (int count=0; count < TABLEWIDTH; count++){
+   		std::cout << "Time table content for core " << threads  <<": " << TAO_Copy::time_table[threads][count] << "\n";
+   	   }
+   }
+
+#endif
 
 //Free memory
   for (int i = 0; i < m_ysize; ++i)
@@ -577,6 +608,7 @@ node new_node(Taotype type, int nodenr, int taonr){
   n.ttype = type;
   n.nodenr = nodenr;
   n.taonr = taonr;
+  n.criticality = 0;
   return n;
 }
 
@@ -660,6 +692,30 @@ bool edge_check(int edge, node const &n){
   }
   //return false if we could not find the node at all.
   return false;
+}
+
+
+
+//used to find critical path of the DAG, which is used to calculate parallelism of the DAG
+///Disclaimer! does not set acutal criticality values, it searched the DAG bottom-up giving
+///the last nodes the highest criticality.
+int find_criticality(node &n){
+  //criticality == 0 means that we have not calculated criticality for this node before
+  if((n.criticality)==0){
+    int max=0;
+             //search successors for the highest criticality value
+             for (int i = 0; i < (n.edges).size(); i++) 
+             {
+                 int new_max =find_criticality(nodes[n.edges[i]]);
+                 max = ((new_max>max) ? (new_max) : (max));
+             }
+
+  //set criticality of the node to maximum of its edges +1
+  n.criticality=++max;
+
+  }
+  
+  return n.criticality;
 }
 
 

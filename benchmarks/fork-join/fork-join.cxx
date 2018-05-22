@@ -13,8 +13,8 @@
 #include <vector>
 #include <algorithm>
 #include "../../tao.h"
-#include "../tabletest/taomatrix_table.h"
-#include "../tabletest/taosort_table.h"
+#include "../taomatrix.h"
+#include "../taosort.h"
 #include "../taocopy.h"
 #include "../random-dags/randombench.h"
 #include "config-fork-join.h"

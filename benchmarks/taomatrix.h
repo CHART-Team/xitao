@@ -3,6 +3,9 @@
 #include <iostream>
 #include <atomic>
 
+#ifdef TIME_TRACE
+#define TABLEWIDTH (int)((std::log2(GOTAO_NTHREADS))+1)
+#endif
 
 extern "C" {
 
@@ -11,7 +14,6 @@ extern "C" {
 #include <unistd.h>
 
 }
-
 /***********************************************************************
  * main: 
  **********************************************************************/
@@ -24,6 +26,9 @@ class TAO_matrix : public AssemblyTask
 {
         public: 
                 // initialize static parameters
+#ifdef  TIME_TRACE             
+                static double time_table[][TABLEWIDTH];
+#endif
                 TAO_matrix(int res, //TAO width
                  int mini, //start y (used for segmenting the matrix into blocks)
                  int maxi, //stop y
@@ -33,15 +38,17 @@ class TAO_matrix : public AssemblyTask
                  int r_size, //row size
                  int **m_a, //input matrices
                  int **m_c) //output matrix
-                        : _res(res), imax(maxi), jmin(minj), jmax(maxj), offset(c_offset),  AssemblyTask(res) 
+                        : _res(res), imax(maxi), jmin(minj), jmax(maxj), offset(c_offset), AssemblyTask(res) 
                 {   
 
                   a = m_a;
                   c = m_c;
                   i = mini;
-                  ROW_SIZE = r_size;
                   i_lock.lock = false;
-                  //std::atomic_init(&i_lock,false);  
+#ifdef TIME_TRACE
+//		       ttable_lock.lock = false;
+#endif                       
+                  ROW_SIZE = r_size;
                 
                 }
 
@@ -51,7 +58,6 @@ class TAO_matrix : public AssemblyTask
                 // this assembly can work totally asynchronously
                 int execute(int threadid)
                 {
-
 
                     int temp_j, temp_i;
                       while (1){ 
@@ -79,10 +85,25 @@ class TAO_matrix : public AssemblyTask
                   
                     
                   }
+
+
+
                 }
               
               GENERIC_LOCK(i_lock);
-              
+#ifdef  TIME_TRACE             
+
+              int set_timetable(int threadid, double ticks, int index){
+                  time_table[threadid][index] = ticks;
+              }
+
+	     double get_timetable(int threadid, int index){
+		 
+                  double time=0;
+		  time = time_table[threadid][index];
+	          return time;
+	     }
+#endif                            
               //Variable declaration
               int i, jmin, jmax, imax, _res, ROW_SIZE, offset;
               int **a;
