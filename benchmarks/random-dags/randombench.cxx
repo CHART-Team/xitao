@@ -139,11 +139,6 @@ main(int argc, char* argv[])
    else
   heat_resolution=HEAT_RESOLUTION;
 
-  if(getenv("INTERNAL_XDECOMP"))
-  xdecomp=atoi(getenv("INTERNAL_XDECOMP"));
-   else
-  xdecomp=INTERNAL_XDECOMP;
-
   if(getenv("M_ASSEMBLY_WIDTH"))
   ma_width=atoi(getenv("M_ASSEMBLY_WIDTH"));
    else
