@@ -75,12 +75,12 @@ int gotao_init()
 
 int gotao_start()
 {
-#ifdef BIAS
+#ifdef WEIGHT_SCHED
 //Store inital weight value
 PolyTask::bias.store(1.5);
 #endif
 
-#ifdef F3
+#if defined(CRIT_PERF_SCHED) || defined(CRIT_HETERO_SCHED)
   //Analyse DAG based on tasks in ready q and
   //asign criticality values
   for(int j=0; j<GOTAO_NTHREADS; j++){
@@ -129,7 +129,7 @@ int gotao_push(PolyTask *pt, int queue)
   LOCK_RELEASE(worker_lock[queue]);
 #endif // SUPERTASK_STEALING
 
-#if defined (F2) || defined(F3) || defined(BIAS)
+#ifdef LOAD_MOLD
   //Increment value of tasks for load based molding
   PolyTask::current_tasks.fetch_add(1);
 #endif
@@ -152,7 +152,7 @@ int gotao_push_init(PolyTask *pt, int queue)
           queue = gotao_thread_base;
 
   worker_ready_q[queue].push_front(pt);
-#if defined(F2) || defined(F3) || defined(BIAS)
+#ifdef LOAD_MOLD
   //increment value of tasks for load based molding
   PolyTask::current_tasks.fetch_add(1);
 #endif
@@ -172,7 +172,7 @@ int gotao_push_back_init(PolyTask *pt, int queue)
           queue = gotao_thread_base;
 
   worker_ready_q[queue].push_back(pt);
-#if defined(F2) || defined(F3) || defined(BIAS)
+#ifdef LOAD_MOLD
   //increment value of tasks for load based molding
   PolyTask::current_tasks.fetch_add(1);
 #endif
@@ -545,15 +545,15 @@ std::atomic<int> PolyTask::pending_tasks;
 struct completions task_completions[MAXTHREADS];
 struct completions task_pool[MAXTHREADS];
 
-#if defined(F2) || defined(F3) || defined(BIAS)
+#ifdef LOAD_MOLD
 //System load for load-based molding
 std::atomic<int> PolyTask::current_tasks;
 #endif
-#ifdef F3
+#if defined(CRIT_PERF_SCHED) || defined(CRIT_HETERO_SCHED)
 //Current highest critical task in system
 std::atomic<int> PolyTask::prev_top_task;
 #endif
-#ifdef BIAS
+#ifdef WEIGHT_SCHED
 //The current threshold value for weight-based of the system
 std::atomic<double> PolyTask::bias;
 #endif

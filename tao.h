@@ -195,13 +195,13 @@ class PolyTask{
                         }
                     else task_pool[_nthread].tasks--;
                     threads_out_tao = 0;
-#ifdef F3
+#if defined(CRIT_PERF_SCHED) || defined(CRIT_HETERO_SCHED)
 		    //Init criticality to 0
 	 	    criticality=0;
 #endif
             }
 	
-#ifdef F3
+#if defined(CRIT_PERF_SCHED) || defined(CRIT_HETERO_SCHED)
 	   //Ciritcality value to indicate critical path, higher value -> more critical
 	   int criticality;
 #endif
@@ -213,15 +213,15 @@ class PolyTask{
            static std::atomic<int> created_tasks;
 #endif
            static std::atomic<int> pending_tasks;
-#if defined(F2) || defined(F3) || defined(BIAS)
+#ifdef LOAD_MOLD
 	   //Static atomic of system load for load-based molding
            static std::atomic<int> current_tasks;
 #endif
-#ifdef F3
+#if defined(CRIT_PERF_SCHED) || defined(CRIT_HETERO_SCHED)
 	   //Static atomic of current most critical task for criticality-based scheduling
            static std::atomic<int> prev_top_task;
 #endif
-#ifdef BIAS
+#ifdef WEIGHT_SCHED
 	  //Static atomic of current weight threshold for weight-based scheduling
 	  static std::atomic<double> bias;
 #endif	   
@@ -271,7 +271,7 @@ class PolyTask{
                t->refcount++;
            }
 
-#if defined(F1)  || defined(F2) || defined(F3) || defined(BIAS) 
+#ifdef HISTORY_MOLD 
 //Scheduling FUNCTIONs
 
             //History-based molding
@@ -296,12 +296,6 @@ class PolyTask{
 				new_width = width;
 			} 
 
-			//SAVE UNTIL TESTED ON PLATFORM
-			/*
-			if(temp*(it->get_timetable((_nthread-(_nthread%(temp))),i)) < shortest_exec){
-				shortest_exec = (it->get_timetable((_nthread-(_nthread%(temp))),i))*temp;
-				new_width = temp;
-			}*/
 		}  
 		//Change width after results
 		it->width=new_width;
@@ -309,7 +303,7 @@ class PolyTask{
 	   } 
 #endif
 
-#if defined(F2) || defined(F3) || defined(BIAS)
+#ifdef LOAD_MOLD
 	 //Load-based molding
 	  int load_mold(int _nthread, PolyTask *it){
 		int ndx = _nthread;
@@ -322,32 +316,25 @@ class PolyTask{
 			//Check if suggested width is of power of 2, not 0 and not maximum
 			if(((ce &(ce-1)) == 0) && ce != 0 && ce != MAXTHREADS){
 				it->width=ce;
+			}else{
+				//DON'T SET TO STATICALLY FOUR
+				it->width=4;
 			}
 			//Should we have else case here where we set to 4 as we did before
 
-			//SAVE UNTIL TESTED ON PLATFORM
-			/*if((ce!=3)){
-				if(ce!=8){
-					it->width=ce;
-				}
-				else{
-					it->width=4;
-				}
-			}else{
-				it->width=4;
-			}
-			*/	
 			
 		//If the load was too high, consider history based molding		
 		}else{
+#ifdef HISTORY_MOLD
 			ndx = history_mold(_nthread,it);
-
+#endif
 		}
 		return(ndx); //0?
 
      	  } 
 #endif
-#ifdef F3	
+
+#if defined(CRIT_PERF_SCHED) ||	defined(CRIT_HETERO_SCHED)
           //Recursive function assigning criticality
 	  int set_criticality(){
 		//If the criticality is not yet set
@@ -384,7 +371,9 @@ class PolyTask{
 		} 
 		return prio;
 	}	
+#endif
 
+#ifdef CRIT_PERF_SCHED	
 	//Find suitable thread for prio task
 	 int find_thread(int _nthread, PolyTask * it){
 		//Inital thread is own
@@ -405,24 +394,20 @@ class PolyTask{
 				shortest_exec = temp;
 				ndx=k;
 			}
-			//SAVE FOR TEST ON PLATFORM
-			/*if((it->get_timetable(k,index))<shortest_exec){
-				shortest_exec = (it->get_timetable(k,index));
-				ndx=k;
-			}*/
 		
 		}
-		
+#ifdef LOAD_MOLD		
 		//Mold task to suitable width after suitable thread is found
 		ndx = load_mold(ndx, it);
-		
+#endif
 		return ndx;
 	
 	} 
 
 	
 #endif
-#ifdef BIAS
+
+#ifdef WEIGHT_SCHED
 	int weight_sched(int _nthread, PolyTask * it){
 		int ndx=_nthread;
 		double current_bias=bias;
@@ -433,19 +418,17 @@ class PolyTask{
 		double index = 0;
 		index = log2(it->width);
 		
-		//Look att predefined little and big threads
+		//Look at predefined little and big threads
 		//with current width as index
-	
-		//ADD BIG LITTLE DEFINES
-		little = it->get_timetable(0,index);
-		big = it->get_timetable(4,index); 
+		little = it->get_timetable(LITTLE_INDEX,index);
+		big = it->get_timetable(BIG_INDEX,index); 
 
 		//If it has no recorded value on big, choose big
 		if(!big){
-			ndx=4;
+			ndx=BIG_INDEX;
 		//If it has no recorded value on little, choose little
 		}else if(!little){
-			ndx=0;
+			ndx=LITTLE_INDEX;
 		//Else, check if benifical to run on big or little
 		}else{
 			//If larger than current global value
@@ -453,9 +436,9 @@ class PolyTask{
 			//otherwise LITTLE
 			div = little/big;
 			if(div > current_bias){
-				ndx=4;
+				ndx=BIG_INDEX;
 			}else{
-				ndx=0;
+				ndx=LITTLE_INDEX;
 			}
 			//Update the bias with a ratio of 1:6 
 			//to the old bias
@@ -464,9 +447,15 @@ class PolyTask{
 		}
 		
 		//Choose a random big or little for scheduling
-		ndx=((rand()%4)+ndx);
+		if(ndx == BIG_INDEX){
+			ndx=((rand()%BIG_NTHREADS)+ndx);
+		}else{
+			ndx=((rand()%LITTLE_NTHREADS)+ndx);
+		}
+#ifdef LOAD_MOLD
 		//Mold the task to a new width
 		load_mold(ndx,it);
+#endif
 
 		return ndx;
 	}	
@@ -477,7 +466,7 @@ class PolyTask{
            {
              PolyTask *ret = nullptr;
 
-#if defined(F2) || defined(F3) || defined(BIAS)
+#ifdef LOAD_MOLD
  	     //Decrement value of tasks in the system as we are committing
              current_tasks.fetch_sub(1);
 	     
@@ -494,31 +483,35 @@ class PolyTask{
                         LOCK_RELEASE(output_lck);
 #endif 
 
-#if defined(F3) || defined(BIAS)
+#if defined(CRIT_PERF_SCHED) || defined(CRIT_HETERO_SCHED) || defined(WEIGHT_SCHED)
+			//Choose own thread initially
 			int ndx2 = _nthread;
-#ifdef F3
+#if defined(CRIT_PERF_SCHED)
 			int pr = if_prio(_nthread, (*it));
 			if (pr == 1){
 				ndx2=find_thread(_nthread, (*it));
-				//ndx2=find_thread(ndx2, (*it));
-
-				//ndx2=((rand()%4)+4); //CHOOSE A BIG CORE
 
 			}else{
-				//ndx2=((rand()%4)); //CHOOSE A LITTLE CORE
-				ndx2=load_mold((rand()%8),(*it));
-
+//If molding is turned on then mold
+#ifdef LOAD_MOLD  
+				ndx2=load_mold((rand()%MAXTHREADS),(*it));
+#endif
 
 			}
-#endif
-#ifdef BIAS
+#elif defined(CRIT_HETERO_SCHED)
+			int pr = if_prio(_nthread, (*it));
+			if (pr == 1){
+				//Choose a random big core
+				ndx2=((rand()%BIG_NTHREADS)+BIG_INDEX);
+
+			}else{
+				//Choose a random little core
+				ndx2=((rand()%LITTLE_NTHREADS)+LITTLE_INDEX);
+			}
+
+#elif defined(WEIGHT_SCHED)
 			ndx2 = weight_sched(_nthread, (*it));
 		
-		/*	if(!ret &&  ndx2==((_nthread/4)*4)){// (((ndx2/4)*4)==((_nthread/4)*4))){
-				ret= *it; //Forward locally, consider adding STA support
-
-			}else{ */ 
-
 #endif
 
 #if defined(SUPERTASK_STEALING) || defined(TAO_STA)
@@ -529,9 +522,6 @@ class PolyTask{
                             LOCK_RELEASE(worker_lock[ndx2]);
 #endif
 
-#ifdef BIAS
-			//}
-#endif
 
 
 
@@ -544,12 +534,10 @@ class PolyTask{
                                 && (((*it)->affinity_queue == -1) || (((*it)->affinity_queue/(*it)->width) == (_nthread/(*it)->width)))
 #endif
 ){
-                          //CURRENT OVERRIDE OF POS§
-#ifdef F2
-                          load_mold(_nthread,(*it)); //Since forward locally, we don't need the resulting nthread for now only width change
-#endif
 
-#ifdef F1
+#if defined(LOAD_MOLD)
+                          load_mold(_nthread,(*it)); 
+#elif defined(HISTORY_MOLD)
                            history_mold(_nthread,(*it)); 
 #endif
                            ret = *it; // forward locally only if affinity matches
@@ -563,11 +551,10 @@ class PolyTask{
 			    int ndx = _nthread;
 #endif
 
-#ifdef F2
-                            ndx = load_mold(_nthread,(*it)); //Change width
-#endif
-#ifdef F1
-                            history_mold(_nthread,(*it)); 
+#if defined(LOAD_MOLD)
+                           ndx  = load_mold(_nthread,(*it)); 
+#elif defined(HISTORY_MOLD)
+                           ndx = history_mold(_nthread,(*it)); 
 #endif
                             // seems like we acquire and release the lock for each assembly. 
                             // This is suboptimal, but given that TAO_STA makes the allocation
@@ -587,7 +574,7 @@ class PolyTask{
 
 #endif
 
-#if defined(F2) || defined(F3) || defined(BIAS)
+#ifdef LOAD_MOLD
 		//increment the number of tasks in the system
 		current_tasks.fetch_add(1);
 #endif
