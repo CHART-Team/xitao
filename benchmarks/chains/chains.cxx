@@ -1,6 +1,7 @@
 /*
 	Chains benchmark
-	
+	creates a DAG consisting of parallel chains of TAOs. 
+  the lenght of the chains and parallelism can be adjusted in config-chains-bench.h
 
 */
 #include "../../tao.h"
@@ -22,10 +23,12 @@ extern "C" {
 
 }
 
-
+//used for the size of the sort kernel
 #define BLOCKSIZE (2*1024)
 
 void fill_arrays(int **a, int **c, int ysize, int xsize);
+
+//creating time table used for the history based scheduling methods.
 #ifdef TIME_TRACE
 #define TABLEWIDTH (int)((std::log2(GOTAO_NTHREADS))+1)
 double TAO_matrix::time_table[GOTAO_NTHREADS][TABLEWIDTH];
@@ -38,23 +41,20 @@ int
 main(int argc, char* argv[])
 {
 
-  int matrix_width;
-  int sort_width;
-  int heat_width;
-  int dag_depth;
-  int dag_width;
-  int sort_size;
-  int heat_resolution;
-  int xdecomp;
-  int ydecomp;
+  int matrix_width; //number of chains consisting of matrix multiolication TAOs
+  int sort_width; // number of chains consisting of sortTAOs
+  int heat_width; //number of chains consisting of copyTAOs
+  int dag_depth; //the length of all chain
+  int sort_size; //working set size of sort
+  int heat_resolution; //working set size of copy
   int ma_width; //matrix assembly width
-  int sa_width;
-  int ha_width;
+  int sa_width; //sort assebly width
+  int ha_width; //copy assembly width
 
-   int thread_base; int nthreads; int nctx; //Do we need the last parameter?
-   int c_size; int r_size; int stepsize;
-   int nqueues;  // how many queues to fill: What is this??
-   int nas;      // number of assemblies per queue: what is this??
+   int thread_base; int nthreads; int nctx; 
+   int r_size;
+   int nqueues;  
+   int nas;      
 
 
   
@@ -82,16 +82,6 @@ main(int argc, char* argv[])
  
    else
 	r_size=ROW_SIZE;
-
-   if(getenv("COL_SIZE"))
-	c_size=atoi(getenv("COL_SIZE"));
-   else
-	c_size=COL_SIZE;
-
-   if(getenv("STEP_SIZE"))
-	stepsize=atoi(getenv("STEP_SIZE"));
-   else
-	stepsize=STEP_SIZE;
 
    if(getenv("DAG_DEPTH"))
   dag_depth=atoi(getenv("DAG_DEPTH"));
@@ -123,16 +113,6 @@ main(int argc, char* argv[])
    else
   heat_resolution=HEAT_RESOLUTION;
 
-  if(getenv("INTERNAL_XDECOMP"))
-  xdecomp=atoi(getenv("INTERNAL_XDECOMP"));
-   else
-  xdecomp=INTERNAL_XDECOMP;
-
-  if(getenv("INTERNAL_YDECOMP"))
-  ydecomp=atoi(getenv("INTERNAL_YDECOMP"));
-   else
-  ydecomp=INTERNAL_YDECOMP;
-
   if(getenv("M_ASSEMBLY_WIDTH"))
   ma_width=atoi(getenv("M_ASSEMBLY_WIDTH"));
    else
@@ -148,16 +128,11 @@ main(int argc, char* argv[])
    else
   ha_width=H_ASSEMBLY_WIDTH;
 
-   if((COL_SIZE != ROW_SIZE) || (0!=(COL_SIZE % stepsize))){
-	std::cout << "Incompatible matrix parameters, please choose ROW_SIZE=COL_SIZE and a stepsize that is a divisior of the ROW_SIZE&&COL_SIZE";
-	return 0;
-   }
 
 
 
+//memory allocation
 
-
-  //TAOSORT inits
   if (matrix_width == 0){
     r_size = 0;
   }
@@ -249,11 +224,11 @@ for (int i = 0; i < h_ysize; ++i)
     {
       matrix_ao[i] = new TAO_matrix(ma_width, //taowidth
                                     0, //start y
-                                    stepsize, //stop y
+                                    r_size, //stop y
                                     y*r_size*2, //start x
-                                    stepsize+y*r_size*2, //stop x
+                                    r_size+y*r_size*2, //stop x
                                     0, //output offset (if needed)
-                                    ROW_SIZE, 
+                                    r_size, 
                                     matrix_input_a,
                                     matrix_output_c);
       if (x == 0) {
@@ -264,6 +239,7 @@ for (int i = 0; i < h_ysize; ++i)
       i++;
     }
 
+    //spawn sort TAOs
     for (int z = 0; z < sort_width; z++)
     {
       sort_ao[j] = new TAOQuickMergeDyn(sort_input_a[z],
@@ -278,6 +254,7 @@ for (int i = 0; i < h_ysize; ++i)
       j++;
     }
 
+    //spawn copy TAOs
     for (int z = 0; z < heat_width; z++)
     {
       heat_ao[k] = new TAO_Copy(
@@ -337,13 +314,6 @@ std::cout << "starting \n";
    }
 
 #endif
-  /*
-  std::cout << matrix_output_c[0][0]<< " " << matrix_output_c[0][1] << " " << matrix_output_c[0][2] << " " << matrix_output_c[0][3] << "\n";
-  
-  std::cout << c[1][0] << c[1][1] << c[1][2] << c[1][3] << "\n";
-  std::cout << c[2][0] << c[2][1] << c[2][2] << c[2][3] << "\n";
-  std::cout << c[3][0] << c[3][1] << c[3][2] << c[3][3] << "\n";
-  */
   for (int i = 0; i < m_ysize; ++i)
 {
   delete matrix_input_a[i];
@@ -387,7 +357,6 @@ void fill_arrays(int **a, int **c, int ysize, int xsize)
      for (int i = 0; i < ysize; ++i) { //each row
         for (int j = 0; j  < ysize; j++){ //each column
           a[i][j] = (rand() % 111);
-         // b[i][j] = (rand() % 111);
           c[i][j] = (rand() % 111);
         }
      }

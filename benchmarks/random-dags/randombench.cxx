@@ -1,7 +1,7 @@
-//
-//
-//
+/*
+Generates a randomized DAG with the configurations chosen in config-random-bench.h
 
+*/
 
 #include <chrono>
 #include <fstream>
@@ -27,7 +27,9 @@ extern "C" {
 }
 
 
+//definition the min function
 #define min(a,b) ( ((a) < (b)) ? (a) : (b) )
+//used for the size of the sort kernel
 #define BLOCKSIZE (2*1024)
 
 
@@ -35,6 +37,8 @@ void fill_arrays(int **a, int **c, int ysize, int xsize);
 
   //vector used to contain nodes
    std::vector<node> nodes;
+
+//creating time table used for the history based scheduling methods.
 #ifdef TIME_TRACE
 #define TABLEWIDTH (int)((std::log2(GOTAO_NTHREADS))+1)
 double TAO_matrix::time_table[GOTAO_NTHREADS][TABLEWIDTH];
@@ -51,10 +55,8 @@ main(int argc, char* argv[])
   int sort_count; //sort TAOs count
   int heat_count; //heat/copy TAO count
   int dag_width; //average width of the DAG
-  int sort_size; 
+  int sort_size; //size of the sort working set
   int heat_resolution; // size of copy/heat
-  int xdecomp; //internal decomposition of copy/heat
-  int ydecomp;
   int ma_width; //matrix assembly width
   int sa_width; //sort assembly width
   int ha_width; //heat/copy assembly width
@@ -142,11 +144,6 @@ main(int argc, char* argv[])
    else
   xdecomp=INTERNAL_XDECOMP;
 
-  if(getenv("INTERNAL_YDECOMP"))
-  ydecomp=atoi(getenv("INTERNAL_YDECOMP"));
-   else
-  ydecomp=INTERNAL_YDECOMP;
-
   if(getenv("M_ASSEMBLY_WIDTH"))
   ma_width=atoi(getenv("M_ASSEMBLY_WIDTH"));
    else
@@ -179,7 +176,6 @@ main(int argc, char* argv[])
    int ic = 0;
 
 
-   std::cout << "prewhile \n";
 
    //vectors used to keep track of which input and output data location is free and occupied.
    std::vector<int> matrix_mem;
@@ -267,11 +263,8 @@ main(int argc, char* argv[])
     }
 
     nodecount = nodecount + ic;
-    //std::cout <<"end of while iter\n";
-    //std::cout <<"ic: " << ic;
-    //std::cout <<"\nw: " << w << "\n";
-    std::cout << "nodecount: " << nodecount << "\n";
   }
+
 
   //set colors of our nodes in the DOT graph
   for (int i = 0; i < nodes.size(); i++){
@@ -292,10 +285,7 @@ main(int argc, char* argv[])
   graphfile.close();
 
 
-std::cout << "martix_mem size: " << matrix_mem.size() << "\n";
-std::cout << "sort_mem size:   " << sort_mem.size() << "\n";
-std::cout << "heat_mem size:   " << heat_mem.size() << "\n";
-
+//find the length of the critical path
 double critical_path = find_criticality(nodes[nodecount-1]);
 
 std::cout << "critical path is: " << critical_path << "\n";
@@ -367,7 +357,6 @@ for (int i = 0; i < h_ysize; ++i)
     fill_arrays(heat_input_a , heat_output_c, h_ysize, h_xsize);
 
 
-    std::cout <<"arrays filled\n";
 
    
    TAO_matrix *matrix_ao[matrix_count];
@@ -492,20 +481,6 @@ for (int i = 0; i < h_ysize; ++i)
       
 
 
-
-
-      /*
-   	for(int x=0; x<ROW_SIZE; x+=stepsize){
-  		for(int y=0; y<COL_SIZE; y+=stepsize){
-              //level1[i] = new TAOMergeDyn(array1 + total_assemblies*i*2048, tmp + total_assemblies*i*2048, total_assemblies*2048, 2);
-
-           		ao[i] = new TAO_matrix(2, x, x+stepsize, y, y+stepsize, ROW_SIZE, a, b, c); 
-  	  	 	gotao_push_init(ao[i], i % nthreads);
-          i++;
-  		}	
-    }
-   
-   */
 std::cout << "i = " <<  i << "\n";
 std::cout << "matrix_count = " << matrix_count << "\n";
 std::cout << "j = " <<  j << "\n";
