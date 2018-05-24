@@ -76,20 +76,22 @@ int gotao_init()
 int gotao_start()
 {
 #ifdef BIAS
+//Store inital weight value
 PolyTask::bias.store(1.5);
 #endif
+
 #ifdef F3
-  //Set critiality
+  //Analyse DAG based on tasks in ready q and
+  //asign criticality values
   for(int j=0; j<GOTAO_NTHREADS; j++){
-	
+	//Iterate over all ready tasks for all threads
        for(std::list<PolyTask *>::iterator it = worker_ready_q[j].begin();
                 it != worker_ready_q[j].end();
                 ++it){
+		//Call recursive function setting criticality
 		(*it)->set_criticality();
   	}
   }
-  std::cout << "Done analysing" << std::endl;
-
 #endif
   starting_barrier->wait();
 }
@@ -126,8 +128,9 @@ int gotao_push(PolyTask *pt, int queue)
 #if defined(SUPERTASK_STEALING) || defined(TAO_STA)
   LOCK_RELEASE(worker_lock[queue]);
 #endif // SUPERTASK_STEALING
+
 #if defined (F2) || defined(F3) || defined(BIAS)
-  //Increment value of tasks in the system
+  //Increment value of tasks for load based molding
   PolyTask::current_tasks.fetch_add(1);
 #endif
 
@@ -150,7 +153,7 @@ int gotao_push_init(PolyTask *pt, int queue)
 
   worker_ready_q[queue].push_front(pt);
 #if defined(F2) || defined(F3) || defined(BIAS)
-  //Increment value of tasks in the system
+  //increment value of tasks for load based molding
   PolyTask::current_tasks.fetch_add(1);
 #endif
 }
@@ -170,7 +173,7 @@ int gotao_push_back_init(PolyTask *pt, int queue)
 
   worker_ready_q[queue].push_back(pt);
 #if defined(F2) || defined(F3) || defined(BIAS)
-  //Increment value of tasks in the system
+  //increment value of tasks for load based molding
   PolyTask::current_tasks.fetch_add(1);
 #endif
 }
@@ -348,26 +351,28 @@ int worker_loop(int _nthread)
 
 
 #ifdef TIME_TRACE
-		
-                std::chrono::time_point<std::chrono::system_clock> t1,t2;
-		//If leader or assmebly width=1 start timing information
-		if((!(nthread-(assembly->leader))) || (assembly->width == 1)){
+               	std::chrono::time_point<std::chrono::system_clock> t1,t2;
+		//If leader start timing of TAO execution for trace table		
+		if(!(nthread-(assembly->leader))){
                 	t1 = std::chrono::system_clock::now();
 		}
 #endif
+			//Call execution
                         assembly->execute(nthread);
 #ifdef TIME_TRACE
 	
-		//If leader or assmebly width = 1 gather timing information
-		 if((!(nthread-(assembly->leader))) || (assembly->width == 1)){
-			//System clocks read if TIME_TRACE
+		//If leader gather timing information
+		 if(!(nthread-(assembly->leader))){
                  	t2 = std::chrono::system_clock::now();
+			//Typecast to get the seconds in doubles
                  	std::chrono::duration<double> elapsed_seconds = t2-t1;
                  	double ticks = elapsed_seconds.count();
+
 			//Index table based on width
-		  	int tableind = (assembly->width == 4) ? (2) : ((assembly->width)-1); 
-                	double oldticks = assembly->get_timetable(nthread,tableind);  //((4*oldticks+ticks)/5)
-			assembly->set_timetable(nthread,((4*oldticks+ticks)/5),tableind);         
+			int index = log2(assembly->width);
+			//Weight the newly recorded ticks to the old ticks 1:4 and save
+                	double oldticks = assembly->get_timetable(nthread,index);
+			assembly->set_timetable(nthread,((4*oldticks+ticks)/5),index);         
 		 }
 #endif
 
@@ -385,9 +390,6 @@ int worker_loop(int _nthread)
 #ifdef DEBUG
 		LOCK_ACQUIRE(output_lck);
 		std::cout << "Thread " << nthread << " completed assembly task " << assembly->taskid << std::endl;
-#if defined(F2) || defined(F3)
-		std::cout << "Current number of threads in the system" << PolyTask::current_tasks << std::endl;
-#endif
 		LOCK_RELEASE(output_lck);
 #endif
 
@@ -432,54 +434,6 @@ int worker_loop(int _nthread)
 #endif
           int attempts = STEAL_ATTEMPTS;
 	  
-//#ifdef BIAS
-/*	  int leadercore = (nthread/4)*4; //SHOULD BE FOUR
-	  int notleadercore = (leadercore == 4) ? (0) : (4); //SHOULD BE FOUR
-         
-          LOCK_ACQUIRE(worker_lock[leadercore]);
-               if(!worker_ready_q[leadercore].empty()){
-                 	st = worker_ready_q[leadercore].back(); 
-                  	worker_ready_q[leadercore].pop_back();
-                  	tao_total_steals++;  // successful steals only
-               		LOCK_RELEASE(worker_lock[leadercore]);
-	       }else{
-		       LOCK_RELEASE(worker_lock[leadercore]);
-		       LOCK_ACQUIRE(worker_lock[notleadercore]);
-               	       if(!worker_ready_q[notleadercore].empty()){
-                 		st = worker_ready_q[notleadercore].back(); 
-                  		worker_ready_q[notleadercore].pop_back();
-                  		tao_total_steals++;  // successful steals only
-			}
-		       LOCK_RELEASE(worker_lock[notleadercore]);
-	
-	       }
-	
-
-	  do{
-             do{
-		if(attempts > (STEAL_ATTEMPTS/2)){
-		    //CHANGE TO FOUR?
-		    random_core = ((r_rand(&seed) % 4)+((nthread/4)*4));
-		}else{	
-               	    random_core = (r_rand(&seed) % gotao_nthreads);
-		}
-               } while(random_core == nthread);
-            
-             {
-		     
-               LOCK_ACQUIRE(worker_lock[random_core]);
-               if(!worker_ready_q[random_core].empty()){
-                 	st = worker_ready_q[random_core].back(); 
-                  	worker_ready_q[random_core].pop_back();
-                  	tao_total_steals++;  // successful steals only
-               }
-               LOCK_RELEASE(worker_lock[random_core]);
-             }
-
-            
-          }while(!st && (attempts-- > 0)); 
-*/
-//#else	 
 
 	  do{
              do{
@@ -500,7 +454,6 @@ int worker_loop(int _nthread)
 
              
           }while(!st && (attempts-- > 0));
-//#endif
 	 
         if(st){
 #ifdef EXTRAE
@@ -593,12 +546,15 @@ struct completions task_completions[MAXTHREADS];
 struct completions task_pool[MAXTHREADS];
 
 #if defined(F2) || defined(F3) || defined(BIAS)
+//System load for load-based molding
 std::atomic<int> PolyTask::current_tasks;
 #endif
 #ifdef F3
+//Current highest critical task in system
 std::atomic<int> PolyTask::prev_top_task;
 #endif
 #ifdef BIAS
+//The current threshold value for weight-based of the system
 std::atomic<double> PolyTask::bias;
 #endif
 
