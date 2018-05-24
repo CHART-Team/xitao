@@ -1,23 +1,29 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
-#define GOTAO_NTHREADS 48
+#define GOTAO_NTHREADS 8
 #define GOTAO_THREAD_BASE 0
-#define MAXTHREADS 48
-// use a test-and-test-and-set lock
-#define TTS
+#define MAXTHREADS 8
+
+//Defines for hetero environment if Weight or Crit_Hetero scheduling
+//#define LITTLE_INDEX 0
+//#define LITTLE_NTHREADS 4
+//#define BIG_INDEX 4
+//#define BIG_NTHREADS 4
+
+// use a test-and-set lock
+#define TS
 #define TAO_WIDTH 1
 #define STEAL_ATTEMPTS 1
 #define TASK_POOL 100
 #define TAO_STA 1
 #define IDLE_SWITCH 4
-// #define TAO_PLACES 1
 
 #define L1_W   1
-#define L2_W   2
-#define L3_W   6
-#define L4_W   12
-#define L5_W   48
-#define TOPOLOGY { L1_W, L2_W, L3_W, L4_W, L5_W }
+#define L2_W   4
+//#define L3_W   6
+//#define L4_W   12
+//#define L5_W   48
+#define TOPOLOGY { L1_W, L2_W} //L3_W, L4_W, L5_W }
 #define GOTAO_HW_CONTEXTS 1
 #endif
