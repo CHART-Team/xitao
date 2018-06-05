@@ -169,7 +169,7 @@ extern completions task_completions[MAXTHREADS];
 extern completions task_pool[MAXTHREADS];
 
 #ifdef TIME_TRACE
-#define MAX_WIDTH_INDEX (int)((std::log2(GOTAO_NTHREADS))+1)
+#define MAX_WIDTH_INDEX (int)(std::log2(GOTAO_NTHREADS))
 #endif
 
 
@@ -272,10 +272,9 @@ class PolyTask{
            }
 
 #ifdef HISTORY_MOLD 
-//Scheduling FUNCTIONs
 
-            //History-based molding
-             int history_mold(int _nthread, PolyTask *it){
+        //History-based molding
+        int history_mold(int _nthread, PolyTask *it){
 
 		//Base case width = 1, want to fill table if empty
 		int new_width=1; 
@@ -283,7 +282,7 @@ class PolyTask{
 		double shortest_exec=100;
  
 		//We are not interested in reszing to all cores so MAXWIDTH-1
-		for(int i=0; i<(MAX_WIDTH_INDEX-1); i++){
+		for(int i=0; i<MAX_WIDTH_INDEX; i++){
 
 			//pow(2,i) gives width based of index
 			int width = std::pow(2,i);
@@ -299,14 +298,15 @@ class PolyTask{
 		}  
 		//Change width after results
 		it->width=new_width;
-		return _nthread; //0?	
+
+		return 0; 	
 	   } 
 #endif
 
 #ifdef LOAD_MOLD
 	 //Load-based molding
 	  int load_mold(int _nthread, PolyTask *it){
-		int ndx = _nthread;
+		int what = 0;
 		//If the current systme load including the task to be woken up
 		//does not exceed the resources in the system
 		if((current_tasks+1) < MAXTHREADS){
@@ -314,22 +314,23 @@ class PolyTask{
 			//over the number of tasks to size accordingly
 			int ce = (((current_tasks+1)+MAXTHREADS)-1)/(current_tasks+1);
 			//Check if suggested width is of power of 2, not 0 and not maximum
-			if(((ce &(ce-1)) == 0) && ce != 0 && ce != MAXTHREADS){
+			if(((ce &(ce-1)) == 0) && (ce != 0) && (ce != MAXTHREADS)){
 				it->width=ce;
 			}else{
-				//DON'T SET TO STATICALLY FOUR
-				it->width=4;
-			}
-			//Should we have else case here where we set to 4 as we did before
+				//If desired with is not a power of 2 we want
+				//the widest desirbale width, if 8 cores that is 4
+				it->width= std::pow(2,(MAX_WIDTH_INDEX-1));
 
+
+			}
 			
 		//If the load was too high, consider history based molding		
 		}else{
 #ifdef HISTORY_MOLD
-			ndx = history_mold(_nthread,it);
+			history_mold(_nthread,it);
 #endif
 		}
-		return(ndx); //0?
+		return 0;
 
      	  } 
 #endif
@@ -398,7 +399,7 @@ class PolyTask{
 		}
 #ifdef LOAD_MOLD		
 		//Mold task to suitable width after suitable thread is found
-		ndx = load_mold(ndx, it);
+		load_mold(ndx, it);
 #endif
 		return ndx;
 	
@@ -414,6 +415,7 @@ class PolyTask{
 		double div = 1;
 		double little = 0; //Inital little value
 		double big = 0; //Inital little value
+
 		//Find index based on width
 		double index = 0;
 		index = log2(it->width);
@@ -493,8 +495,9 @@ class PolyTask{
 
 			}else{
 //If molding is turned on then mold
-#ifdef LOAD_MOLD  
-				ndx2=load_mold((rand()%MAXTHREADS),(*it));
+#ifdef LOAD_MOLD 
+				ndx2=(rand()%MAXTHREADS);
+				load_mold(ndx2,(*it));
 #endif
 
 			}
@@ -548,13 +551,13 @@ class PolyTask{
                             if((ndx == -1) || (((*it)->affinity_queue/(*it)->width) == (_nthread/(*it)->width)))
                                  ndx = _nthread;
 #else
-			    int ndx = _nthread;
+			    			int ndx = _nthread;
 #endif
 
 #if defined(LOAD_MOLD)
-                           ndx  = load_mold(_nthread,(*it)); 
+                           load_mold(_nthread,(*it)); 
 #elif defined(HISTORY_MOLD)
-                           ndx = history_mold(_nthread,(*it)); 
+                           history_mold(_nthread,(*it)); 
 #endif
                             // seems like we acquire and release the lock for each assembly. 
                             // This is suboptimal, but given that TAO_STA makes the allocation
