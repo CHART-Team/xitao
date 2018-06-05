@@ -3,9 +3,9 @@
 
 include ../../makefile.inc
 CFLAGS := -std=gnu11 -g3 -O0 ${EXTRAEINC}
-CXXFLAGS = --std=c++11 -pthread  -g3 -O0 -DPAUSE ${EXTRAEINC}
+CXXFLAGS = --std=c++11 -pthread  -g3 -O0 ${EXTRAEINC}
 
-include Makefile.random
+include Makefile.chains
 
 CXXFLAGS += -DLEVEL1=$(LEVEL1) -DLEVEL2=$(LEVEL2) -DLEVEL3=$(LEVEL3) -DLEVEL4=$(LEVEL4) -DLEVEL5=$(LEVEL5)  -DLEVEL6=$(LEVEL6) -DLEVEL7=$(LEVEL7) 
 CXXFLAGS += -DDYNW1=$(DYNW1)   -DDYNW2=$(DYNW2)   -DDYNW3=$(DYNW3)   -DDYNW4=$(DYNW4)   -DDYNW5=$(DYNW5) -DDYNW6=$(DYNW6)   -DDYNW7=$(DYNW7)
@@ -38,22 +38,14 @@ CXXFLAGS += -I$(LOI_DIR)
 
 
 LIBS = -lm ${EXTRAELIBS}
-PROGRAM_OBJS=randombench.o ../../tao_sched.o ../sortlib.o
+PROGRAM_OBJS=chains.o ../../tao_sched.o ../sortlib.o
 
-all: randombench
+all: chains
 
 %.o : %.cxx
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-taosort:  $(TAO_OBJS)  $(LOI_OBJS)
-	$(CXX) $^ -o $@${SUFFIX} ${CXXFLAGS} $(LFLAGS)  -fpermissive -DTAO_SORT -L$(TBBLIB) -Wl,-rpath=$(TBBLIB) $(EXTRAELIBS)
-
-sort:  $(TAO_OBJS)  $(LOI_OBJS)
-	$(CXX) $^ -o $@${SUFFIX} ${CXXFLAGS} $(LFLAGS)  -fpermissive -DTAO_SORT -L$(TBBLIB) -Wl,-rpath=$(TBBLIB) $(EXTRAELIBS)
-
-
-
-randombench: $(PROGRAM_OBJS)
+chains: $(PROGRAM_OBJS)
 	$(CXX) $^ -o $@ $(CXXFLAGS) ${LIBS} -L$(TBBLIB) -fpermissive -DTAO_SORT -Wl,-rpath=$(TBBLIB)
 
 clean:

@@ -1,7 +1,7 @@
-//
-//
-//
+/*
+Generates a randomized DAG with the configurations chosen in config-random-bench.h
 
+*/
 
 #include <chrono>
 #include <fstream>
@@ -11,8 +11,8 @@
 #include <algorithm>
 #include "../../tao.h"
 #include "../taomatrix.h"
-#include "../solver-tao.h"
 #include "../taosort.h"
+#include "../taocopy.h"
 #include "randombench.h"
 #include "config-random-bench.h"
 
@@ -27,6 +27,9 @@ extern "C" {
 }
 
 
+//definition the min function
+#define min(a,b) ( ((a) < (b)) ? (a) : (b) )
+//used for the size of the sort kernel
 #define BLOCKSIZE (2*1024)
 
 
@@ -34,6 +37,14 @@ void fill_arrays(int **a, int **c, int ysize, int xsize);
 
   //vector used to contain nodes
    std::vector<node> nodes;
+
+//creating time table used for the history based scheduling methods.
+#ifdef TIME_TRACE
+#define TABLEWIDTH (int)((std::log2(GOTAO_NTHREADS))+1)
+double TAO_matrix::time_table[GOTAO_NTHREADS][TABLEWIDTH];
+double TAOQuickMergeDyn::time_table[GOTAO_NTHREADS][TABLEWIDTH];
+double TAO_Copy::time_table[GOTAO_NTHREADS][TABLEWIDTH];
+#endif
 
 // MAIN 
 int
@@ -44,10 +55,8 @@ main(int argc, char* argv[])
   int sort_count; //sort TAOs count
   int heat_count; //heat/copy TAO count
   int dag_width; //average width of the DAG
-  int sort_size; 
+  int sort_size; //size of the sort working set
   int heat_resolution; // size of copy/heat
-  int xdecomp; //internal decomposition of copy/heat
-  int ydecomp;
   int ma_width; //matrix assembly width
   int sa_width; //sort assembly width
   int ha_width; //heat/copy assembly width
@@ -130,16 +139,6 @@ main(int argc, char* argv[])
    else
   heat_resolution=HEAT_RESOLUTION;
 
-  if(getenv("INTERNAL_XDECOMP"))
-  xdecomp=atoi(getenv("INTERNAL_XDECOMP"));
-   else
-  xdecomp=INTERNAL_XDECOMP;
-
-  if(getenv("INTERNAL_YDECOMP"))
-  ydecomp=atoi(getenv("INTERNAL_YDECOMP"));
-   else
-  ydecomp=INTERNAL_YDECOMP;
-
   if(getenv("M_ASSEMBLY_WIDTH"))
   ma_width=atoi(getenv("M_ASSEMBLY_WIDTH"));
    else
@@ -172,7 +171,6 @@ main(int argc, char* argv[])
    int ic = 0;
 
 
-   std::cout << "prewhile \n";
 
    //vectors used to keep track of which input and output data location is free and occupied.
    std::vector<int> matrix_mem;
@@ -224,7 +222,7 @@ main(int argc, char* argv[])
 
 
       //Check previous nodes(max 30 previous)
-      for (int y = 1; y <= (min(30, nodecount)); y++){
+      for (int y = 1; y <= (min(200, nodecount)); y++){
         //use edge rate and rand to decide whether to create edge or not
         if ((rand() % 100) < edge_rate){
           //check if that edge is unnecessary to create(by checking if we already are a successor of the node)
@@ -260,11 +258,8 @@ main(int argc, char* argv[])
     }
 
     nodecount = nodecount + ic;
-    //std::cout <<"end of while iter\n";
-    //std::cout <<"ic: " << ic;
-    //std::cout <<"\nw: " << w << "\n";
-    std::cout << "nodecount: " << nodecount << "\n";
   }
+
 
   //set colors of our nodes in the DOT graph
   for (int i = 0; i < nodes.size(); i++){
@@ -285,10 +280,11 @@ main(int argc, char* argv[])
   graphfile.close();
 
 
-std::cout << "martix_mem size: " << matrix_mem.size() << "\n";
-std::cout << "sort_mem size:   " << sort_mem.size() << "\n";
-std::cout << "heat_mem size:   " << heat_mem.size() << "\n";
+//find the length of the critical path
+double critical_path = find_criticality(nodes[nodecount-1]);
 
+std::cout << "critical path is: " << critical_path << "\n";
+std::cout << "degree of prallelism (number of TAOs/critical path): " << nodecount/critical_path << "\n";
 
 //////Memory allocation
 // Creates a 2d array for each TAO class with a size depending on 
@@ -356,14 +352,13 @@ for (int i = 0; i < h_ysize; ++i)
     fill_arrays(heat_input_a , heat_output_c, h_ysize, h_xsize);
 
 
-    std::cout <<"arrays filled\n";
 
    
    TAO_matrix *matrix_ao[matrix_count];
 
    TAOQuickMergeDyn *sort_ao[sort_count];
 
-   copy2D *heat_ao[heat_count];
+   TAO_Copy *heat_ao[heat_count];
 
 
 
@@ -449,17 +444,10 @@ for (int i = 0; i < h_ysize; ++i)
     //spawn copy TAO
     if (nodes[x].ttype == heat)
     {
-      heat_ao[k] = new copy2D(
+      heat_ao[k] = new TAO_Copy(
                              heat_input_a[(nodes[x].mem_space)+1],
                              heat_output_c[(nodes[x].mem_space)+1],
-                             heat_resolution, heat_resolution,
-                             0, // x*((np + exdecomp -1) / exdecomp),
-                             0, //y*((np + eydecomp -1) / eydecomp),
-                             heat_resolution, //(np + exdecomp - 1) / exdecomp,
-                             heat_resolution, //(np + eydecomp - 1) / eydecomp, 
-                             gotao_sched_2D_static,
-                             heat_resolution/xdecomp, // (np + ixdecomp*exdecomp -1) / (ixdecomp*exdecomp),
-                             heat_resolution/ydecomp, //(np + iydecomp*eydecomp -1) / (iydecomp*eydecomp), 
+                             heat_resolution * heat_resolution,
                              ha_width);
       //if our node has no input edges
       if (nodes[x].edges.size() == 0) {
@@ -488,20 +476,6 @@ for (int i = 0; i < h_ysize; ++i)
       
 
 
-
-
-      /*
-   	for(int x=0; x<ROW_SIZE; x+=stepsize){
-  		for(int y=0; y<COL_SIZE; y+=stepsize){
-              //level1[i] = new TAOMergeDyn(array1 + total_assemblies*i*2048, tmp + total_assemblies*i*2048, total_assemblies*2048, 2);
-
-           		ao[i] = new TAO_matrix(2, x, x+stepsize, y, y+stepsize, ROW_SIZE, a, b, c); 
-  	  	 	gotao_push_init(ao[i], i % nthreads);
-          i++;
-  		}	
-    }
-   
-   */
 std::cout << "i = " <<  i << "\n";
 std::cout << "matrix_count = " << matrix_count << "\n";
 std::cout << "j = " <<  j << "\n";
@@ -528,6 +502,27 @@ std::cout << "starting \n";
    std::cout << "Assembly Cycle: " << elapsed_seconds.count() / (nodecount)  << " sec/A\n";
 
 
+#ifdef TIME_TRACE
+   for(int threads =0; threads< GOTAO_NTHREADS; threads++){
+	   std::cout <<"Tao Matrix: \n";
+	   for (int count=0; count < TABLEWIDTH; count++){
+   		std::cout << "Time table content for core " << threads  <<": " << TAO_matrix::time_table[threads][count] << "\n";
+   	   }
+   }
+   for(int threads =0; threads< GOTAO_NTHREADS; threads++){
+	   std::cout <<"Tao Sort: \n";
+	   for (int count=0; count < TABLEWIDTH; count++){
+   		std::cout << "Time table content for core " << threads  <<": " << TAOQuickMergeDyn::time_table[threads][count] << "\n";
+   	   }
+   }
+   for(int threads =0; threads< GOTAO_NTHREADS; threads++){
+	   std::cout <<"Tao Copy: \n";
+	   for (int count=0; count < TABLEWIDTH; count++){
+   		std::cout << "Time table content for core " << threads  <<": " << TAO_Copy::time_table[threads][count] << "\n";
+   	   }
+   }
+
+#endif
 
 //Free memory
   for (int i = 0; i < m_ysize; ++i)
@@ -583,6 +578,7 @@ node new_node(Taotype type, int nodenr, int taonr){
   n.ttype = type;
   n.nodenr = nodenr;
   n.taonr = taonr;
+  n.criticality = 0;
   return n;
 }
 
@@ -666,6 +662,30 @@ bool edge_check(int edge, node const &n){
   }
   //return false if we could not find the node at all.
   return false;
+}
+
+
+
+//used to find critical path of the DAG, which is used to calculate parallelism of the DAG
+///Disclaimer! does not set acutal criticality values, it searched the DAG bottom-up giving
+///the last nodes the highest criticality.
+int find_criticality(node &n){
+  //criticality == 0 means that we have not calculated criticality for this node before
+  if((n.criticality)==0){
+    int max=0;
+             //search successors for the highest criticality value
+             for (int i = 0; i < (n.edges).size(); i++) 
+             {
+                 int new_max =find_criticality(nodes[n.edges[i]]);
+                 max = ((new_max>max) ? (new_max) : (max));
+             }
+
+  //set criticality of the node to maximum of its edges +1
+  n.criticality=++max;
+
+  }
+  
+  return n.criticality;
 }
 
 

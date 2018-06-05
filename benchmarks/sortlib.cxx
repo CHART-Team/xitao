@@ -1,8 +1,6 @@
 // tao_objs.cxx
 //
 //
-
-
 #include "taosort.h"
 
 // Use LOI instrumentation: 

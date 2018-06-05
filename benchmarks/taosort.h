@@ -17,6 +17,10 @@
 #define SORT_TASK_SIZE (2*1024)
 #define INSERTION_THR (20)
 
+#ifdef TIME_TRACE
+#define TABLEWIDTH (int)((std::log2(GOTAO_NTHREADS))+1)
+#endif
+
 // hereby you define what barrier you want to use
 //#define BARRIER cxx_barrier
 #define BARRIER spin_barrier
@@ -113,7 +117,7 @@ struct quickmerge_uow{
         
 void print_array( int, ELM * );
 
-
+/*
 class TAOinit : public AssemblyTask
 {
     public: 
@@ -623,7 +627,7 @@ class TAOMerge2 : public AssemblyTask
                 int steps;
                 quickmerge_uow dow[2][5]; // [threadid][step]
 };
-
+*/
 struct quickmerge_uow_dyn{
         int type; // SEQMERGE, SEQQUICK, BINSPLIT, IDLE
         union{
@@ -635,7 +639,7 @@ struct quickmerge_uow_dyn{
         std::list <quickmerge_uow_dyn *> out;
         std::atomic<int> refcount;
 };
-        
+  /*      
 // like TAOMerge but using a dependence based scheduler with variable width
 class TAOMergeDyn : public AssemblyTask 
 {
@@ -792,18 +796,24 @@ class TAOMergeDyn : public AssemblyTask
                 // assembly locks
                 GENERIC_LOCK(assembly_lock);
 };
-
+*/
 
 class TAOQuickMergeDyn : public AssemblyTask 
 {
         public: 
+#ifdef  TIME_TRACE             
+                static double time_table[][TABLEWIDTH];
+#endif
+
                 // initialize static parameters
                 TAOQuickMergeDyn(ELM *array, ELM *tmp, int size, int res=2) : AssemblyTask(res) 
                 {   
-                      //std::atomic_init(&assembly_lock,false);                  
                        int quarter = size / 4;
                        pending_tasks = 13;
-                       assembly_lock.lock = false;
+#ifdef TIME_TRACE
+//		       ttable_lock.lock = false;
+#endif                       
+		       assembly_lock.lock = false;
 
                        for(int i = 0; i < 13; i++) dow[i].refcount=0;
 
@@ -967,7 +977,18 @@ class TAOQuickMergeDyn : public AssemblyTask
                    }
 
                 }
-            
+#ifdef  TIME_TRACE             
+
+              int set_timetable(int threadid, double ticks, int index){
+                  time_table[threadid][index] = ticks;
+              }
+	     double get_timetable(int threadid, int index){
+		 
+                  double time = 0;
+		  time = time_table[threadid][index];
+	          return time;
+	     }
+#endif          
                 std::atomic<int> pending_tasks;
                 std::list <quickmerge_uow_dyn *> readyq;
 

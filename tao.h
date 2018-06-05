@@ -11,7 +11,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <iostream>
-
+#include <cmath>
 #include "lfq-fifo.h"
 #include "config.h"
 
@@ -168,6 +168,11 @@ struct completions{
 extern completions task_completions[MAXTHREADS];
 extern completions task_pool[MAXTHREADS];
 
+#ifdef TIME_TRACE
+#define MAX_WIDTH_INDEX (int)(std::log2(GOTAO_NTHREADS))
+#endif
+
+
 class PolyTask{
         public:
            PolyTask(int t, int _nthread=0) : type(t) 
@@ -190,7 +195,16 @@ class PolyTask{
                         }
                     else task_pool[_nthread].tasks--;
                     threads_out_tao = 0;
+#if defined(CRIT_PERF_SCHED) || defined(CRIT_HETERO_SCHED)
+		    //Init criticality to 0
+	 	    criticality=0;
+#endif
             }
+	
+#if defined(CRIT_PERF_SCHED) || defined(CRIT_HETERO_SCHED)
+	   //Ciritcality value to indicate critical path, higher value -> more critical
+	   int criticality;
+#endif
 
            int type;
 
@@ -199,12 +213,29 @@ class PolyTask{
            static std::atomic<int> created_tasks;
 #endif
            static std::atomic<int> pending_tasks;
+#ifdef LOAD_MOLD
+	   //Static atomic of system load for load-based molding
+           static std::atomic<int> current_tasks;
+#endif
+#if defined(CRIT_PERF_SCHED) || defined(CRIT_HETERO_SCHED)
+	   //Static atomic of current most critical task for criticality-based scheduling
+           static std::atomic<int> prev_top_task;
+#endif
+#ifdef WEIGHT_SCHED
+	  //Static atomic of current weight threshold for weight-based scheduling
+	  static std::atomic<double> bias;
+#endif	   
 
            std::atomic<int> refcount;
            std::list <PolyTask *> out;
            std::atomic<int> threads_out_tao;
            int width;  // number of resources that this assembly uses
 
+#ifdef TIME_TRACE
+	   //Virtual declaration of performance table get/set within tasks
+           virtual double get_timetable(int thread, int index) = 0;
+           virtual int set_timetable(int thread, double t, int index) = 0;
+#endif
 #ifdef TAO_STA
            // PolyTasks can have affinity. Currently these are specified on a unidimensional vector
            // space [0,1) of type float
@@ -240,9 +271,208 @@ class PolyTask{
                t->refcount++;
            }
 
+#ifdef HISTORY_MOLD 
+
+        //History-based molding
+        int history_mold(int _nthread, PolyTask *it){
+
+		//Base case width = 1, want to fill table if empty
+		int new_width=1; 
+		//Set initial high value of shortest recorded
+		double shortest_exec=100;
+ 
+		//We are not interested in reszing to all cores so MAXWIDTH-1
+		for(int i=0; i<MAX_WIDTH_INDEX; i++){
+
+			//pow(2,i) gives width based of index
+			int width = std::pow(2,i);
+			//Fetch the leaders past recorded value to compare with
+			//Multiplication by width to account for the added resources
+			double comp_perf = (width*(it->get_timetable((_nthread-(_nthread%(width))),i)));
+			//If lower, update width
+			if (comp_perf < shortest_exec){
+				shortest_exec = comp_perf;
+				new_width = width;
+			} 
+
+		}  
+		//Change width after results
+		it->width=new_width;
+
+		return 0; 	
+	   } 
+#endif
+
+#ifdef LOAD_MOLD
+	 //Load-based molding
+	  int load_mold(int _nthread, PolyTask *it){
+		int what = 0;
+		//If the current systme load including the task to be woken up
+		//does not exceed the resources in the system
+		if((current_tasks+1) < MAXTHREADS){
+			//Calculate ceiling devision of the number of resources
+			//over the number of tasks to size accordingly
+			int ce = (((current_tasks+1)+MAXTHREADS)-1)/(current_tasks+1);
+			//Check if suggested width is of power of 2, not 0 and not maximum
+			if(((ce &(ce-1)) == 0) && (ce != 0) && (ce != MAXTHREADS)){
+				it->width=ce;
+			}else{
+				//If desired with is not a power of 2 we want
+				//the widest desirbale width, if 8 cores that is 4
+				it->width= std::pow(2,(MAX_WIDTH_INDEX-1));
+
+
+			}
+			
+		//If the load was too high, consider history based molding		
+		}else{
+#ifdef HISTORY_MOLD
+			history_mold(_nthread,it);
+#endif
+		}
+		return 0;
+
+     	  } 
+#endif
+
+#if defined(CRIT_PERF_SCHED) ||	defined(CRIT_HETERO_SCHED)
+          //Recursive function assigning criticality
+	  int set_criticality(){
+		//If the criticality is not yet set
+		if((criticality)==0){
+			int max=0;
+			//For all children nodes
+             		for(std::list<PolyTask *>::iterator edges = out.begin();
+                	edges != out.end();
+                	++edges){
+				//Recursively call function, finding maximum of children
+				int new_max =((*edges)->set_criticality());
+				//If maximum is larger, update maximum
+				max = ((new_max>max) ? (new_max) : (max));
+			}
+
+			//When all children have assigned crtiticality values
+			//Set own criticality value to the maxiumum of children +1
+			criticality=++max;
+
+		}
+	
+		return criticality;
+	  }
+
+	//Determine if task is more or less critical then current system task
+	int if_prio(int _nthread, PolyTask * it){
+		int prio = 0;
+		//If the criticality is larger or equal to current system load
+ 		if((it->criticality) >= (prev_top_task.load()-1)){
+			//store own criticality as highest value 
+			prev_top_task.store(it->criticality);
+			//set return indication to task being prio
+			prio=1;
+		} 
+		return prio;
+	}	
+#endif
+
+#ifdef CRIT_PERF_SCHED	
+	//Find suitable thread for prio task
+	 int find_thread(int _nthread, PolyTask * it){
+		//Inital thread is own
+		int ndx = _nthread;
+		//Set inital comparison value hihg
+		double shortest_exec=100;
+		double index = 0;
+		//Compare threads with same width as task
+		//Index corresponding to width is log2(width)
+		index = log2(it->width);
+		
+		//Compare execution times of possible leaders for task
+		//with current width, for loop interval is k=k+(wdith) 
+		//to find next possible leader
+		for(int k=0; k<MAXTHREADS; (k=k+(it->width))){
+			double temp = (it->get_timetable(k,index));
+			if(temp<shortest_exec){
+				shortest_exec = temp;
+				ndx=k;
+			}
+		
+		}
+#ifdef LOAD_MOLD		
+		//Mold task to suitable width after suitable thread is found
+		load_mold(ndx, it);
+#endif
+		return ndx;
+	
+	} 
+
+	
+#endif
+
+#ifdef WEIGHT_SCHED
+	int weight_sched(int _nthread, PolyTask * it){
+		int ndx=_nthread;
+		double current_bias=bias;
+		double div = 1;
+		double little = 0; //Inital little value
+		double big = 0; //Inital little value
+
+		//Find index based on width
+		double index = 0;
+		index = log2(it->width);
+		
+		//Look at predefined little and big threads
+		//with current width as index
+		little = it->get_timetable(LITTLE_INDEX,index);
+		big = it->get_timetable(BIG_INDEX,index); 
+
+		//If it has no recorded value on big, choose big
+		if(!big){
+			ndx=BIG_INDEX;
+		//If it has no recorded value on little, choose little
+		}else if(!little){
+			ndx=LITTLE_INDEX;
+		//Else, check if benifical to run on big or little
+		}else{
+			//If larger than current global value
+			//Schedule on big cluster 
+			//otherwise LITTLE
+			div = little/big;
+			if(div > current_bias){
+				ndx=BIG_INDEX;
+			}else{
+				ndx=LITTLE_INDEX;
+			}
+			//Update the bias with a ratio of 1:6 
+			//to the old bias
+			current_bias=((6*current_bias)+div)/7;
+			bias.store(current_bias);
+		}
+		
+		//Choose a random big or little for scheduling
+		if(ndx == BIG_INDEX){
+			ndx=((rand()%BIG_NTHREADS)+ndx);
+		}else{
+			ndx=((rand()%LITTLE_NTHREADS)+ndx);
+		}
+#ifdef LOAD_MOLD
+		//Mold the task to a new width
+		load_mold(ndx,it);
+#endif
+
+		return ndx;
+	}	
+
+#endif
+
            PolyTask * commit_and_wakeup(int _nthread)
            {
              PolyTask *ret = nullptr;
+
+#ifdef LOAD_MOLD
+ 	     //Decrement value of tasks in the system as we are committing
+             current_tasks.fetch_sub(1);
+	     
+#endif
              for(std::list<PolyTask *>::iterator it = out.begin();
                 it != out.end();
                 ++it)
@@ -254,23 +484,81 @@ class PolyTask{
                         std::cout << "Task " << (*it)->taskid << " became ready" << std::endl;
                         LOCK_RELEASE(output_lck);
 #endif 
+
+#if defined(CRIT_PERF_SCHED) || defined(CRIT_HETERO_SCHED) || defined(WEIGHT_SCHED)
+			//Choose own thread initially
+			int ndx2 = _nthread;
+#if defined(CRIT_PERF_SCHED)
+			int pr = if_prio(_nthread, (*it));
+			if (pr == 1){
+				ndx2=find_thread(_nthread, (*it));
+
+			}else{
+//If molding is turned on then mold
+#ifdef LOAD_MOLD 
+				ndx2=(rand()%MAXTHREADS);
+				load_mold(ndx2,(*it));
+#endif
+
+			}
+#elif defined(CRIT_HETERO_SCHED)
+			int pr = if_prio(_nthread, (*it));
+			if (pr == 1){
+				//Choose a random big core
+				ndx2=((rand()%BIG_NTHREADS)+BIG_INDEX);
+
+			}else{
+				//Choose a random little core
+				ndx2=((rand()%LITTLE_NTHREADS)+LITTLE_INDEX);
+			}
+
+#elif defined(WEIGHT_SCHED)
+			ndx2 = weight_sched(_nthread, (*it));
+		
+#endif
+
+#if defined(SUPERTASK_STEALING) || defined(TAO_STA)
+                            LOCK_ACQUIRE(worker_lock[ndx2]);
+#endif
+                            worker_ready_q[ndx2].push_front(*it);
+#if defined(SUPERTASK_STEALING) || defined(TAO_STA)
+                            LOCK_RELEASE(worker_lock[ndx2]);
+#endif
+
+
+
+
+
+#else
+
                         if(!ret
 #ifdef TAO_STA
                            // check the case affinity_queue == -1
                                 && (((*it)->affinity_queue == -1) || (((*it)->affinity_queue/(*it)->width) == (_nthread/(*it)->width)))
 #endif
-)
+){
+
+#if defined(LOAD_MOLD)
+                          load_mold(_nthread,(*it)); 
+#elif defined(HISTORY_MOLD)
+                           history_mold(_nthread,(*it)); 
+#endif
                            ret = *it; // forward locally only if affinity matches
-                        else{
+                        }else{
                             // otherwise insert into affinity queue, or in local queue
 #ifdef TAO_STA
                             int ndx = (*it)->affinity_queue;
                             if((ndx == -1) || (((*it)->affinity_queue/(*it)->width) == (_nthread/(*it)->width)))
                                  ndx = _nthread;
 #else
-                            int ndx = _nthread;
+			    			int ndx = _nthread;
 #endif
 
+#if defined(LOAD_MOLD)
+                           load_mold(_nthread,(*it)); 
+#elif defined(HISTORY_MOLD)
+                           history_mold(_nthread,(*it)); 
+#endif
                             // seems like we acquire and release the lock for each assembly. 
                             // This is suboptimal, but given that TAO_STA makes the allocation
                             // somewhat random it simpifies the implementation. In the case that
@@ -282,7 +570,17 @@ class PolyTask{
 #if defined(SUPERTASK_STEALING) || defined(TAO_STA)
                             LOCK_RELEASE(worker_lock[ndx]);
 #endif
+
+
+
                          } 
+
+#endif
+
+#ifdef LOAD_MOLD
+		//increment the number of tasks in the system
+		current_tasks.fetch_add(1);
+#endif
                     }
               }
 
@@ -315,7 +613,6 @@ class AssemblyTask: public PolyTask{
                 int leader;
 
                 virtual int execute(int thread) = 0;
-
                 ~AssemblyTask(){
 #ifdef NEED_BARRIER
                       delete barrier;

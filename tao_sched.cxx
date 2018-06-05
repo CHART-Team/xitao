@@ -75,6 +75,24 @@ int gotao_init()
 
 int gotao_start()
 {
+#ifdef WEIGHT_SCHED
+//Store inital weight value
+PolyTask::bias.store(1.5);
+#endif
+
+#if defined(CRIT_PERF_SCHED) || defined(CRIT_HETERO_SCHED)
+  //Analyse DAG based on tasks in ready q and
+  //asign criticality values
+  for(int j=0; j<GOTAO_NTHREADS; j++){
+	//Iterate over all ready tasks for all threads
+       for(std::list<PolyTask *>::iterator it = worker_ready_q[j].begin();
+                it != worker_ready_q[j].end();
+                ++it){
+		//Call recursive function setting criticality
+		(*it)->set_criticality();
+  	}
+  }
+#endif
   starting_barrier->wait();
 }
 
@@ -110,6 +128,12 @@ int gotao_push(PolyTask *pt, int queue)
 #if defined(SUPERTASK_STEALING) || defined(TAO_STA)
   LOCK_RELEASE(worker_lock[queue]);
 #endif // SUPERTASK_STEALING
+
+#ifdef LOAD_MOLD
+  //Increment value of tasks for load based molding
+  PolyTask::current_tasks.fetch_add(1);
+#endif
+
 }
 
 
@@ -128,6 +152,10 @@ int gotao_push_init(PolyTask *pt, int queue)
           queue = gotao_thread_base;
 
   worker_ready_q[queue].push_front(pt);
+#ifdef LOAD_MOLD
+  //increment value of tasks for load based molding
+  PolyTask::current_tasks.fetch_add(1);
+#endif
 }
 
 
@@ -144,6 +172,10 @@ int gotao_push_back_init(PolyTask *pt, int queue)
           queue = gotao_thread_base;
 
   worker_ready_q[queue].push_back(pt);
+#ifdef LOAD_MOLD
+  //increment value of tasks for load based molding
+  PolyTask::current_tasks.fetch_add(1);
+#endif
 }
 
 
@@ -316,7 +348,34 @@ int worker_loop(int _nthread)
 #ifdef SYNCHRONOUS_TAO
             assembly->barrier->wait();
 #endif
-            assembly->execute(nthread);
+
+
+#ifdef TIME_TRACE
+               	std::chrono::time_point<std::chrono::system_clock> t1,t2;
+		//If leader start timing of TAO execution for trace table		
+		if(!(nthread-(assembly->leader))){
+                	t1 = std::chrono::system_clock::now();
+		}
+#endif
+			//Call execution
+                        assembly->execute(nthread);
+#ifdef TIME_TRACE
+	
+		//If leader gather timing information
+		 if(!(nthread-(assembly->leader))){
+                 	t2 = std::chrono::system_clock::now();
+			//Typecast to get the seconds in doubles
+                 	std::chrono::duration<double> elapsed_seconds = t2-t1;
+                 	double ticks = elapsed_seconds.count();
+
+			//Index table based on width
+			int index = log2(assembly->width);
+			//Weight the newly recorded ticks to the old ticks 1:4 and save
+                	double oldticks = assembly->get_timetable(nthread,index);
+			assembly->set_timetable(nthread,((4*oldticks+ticks)/5),index);         
+		 }
+#endif
+
 #ifdef SYNCHRONOUS_TAO
             assembly->barrier->wait();
 #endif
@@ -332,7 +391,8 @@ int worker_loop(int _nthread)
 		LOCK_ACQUIRE(output_lck);
 		std::cout << "Thread " << nthread << " completed assembly task " << assembly->taskid << std::endl;
 		LOCK_RELEASE(output_lck);
-#endif 
+#endif
+
                st = assembly->commit_and_wakeup(nthread);
                assembly->cleanup();
                delete assembly;
@@ -372,24 +432,29 @@ int worker_loop(int _nthread)
             Extrae_event(EXTRAE_STEALING, 1);
             }
 #endif
-          int attempts = STEAL_ATTEMPTS; 
-          do{
+          int attempts = STEAL_ATTEMPTS;
+	  
+
+	  do{
              do{
+	
                random_core = (r_rand(&seed) % gotao_nthreads);
                } while(random_core == nthread);
             
              {
+		     
                LOCK_ACQUIRE(worker_lock[random_core]);
                if(!worker_ready_q[random_core].empty()){
-                  st = worker_ready_q[random_core].back();  
-                  worker_ready_q[random_core].pop_back();
-                  tao_total_steals++;  // successful steals only
+                 	st = worker_ready_q[random_core].back(); 
+                  	worker_ready_q[random_core].pop_back();
+                  	tao_total_steals++;  // successful steals only
                }
                LOCK_RELEASE(worker_lock[random_core]);
              }
 
              
           }while(!st && (attempts-- > 0));
+	 
         if(st){
 #ifdef EXTRAE
 	     stealing = false;
@@ -479,6 +544,19 @@ int worker_loop(int _nthread)
 std::atomic<int> PolyTask::pending_tasks;
 struct completions task_completions[MAXTHREADS];
 struct completions task_pool[MAXTHREADS];
+
+#ifdef LOAD_MOLD
+//System load for load-based molding
+std::atomic<int> PolyTask::current_tasks;
+#endif
+#if defined(CRIT_PERF_SCHED) || defined(CRIT_HETERO_SCHED)
+//Current highest critical task in system
+std::atomic<int> PolyTask::prev_top_task;
+#endif
+#ifdef WEIGHT_SCHED
+//The current threshold value for weight-based of the system
+std::atomic<double> PolyTask::bias;
+#endif
 
 // need to declare the static class memeber
 #if defined(DEBUG) || defined(EXTRAE)
