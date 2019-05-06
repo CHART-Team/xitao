@@ -1,0 +1,53 @@
+# loikrd.defs.sample
+# sample file for LOI/KRD configuration. Please edit this file and remove the suffix to make it visible to LOI/KRD
+#
+# common definitions for LOI/KRD
+
+# Optimization to reduce memory allocation -- specify max number of system threads (logical cores)
+LOIFLAGS += -DNUMTHREADS=48
+
+# Set the level of profiling / tracing
+# LOI accepts only two options: 
+#   "TIMING"          -> generate a timing profile only 
+#   "TRACING_TIMING"  -> generate both timing profile and KRD traces
+# If $(LOI) is empty then an uninstrumented binary is generated
+
+#LOI = TRACING_TIMING
+# LOI = TIMING
+LOI = 
+
+# LOIFLAGS is modified based on the previous selection
+ifeq ($(LOI), TIMING)
+$(info "LOIKRD - profiling mode:")
+LOIFLAGS  += -DDO_LOI -DLOI_TIMING -lrt -lm
+LOIFLAGS  += -DTIMESTATS
+else ifeq ($(LOI), TRACING_TIMING)
+$(info "LOIKRD - profiling and tracing mode:")
+LOIFLAGS  += -DDO_LOI -DLOI_TIMING -DDO_KRD -lrt -lm
+LOIFLAGS  += -DTIMESTATS
+endif
+
+# TIMESTATS controls whether the detailed kernel timing statistics are printed
+# LOI is required by KRD, but it can generate a lot of unnecessary output, which can be removed by not declaring TIMESTATS
+
+
+# Use RDTSCP to get a core id and timestamp atomically with a single instruction
+# Please make sure that your platform supports this instruction
+# OBS: this flag overrides THREADID
+LOIFLAGS  += -DRDTSCP_ID
+
+# Which method to use in order to identify the current logical thread
+# 1) gettid syscall, 2) pthread_self() hack, 3) always return 0, 4) myth_get_worker_num, 5) sched_getcpu()
+# OBS: This flag has no effect if -DRDTSCP_ID is specified
+# OBS: only sched_getcpu() and RDTSCP can be used to identify the current core and generate topology-aware KRD histograms
+LOIFLAGS  += -DTHREADID=5  # Use the sched_getcpu method
+
+# Which timing method to use
+# 1) RDTSC or 2) RDTSCP
+LOIFLAGS  += -DTIMER=2    # Use the RDTSCP method for timing
+
+# Perform an initialization routine to measure overheads of timers and thread identification
+#LOIFLAGS += -DDO_BENCH
+
+# Debug memory accesses (prints trace of all memory allocations in KRD)
+#LOIFLAGS += -DMEM_DEBUG

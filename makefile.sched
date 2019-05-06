@@ -1,0 +1,10 @@
+# Performance Based Scheduling 
+#CXXFLAGS+=-DCRIT_PERF_SCHED
+
+# Homogenous Scheduling 
+#CXXFLAGS+=-DBASIC_SCHED
+
+#Weight Based Scheduling
+#CXXFLAGS+=-DWEIGHT_SCHED
+
+

@@ -1,0 +1,9 @@
+# makefile.chol
+
+CC=gcc
+CXX=g++
+
+# the widths of the parallel assemblies
+CXXFLAGS+=-DDGEMM_WIDTH=L3_W
+CXXFLAGS+=-DTRSM_WIDTH=L2_W
+

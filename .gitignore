@@ -1,2 +1,11 @@
-*.out
+randombench
+dotprod
 *.o
+*.txt
+lib/*.a
+*.weights
+*.a
+*.so
+darknet
+html
+latex
