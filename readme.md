@@ -38,16 +38,6 @@ Assembly Throughput: 828.567 A/sec
 Total number of steals: 2209
 ```
 
-## Running Darknet's Image Classification Example ##
-```bash
-cd benchmarks/vgg16
-make -j
-export GOTAO_NTHREADS=nthreads 
-wget https://pjreddie.com/media/files/vgg-16.weights
-./darknet classifier predict cfg/imagenet1k.data cfg/vgg-16.cfg vgg-16.weights data/dog.jpg 2 2
-```
-
-
 ## Turning on Debug Trace ##
 ```bash
 cd ./include/

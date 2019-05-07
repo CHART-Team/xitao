@@ -51,7 +51,7 @@ public:
   std::atomic<int> refcount;
   std::list <PolyTask *> out;
   std::atomic<int> threads_out_tao;
-  int width;  // number of resources that this assembly uses
+  int width; /*!< number of resources that this assembly uses */  
 
   //Virtual declaration of performance table get/set within tasks
 #if defined(CRIT_PERF_SCHED)
@@ -84,8 +84,6 @@ public:
   float get_sta();
   //! copy the STA of a TAO to the current TAO
   int clone_sta(PolyTask *pt);
-
-  
   //! create a dependency to another TAO
   /*!
     \param t a TAO with which a happens-before order needs to be ensured (TAO t should execute after *this) 
