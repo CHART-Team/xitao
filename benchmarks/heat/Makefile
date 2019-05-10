@@ -59,10 +59,9 @@ heat-tao: $(HEAT_TAO_OBJS)  $(LOI_OBJS)
 heat-tbb: $(HEAT_TBB_OBJS) misc.o
 	$(CXX) $^ -o $@ ${LIBS}
 
-
 heat: heat.o solver.o misc.o
 	$(CC) $^ -o $@ $(CFLAGS) ${LIBS} -ltbb
 
 clean:
-	rm -rf $(HEAT_TAO_OBJS) $(HEAT_TBB_OBJS) heat-tao heat-tbb
+	rm -rf $(HEAT_TAO_OBJS) $(HEAT_TBB_OBJS) heat-tao heat-tbb *.ppm
 
