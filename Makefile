@@ -40,6 +40,7 @@ TAO_OBJS =  src/tao_sched.o src/poly_task.o src/barriers.o
 all: lib
 	cd $(EXAMPLES)/dotproduct && $(MAKE) clean && $(MAKE) 
 	cd $(EXAMPLES)/randomDAGs && $(MAKE) clean && $(MAKE) 
+	cd $(EXAMPLES)/heat && $(MAKE) clean && $(MAKE) 
 
 %.o : %.cxx
 	$(CXX) $(CXXFLAGS) -c $< -o $@

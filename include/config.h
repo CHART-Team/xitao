@@ -4,7 +4,7 @@
 //#define DEBUG
 
 #define GOTAO_THREAD_BASE 0
-
+#define GOTAO_NO_AFFINITY (1.0)
 #define STEAL_ATTEMPTS 100
 #define TASK_POOL 100
 #define TAO_STA 1
