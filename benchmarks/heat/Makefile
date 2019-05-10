@@ -54,14 +54,14 @@ all: heat-tao
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS)  $(LOIFLAGS) --std=c++11  -c $< -o $@
  
 heat-tao: $(HEAT_TAO_OBJS)  $(LOI_OBJS)
-	$(CXX) $^ -o $@ ${LIBS} -L$(TBBLIB) -ltbbmalloc_proxy -ltbbmalloc 
+	$(CXX) $^ -o $@ ${LIBS}  
 
 heat-tbb: $(HEAT_TBB_OBJS) misc.o
-	$(CXX) $^ -o $@ ${LIBS}
+	$(CXX) $^ -o $@ ${LIBS} -ltbb
 
 heat: heat.o solver.o misc.o
-	$(CC) $^ -o $@ $(CFLAGS) ${LIBS} -ltbb
+	$(CC) $^ -o $@ $(CFLAGS) ${LIBS}
 
 clean:
-	rm -rf $(HEAT_TAO_OBJS) $(HEAT_TBB_OBJS) heat-tao heat-tbb *.ppm
+	rm -rf $(HEAT_TAO_OBJS) $(HEAT_TBB_OBJS) heat-tao heat-tbb *.ppm heat
 

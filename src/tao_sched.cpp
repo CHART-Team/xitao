@@ -85,6 +85,10 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
     else gotao_nthreads = GOTAO_NTHREADS;
   }
 #endif
+  if(gotao_nthreads > MAXTHREADS) {
+    std::cout << "Fatal error: gotao_nthreads is greater than MAXTHREADS of " << MAXTHREADS << ". Make sure GOTAO_NTHREADS environment variable is set properly" << std::endl;    
+    exit(0);
+  }
 
   if(nhwc>=0){
     gotao_ncontexts = nhwc;
@@ -152,10 +156,6 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
   std::cout<< "\n";
   LOCK_RELEASE(output_lck);
 #endif
-  if(gotao_nthreads > MAXTHREADS) {
-    std::cout << "Fatal error: gotao_nthreads is greater that MAXTHREADS of " << MAXTHREADS << ". Make sure GOTAO_NTHREADS environment variable is set properly or unset" << std::endl;    
-    exit(0);
-  }
 }
 
 // Initialize gotao from environment vars or defaults

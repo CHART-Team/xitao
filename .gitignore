@@ -9,3 +9,5 @@ lib/*.a
 darknet
 html
 latex
+heat-tao
+heat-tbb
