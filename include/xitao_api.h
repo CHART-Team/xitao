@@ -15,7 +15,7 @@ class PolyTask;
 /*!
   \param affinity_control Set the available resources for XiTAO
  */
-int set_xitao_affinity(cpu_set_t& user_affinity_setup);
+int set_xitao_mask(cpu_set_t& user_affinity_setup);
 //! Initialize the XiTAO Runtime
 /*!
   \param nthr The number of XiTAO threads 

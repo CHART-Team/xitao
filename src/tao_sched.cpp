@@ -16,7 +16,7 @@ GENERIC_LOCK(output_lck);
 BARRIER *starting_barrier;
 cxx_barrier *tao_barrier;
 int wid[MAXTHREADS] = {1};
-std::vector<int> static_resources(MAXTHREADS);
+std::vector<int> static_resource_mapper(MAXTHREADS);
 struct completions task_completions[MAXTHREADS];
 struct completions task_pool[MAXTHREADS];
 cpu_set_t affinity_setup;
@@ -31,8 +31,7 @@ int gotao_thread_base;
 bool gotao_can_exit = false;
 bool gotao_initialized = false;
 bool resources_runtime_conrolled = false;
-// a logical to physical resource mapper
-std::vector<int> runtime_resources;
+std::vector<int> runtime_resource_mapper;                                   // a logical to physical runtime resource mapper
 int TABLEWIDTH;
 int worker_loop(int);
 std::thread *t[MAXTHREADS];
@@ -42,16 +41,16 @@ std::thread *t[MAXTHREADS];
 /*!
   \param affinity_control Set the usage per each cpu entry in the cpu_set_t
  */
-int set_xitao_affinity(cpu_set_t& user_affinity_setup) {
+int set_xitao_mask(cpu_set_t& user_affinity_setup) {
   if(!gotao_initialized) {
     resources_runtime_conrolled = true;
     affinity_setup = user_affinity_setup;
     int cpu_count = CPU_COUNT(&affinity_setup);
-    runtime_resources.resize(cpu_count);
+    runtime_resource_mapper.resize(cpu_count);
     int j = 0;
     for(int i = 0; i < MAXTHREADS; ++i) {
       if(CPU_ISSET(i, &affinity_setup)) {
-        runtime_resources[j++] = i;
+        runtime_resource_mapper[j++] = i;
       }
     }
     if(cpu_count < gotao_nthreads) std::cout << "Warning: only " << cpu_count << " physical cores available, whereas " << gotao_nthreads << " are requested!" << std::endl;      
@@ -78,13 +77,13 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
     s.erase(0, pos + 1);
     while ((pos = s.find(",")) != std::string::npos && i < MAXTHREADS) {
       token = s.substr(0, pos);      
-      static_resources[i++] = stoi(token);
+      static_resource_mapper[i++] = stoi(token);
       s.erase(0, pos + 1);
     }
   } else if(!resources_runtime_conrolled) { 
     std::cout << "Warning: affinity not set. To set it, use export XITAO_AFFINITY =\"[int,[int,...]]\"" << std::endl;
     for(int i = 0; i < MAXTHREADS; ++i)
-      static_resources[i] = i;
+      static_resource_mapper[i] = i;
   }   
 #if TX2
   if(resources_runtime_conrolled) std::cout << "Warning: experimental TX2 mode is not available with runtime resource allocation requested. Nondeterminitic behavior may occur" << std::endl;
@@ -114,9 +113,9 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
     else gotao_nthreads = GOTAO_NTHREADS;
   }
   if(resources_runtime_conrolled) {
-    if(gotao_nthreads != runtime_resources.size()) {
-      std::cout << "Warning: requested " << runtime_resources.size() << " at runtime, whereas gotao_nthreads is set to " << gotao_nthreads <<". Runtime value will be used" << std::endl;
-      gotao_nthreads = runtime_resources.size();
+    if(gotao_nthreads != runtime_resource_mapper.size()) {
+      std::cout << "Warning: requested " << runtime_resource_mapper.size() << " at runtime, whereas gotao_nthreads is set to " << gotao_nthreads <<". Runtime value will be used" << std::endl;
+      gotao_nthreads = runtime_resource_mapper.size();
     }  
   }
 #endif
@@ -245,8 +244,8 @@ void gotao_barrier()
 
 int check_and_get_available_queue(int queue) {
   bool found = false;
-  if(queue >= runtime_resources.size()) {
-    return rand()%runtime_resources.size();
+  if(queue >= runtime_resource_mapper.size()) {
+    return rand()%runtime_resource_mapper.size();
   } else {
     return queue;
   }  
@@ -316,15 +315,15 @@ int worker_loop(int nthread)
 {
   int phys_core;
   if(resources_runtime_conrolled) {
-    if(nthread >= runtime_resources.size()) {
+    if(nthread >= runtime_resource_mapper.size()) {
       LOCK_ACQUIRE(output_lck);
       std::cout << "Error: thread cannot be created due to resource limitation" << std::endl;
       LOCK_RELEASE(output_lck);
       exit(0);
     }
-    phys_core = runtime_resources[nthread];
+    phys_core = runtime_resource_mapper[nthread];
   } else {
-    phys_core = static_resources[gotao_thread_base+(nthread%(MAXTHREADS-gotao_thread_base))];   
+    phys_core = static_resource_mapper[gotao_thread_base+(nthread%(MAXTHREADS-gotao_thread_base))];   
   }
 #ifdef DEBUG
   LOCK_ACQUIRE(output_lck);
