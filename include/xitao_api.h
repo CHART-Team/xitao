@@ -9,9 +9,13 @@ of the TAODAG, finalization, etc.
  *  */
 #ifndef _XITAO_API
 #define _XITAO_API
-
 #define goTAO_init gotao_init
 class PolyTask;
+//! Allocates/deallocates the XiTAO's runtime resources
+/*!
+  \param affinity_control Set the available resources for XiTAO
+ */
+int set_xitao_affinity(cpu_set_t& user_affinity_setup);
 //! Initialize the XiTAO Runtime
 /*!
   \param nthr The number of XiTAO threads 

@@ -16,10 +16,10 @@ GENERIC_LOCK(output_lck);
 BARRIER *starting_barrier;
 cxx_barrier *tao_barrier;
 int wid[GOTAO_NTHREADS] = {1};
-std::vector<int> PHYSCORE(MAXTHREADS);
+std::vector<int> static_resources(MAXTHREADS);
 struct completions task_completions[MAXTHREADS];
 struct completions task_pool[MAXTHREADS];
-
+cpu_set_t affinity_setup;
 #if TX2
 int pac0;
 int pac1;
@@ -29,9 +29,36 @@ int gotao_nthreads;
 int gotao_ncontexts;
 int gotao_thread_base;
 bool gotao_can_exit = false;
+bool gotao_initialized = false;
+bool resources_runtime_conrolled = false;
+// a logical to physical resource mapper
+std::vector<int> runtime_resources;
 int TABLEWIDTH;
 int worker_loop(int);
 std::thread *t[MAXTHREADS];
+
+// std::vector<thread_info> thread_info_vector(MAXTHREADS);
+//! Allocates/deallocates the XiTAO's runtime resources. The size of the vector is equal to the number of available CPU cores. 
+/*!
+  \param affinity_control Set the usage per each cpu entry in the cpu_set_t
+ */
+int set_xitao_affinity(cpu_set_t& user_affinity_setup) {
+  if(!gotao_initialized) {
+    resources_runtime_conrolled = true;
+    affinity_setup = user_affinity_setup;
+    int cpu_count = CPU_COUNT(&affinity_setup);
+    runtime_resources.resize(cpu_count);
+    int j = 0;
+    for(int i = 0; i < MAXTHREADS; ++i) {
+      if(CPU_ISSET(i, &affinity_setup)) {
+        runtime_resources[j++] = i;
+      }
+    }
+    if(cpu_count < gotao_nthreads) std::cout << "Warning: only " << cpu_count << " physical cores available, whereas " << gotao_nthreads << " are requested!" << std::endl;      
+  } else {
+    std::cout << "Warning: unable to set XiTAO affinity. Runtime is already initialized. This call will be ignored" << std::endl;      
+  }  
+}
 
 //! Initialize the XiTAO Runtime
 /*!
@@ -41,6 +68,7 @@ std::thread *t[MAXTHREADS];
 */ 
 int gotao_init_hw( int nthr, int thrb, int nhwc)
 {
+  gotao_initialized = true;
   const char* affinity = getenv("XITAO_AFFINITY");
   if(affinity) {    
     std::string s(affinity);
@@ -50,15 +78,16 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
     s.erase(0, pos + 1);
     while ((pos = s.find(",")) != std::string::npos && i < MAXTHREADS) {
       token = s.substr(0, pos);      
-      PHYSCORE[i++] = stoi(token);
+      static_resources[i++] = stoi(token);
       s.erase(0, pos + 1);
     }
-  } else { 
+  } else if(!resources_runtime_conrolled) { 
     std::cout << "Warning: affinity not set. To set it, use export XITAO_AFFINITY =\"[int,[int,...]]\"" << std::endl;
     for(int i = 0; i < MAXTHREADS; ++i)
-      PHYSCORE[i] = i;
-  } 
+      static_resources[i] = i;
+  }   
 #if TX2
+  if(resources_runtime_conrolled) std::cout << "Warning: experimental TX2 mode is not available with runtime resource allocation requested. Nondeterminitic behavior may occur" << std::endl;
   if(nthr>=0){
     pac0 = nthr; 
     pac1 = nthr;
@@ -79,10 +108,18 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
   }
   gotao_nthreads = pac0 + pac1;
 #else
-  if(nthr>=0) gotao_nthreads = nthr;
-  else {    
-    if(getenv("GOTAO_NTHREADS")) gotao_nthreads = atoi(getenv("GOTAO_NTHREADS"));
-    else gotao_nthreads = GOTAO_NTHREADS;
+  if(resources_runtime_conrolled) {
+    if(gotao_nthreads != runtime_resources.size()) {
+      std::cout << "Warning: requested " << runtime_resources.size() << " at runtime, whereas gotao_nthreads is set to " << gotao_nthreads <<". Runtime value will be used" << std::endl;
+      gotao_nthreads = runtime_resources.size();
+    }  
+  }
+  else {
+    if(nthr>=0) gotao_nthreads = nthr;
+    else {    
+      if(getenv("GOTAO_NTHREADS")) gotao_nthreads = atoi(getenv("GOTAO_NTHREADS"));
+      else gotao_nthreads = GOTAO_NTHREADS;
+    }
   }
 #endif
   if(gotao_nthreads > MAXTHREADS) {
@@ -117,7 +154,7 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
   starting_barrier = new BARRIER(gotao_nthreads + 1);
   tao_barrier = new cxx_barrier(2);
   for(int i = 0; i < gotao_nthreads; i++){
-    t[i]  = new std::thread(worker_loop, i);
+    t[i]  = new std::thread(worker_loop, i);   
   }
 #if TX2
   TABLEWIDTH = 1;
@@ -195,7 +232,9 @@ int gotao_start()
 
 int gotao_fini()
 {
+  resources_runtime_conrolled = false;
   gotao_can_exit = true;
+  gotao_initialized = false;
   for(int i = 0; i < gotao_nthreads; i++){
     t[i]->join();
   }
@@ -206,6 +245,14 @@ void gotao_barrier()
   tao_barrier->wait();
 }
 
+int check_and_get_available_queue(int queue) {
+  bool found = false;
+  if(queue >= runtime_resources.size()) {
+    return rand()%runtime_resources.size();
+  } else {
+    return queue;
+  }  
+}
 // push work into polytask queue
 // if no particular queue is specified then try to determine which is the local
 // queue and insert it there. This has some overhead, so in general the
@@ -220,6 +267,7 @@ int gotao_push(PolyTask *pt, int queue)
       queue = sched_getcpu();
     }
   }
+  if(resources_runtime_conrolled) queue = check_and_get_available_queue(queue);
   LOCK_ACQUIRE(worker_lock[queue]);
   worker_ready_q[queue].push_front(pt);
   LOCK_RELEASE(worker_lock[queue]);
@@ -239,6 +287,7 @@ int gotao_push_init(PolyTask *pt, int queue)
       queue = gotao_thread_base;
     }
   }
+  if(resources_runtime_conrolled) queue = check_and_get_available_queue(queue);
   worker_ready_q[queue].push_front(pt);
 }
 
@@ -267,26 +316,37 @@ long int r_rand(long int *s)
 
 int worker_loop(int nthread)
 {
-  int phys_core = PHYSCORE[gotao_thread_base+(nthread%(MAXTHREADS-gotao_thread_base))];   
+  int phys_core;
+  if(resources_runtime_conrolled) {
+    if(nthread >= runtime_resources.size()) {
+      LOCK_ACQUIRE(output_lck);
+      std::cout << "Error: thread cannot be created due to resource limitation" << std::endl;
+      LOCK_RELEASE(output_lck);
+      exit(0);
+    }
+    phys_core = runtime_resources[nthread];
+  } else {
+    phys_core = static_resources[gotao_thread_base+(nthread%(MAXTHREADS-gotao_thread_base))];   
+  }
 #ifdef DEBUG
   LOCK_ACQUIRE(output_lck);
   std::cout << "[DEBUG] nthread: " << nthread << " mapped to physical core: "<< phys_core << std::endl;
   LOCK_RELEASE(output_lck);
 #endif
-
+  
   long int seed = 123456789;
-
   cpu_set_t cpu_mask;
   CPU_ZERO(&cpu_mask);
   CPU_SET(phys_core, &cpu_mask);
 
   sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask); 
-
+  // When resources are reclaimed, this will preempt the thread if it has no work in its local queue to do.
+  
   PolyTask *st = nullptr;
   starting_barrier->wait();
 
   while(true)
-  {
+  {    
     int random_core = 0;
     AssemblyTask *assembly = nullptr;
     SimpleTask *simple = nullptr;
@@ -348,49 +408,49 @@ int worker_loop(int nthread)
       st = nullptr;
     }
   // assemblies are inlined between two barriers
-    if(st){
-int _final; // remaining
-assembly = (AssemblyTask *) st;
+    if(st) {
+      int _final; // remaining
+      assembly = (AssemblyTask *) st;
 
 #if defined(CRIT_PERF_SCHED)
-std::chrono::time_point<std::chrono::system_clock> t1,t2; 
-if(!(nthread-(assembly->leader))){
-  t1 = std::chrono::system_clock::now();
-}
+      std::chrono::time_point<std::chrono::system_clock> t1,t2; 
+      if(!(nthread-(assembly->leader))){
+        t1 = std::chrono::system_clock::now();
+      }
 #endif
 
 #ifdef DEBUG
-LOCK_ACQUIRE(output_lck);
-std::cout << "[DEBUG] Thread "<< nthread << " start executing task " << assembly->taskid << "......\n";
-LOCK_RELEASE(output_lck);
+      LOCK_ACQUIRE(output_lck);
+      std::cout << "[DEBUG] Thread "<< nthread << " start executing task " << assembly->taskid << "......\n";
+      LOCK_RELEASE(output_lck);
 #endif
-assembly->execute(nthread);
+      assembly->execute(nthread);
 
 #if defined(CRIT_PERF_SCHED)
-if(!(nthread-(assembly->leader))){
-  t2 = std::chrono::system_clock::now();
-  std::chrono::duration<double> elapsed_seconds = t2-t1;
-  double ticks = elapsed_seconds.count();
-  int index = 0;
-  for(int k = 0; k<TABLEWIDTH; k++){
-    if(wid[k] == assembly->width){
-      index = k;  
+      if(!(nthread-(assembly->leader))){
+        t2 = std::chrono::system_clock::now();
+        std::chrono::duration<double> elapsed_seconds = t2-t1;
+        double ticks = elapsed_seconds.count();
+        int index = 0;
+        for(int k = 0; k<TABLEWIDTH; k++){
+          if(wid[k] == assembly->width){
+            index = k;  
+          }
+        }
+        //Weight the newly recorded ticks to the old ticks 1:4 and save
+        float oldticks = assembly->get_timetable( nthread,index);
+        if(oldticks == 0){
+          assembly->set_timetable(nthread,ticks,index);
+        }
+        else {
+          assembly->set_timetable(nthread,((4*oldticks+ticks)/5),index);         
+        }
     }
-  }
-  //Weight the newly recorded ticks to the old ticks 1:4 and save
-  float oldticks = assembly->get_timetable( nthread,index);
-  if(oldticks == 0){
-    assembly->set_timetable(nthread,ticks,index);
-  }
-  else{
-    assembly->set_timetable(nthread,((4*oldticks+ticks)/5),index);         
-  }
-}
 #endif
 
-_final = (++assembly->threads_out_tao == assembly->width);
-st = nullptr;
-      if(_final){ // the last exiting thread updates
+    _final = (++assembly->threads_out_tao == assembly->width);
+     st = nullptr;
+     if(_final){ // the last exiting thread updates
 #ifdef DEBUG
         LOCK_ACQUIRE(output_lck);
         std::cout << "[DEBUG] Thread " << nthread << " completed assembly task " << assembly->taskid << std::endl;
@@ -410,9 +470,8 @@ st = nullptr;
       worker_ready_q[nthread].pop_front();
       LOCK_RELEASE(worker_lock[nthread]);
       continue;
-    }
-    LOCK_RELEASE(worker_lock[nthread]);
-
+    }     
+    LOCK_RELEASE(worker_lock[nthread]);        
   // 3. try to steal 
   // TAO_WIDTH determines which threads participates in stealing
   // STEAL_ATTEMPTS determines number of steals before retrying the loop
