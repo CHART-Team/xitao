@@ -44,12 +44,11 @@ std::thread *t[MAXTHREADS];
 int set_xitao_mask(cpu_set_t& user_affinity_setup) {
   if(!gotao_initialized) {
     resources_runtime_conrolled = true;
-    affinity_setup = user_affinity_setup;
-    int cpu_count = CPU_COUNT(&affinity_setup);
+    int cpu_count = CPU_COUNT(&user_affinity_setup);
     runtime_resource_mapper.resize(cpu_count);
     int j = 0;
     for(int i = 0; i < MAXTHREADS; ++i) {
-      if(CPU_ISSET(i, &affinity_setup)) {
+      if(CPU_ISSET(i, &user_affinity_setup)) {
         runtime_resource_mapper[j++] = i;
       }
     }
