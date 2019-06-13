@@ -15,7 +15,7 @@ GENERIC_LOCK(worker_lock[MAXTHREADS]);
 GENERIC_LOCK(output_lck);
 BARRIER *starting_barrier;
 cxx_barrier *tao_barrier;
-int wid[GOTAO_NTHREADS] = {1};
+int wid[MAXTHREADS] = {1};
 std::vector<int> static_resources(MAXTHREADS);
 struct completions task_completions[MAXTHREADS];
 struct completions task_pool[MAXTHREADS];
@@ -108,18 +108,16 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
   }
   gotao_nthreads = pac0 + pac1;
 #else
+  if(nthr>=0) gotao_nthreads = nthr;
+  else {    
+    if(getenv("GOTAO_NTHREADS")) gotao_nthreads = atoi(getenv("GOTAO_NTHREADS"));
+    else gotao_nthreads = GOTAO_NTHREADS;
+  }
   if(resources_runtime_conrolled) {
     if(gotao_nthreads != runtime_resources.size()) {
       std::cout << "Warning: requested " << runtime_resources.size() << " at runtime, whereas gotao_nthreads is set to " << gotao_nthreads <<". Runtime value will be used" << std::endl;
       gotao_nthreads = runtime_resources.size();
     }  
-  }
-  else {
-    if(nthr>=0) gotao_nthreads = nthr;
-    else {    
-      if(getenv("GOTAO_NTHREADS")) gotao_nthreads = atoi(getenv("GOTAO_NTHREADS"));
-      else gotao_nthreads = GOTAO_NTHREADS;
-    }
   }
 #endif
   if(gotao_nthreads > MAXTHREADS) {
