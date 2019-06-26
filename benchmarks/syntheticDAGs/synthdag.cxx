@@ -76,6 +76,13 @@ main(int argc, char *argv[])
             tao_copy--;
             break;
           }
+        default:
+          if(tao_mul > 0) { 
+            currentTAO = new Synth_MatMul(len, resource_width);
+            previousTAO->make_edge(currentTAO); 
+            tao_mul--;
+            break;
+          }
       }
       if(j == 0) previousTAO = currentTAO;
       current_type++;
