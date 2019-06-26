@@ -8,6 +8,7 @@
 */
 #include "synthmat.h"
 #include "synthcopy.h"
+#include "synthstencil.h"
 #include <vector>
 #include <chrono>
 #include <fstream>
@@ -22,22 +23,24 @@ extern int wid[GOTAO_NTHREADS];
 extern int TABLEWIDTH;
 float Synth_MatMul::time_table[GOTAO_NTHREADS][GOTAO_NTHREADS];
 float Synth_MatCopy::time_table[GOTAO_NTHREADS][GOTAO_NTHREADS];
+float Synth_MatStencil::time_table[GOTAO_NTHREADS][GOTAO_NTHREADS];
 #endif
 
 int
 main(int argc, char *argv[])
 {
-  if(argc != 6) {
-    std::cout << "./a.out <Block Side Length> <Resource Width> <TAO Mul Count> <TAO Copy Count> <Degree of Parallelism>" << std::endl; 
+  if(argc != 7) {
+    std::cout << "./synbench <Block Side Length> <Resource Width> <TAO Mul Count> <TAO Copy Count> <TAO Stencil Count> <Degree of Parallelism>" << std::endl; 
     return 0;
   }
-  const int tao_types = 2;
+  const int tao_types = 3;
   int len = atoi(argv[1]);
   int resource_width = atoi(argv[2]); 
   int tao_mul = atoi(argv[3]);
   int tao_copy = atoi(argv[4]);
-  int parallelism = atoi(argv[5]);
-  int total_taos = tao_mul + tao_copy;
+  int tao_stencil = atoi(argv[5]);
+  int parallelism = atoi(argv[6]);
+  int total_taos = tao_mul + tao_copy + tao_stencil;
   int nthreads = GOTAO_NTHREADS;
 
   // init XiTAO runtime 
@@ -47,7 +50,6 @@ main(int argc, char *argv[])
   AssemblyTask* previousTAO;
   AssemblyTask* startTAO;
 
-
   // create first TAO
   if(tao_mul > 0) {
     previousTAO = new Synth_MatMul(len, resource_width);
@@ -55,11 +57,14 @@ main(int argc, char *argv[])
   } else if(tao_copy > 0){
     previousTAO = new Synth_MatCopy(len, resource_width);
     tao_copy--;
+  } else if(tao_stencil > 0) {
+    previousTAO = new Synth_MatStencil(len, resource_width);
+    tao_copy--;
   }
   startTAO = previousTAO;
   previousTAO->criticality = 1;
   total_taos--;
-  for(int i = 0; i < total_taos; ++i) {
+  for(int i = 0; i < total_taos; i+=parallelism) {
     for(int j = 0; j < parallelism; ++j) {
       AssemblyTask* currentTAO;
       switch(current_type) {
@@ -75,6 +80,13 @@ main(int argc, char *argv[])
             currentTAO = new Synth_MatCopy(len, resource_width);
             previousTAO->make_edge(currentTAO); 
             tao_copy--;
+            break;
+          }
+        case 2: 
+          if(tao_stencil > 0) {
+            currentTAO = new Synth_MatStencil(len, resource_width);
+            previousTAO->make_edge(currentTAO); 
+            tao_stencil--;
             break;
           }
         default:
@@ -110,7 +122,7 @@ main(int argc, char *argv[])
   auto epoch1_end = end1_ms.time_since_epoch();
   std::chrono::duration<double> elapsed_seconds = end-start;
 
-  std::cout << total_taos <<" Tasks completed in "<< elapsed_seconds.count() << "s\n";
+  std::cout << total_taos + 1 <<" Tasks completed in "<< elapsed_seconds.count() << "s\n";
   std::cout << "Assembly Throughput: " << (total_taos) / elapsed_seconds.count() << " A/sec\n"; 
   std::cout << "Total number of steals: " <<  tao_total_steals << "\n";
 
@@ -123,43 +135,62 @@ main(int argc, char *argv[])
       cut++;  
     }
   }
-  std::cout<<"TAO Matrix PTT:\n";
-  std::cout<< std::setfill(' ') << std::setw(15) << " ";
+  std::cout<<std::endl<<"TAO MMul PTT| ";
+  //std::cout<< std::setfill(' ') << std::setw(15) << " ";
   for(int threads =0; threads<nthreads; threads++)
   {
-    std::cout << "Th " << threads << std::setfill(' ') << std::setw(9) << " " ; 
+    std::cout << "Th " << std::setfill('0') << std::setw(4) << threads << "   | "; 
   }
-  std::cout<<"\n";
+  std::cout<<std::endl<<"---------------------------------------------------------------------------------------------------------------"<<std::endl;
+
 
   for (int count=0; count < TABLEWIDTH; count++)
   {
-    std::cout << std::setfill(' ') << std::setw(11) << "width=" << wid[count] << "  ";
+    std::cout << std::setfill(' ') << std::setw(11) << "width = " << wid[count] << "|";
     for(int threads =0; threads<nthreads; threads++)
     {
-      std::cout << std::setfill(' ') << std::setw(11) << Synth_MatMul::time_table[count][threads] << "  ";
+      std::cout << std::setfill(' ') << std::setw(11) << Synth_MatMul::time_table[count][threads] << "|";
     }
-    std::cout << "\n";
+    std::cout<<std::endl<<"---------------------------------------------------------------------------------------------------------------"<<std::endl;
+
   }
 
-  std::cout<<"TAO Copy PTT:\n";
-  std::cout<< std::setfill(' ') << std::setw(15) << " ";
+  std::cout<<std::endl<<"TAO Copy PTT| ";
+  //std::cout<< std::setfill(' ') << std::setw(15) << " ";
   for(int threads =0; threads<nthreads; threads++)
   {
-    std::cout << "Th " << threads << std::setfill(' ') << std::setw(9) << " " ; 
+    std::cout << "Th " << std::setfill('0') << std::setw(4) << threads << "   | ";  
   }
-  std::cout<<"\n";
+  std::cout<<std::endl<<"---------------------------------------------------------------------------------------------------------------"<<std::endl;
 
   for (int count=0; count < TABLEWIDTH; count++)
   {
-    std::cout << std::setfill(' ') << std::setw(11) << "width=" << wid[count] << "  ";
+    std::cout << std::setfill(' ') << std::setw(11) << "width = " << wid[count] << "|";
     for(int threads =0; threads< nthreads; threads++)
     {
-      std::cout << std::setfill(' ') << std::setw(11) << Synth_MatCopy::time_table[count][threads] << "  ";
+      std::cout << std::setfill(' ') << std::setw(11) << Synth_MatCopy::time_table[count][threads] << "|";
     }
-    std::cout << "\n";
+    std::cout<<std::endl<<"---------------------------------------------------------------------------------------------------------------"<<std::endl;
   }
+
+  std::cout<<std::endl<<"TAO Sten PTT| ";
+  //std::cout<< std::setfill(' ') << std::setw(15) << " ";
+  for(int threads =0; threads<nthreads; threads++)
+  {
+    std::cout << "Th " << std::setfill('0') << std::setw(4) << threads << "   | "; 
+  }
+  std::cout<<std::endl<<"---------------------------------------------------------------------------------------------------------------"<<std::endl;
+
+
+  for (int count=0; count < TABLEWIDTH; count++)
+  {
+    std::cout << std::setfill(' ') << std::setw(11) << "width = " << wid[count] << "|";
+    for(int threads =0; threads< nthreads; threads++)
+    {
+      std::cout << std::setfill(' ') << std::setw(11) << Synth_MatStencil::time_table[count][threads] << "|";
+    }
+    std::cout<<std::endl<<"---------------------------------------------------------------------------------------------------------------"<<std::endl;
+  }
+  
 #endif
-  std::cout << "***************** XITAO RUNTIME *****************\n";
-
-
 }

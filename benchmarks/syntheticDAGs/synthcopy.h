@@ -2,6 +2,7 @@
 #define SYNTH_COPY
 
 #include "tao.h"
+#include "dtypes.h"
 #include <chrono>
 #include <iostream>
 #include <atomic>
@@ -24,8 +25,8 @@ public:
     if(block_size == 0) block_size = 1;
     block_index = 0;
     uint32_t elem_count = dim_size * dim_size;
-    A = new double[elem_count]; 
-    B = new double[elem_count];
+    A = new real_t[elem_count]; 
+    B = new real_t[elem_count];
     block_count = dim_size / block_size;
   }
 
@@ -64,7 +65,7 @@ private:
   int block_size; 
   int dim_size;
   int block_count;
-  double *A, *B;
+  real_t *A, *B;
 };
 
 
