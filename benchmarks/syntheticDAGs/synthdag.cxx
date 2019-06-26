@@ -57,6 +57,7 @@ main(int argc, char *argv[])
     tao_copy--;
   }
   startTAO = previousTAO;
+  previousTAO->criticality = 1;
   total_taos--;
   for(int i = 0; i < total_taos; ++i) {
     for(int j = 0; j < parallelism; ++j) {
@@ -84,7 +85,11 @@ main(int argc, char *argv[])
             break;
           }
       }
-      if(j == 0) previousTAO = currentTAO;
+      if(j == 0) {
+        previousTAO = currentTAO;
+        previousTAO->criticality = 1;
+      }
+
       current_type++;
       if(current_type >= tao_types) current_type = 0;
     }

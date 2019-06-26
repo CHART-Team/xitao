@@ -140,11 +140,12 @@ int PolyTask::set_marker(int i){
 
 //Determine if task is critical task
 int PolyTask::if_prio(int _nthread, PolyTask * it){
-  int prio = 0;
-  if((it->marker) == 1){
-    prio=1;
-  } 
-  return prio;
+  // int prio = 0;
+  // if((it->marker) == 1){
+  //   prio=1;
+  // } 
+  // return prio;
+  return (it->criticality)
 } 
 #endif
   
