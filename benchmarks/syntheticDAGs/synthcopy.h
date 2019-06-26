@@ -39,10 +39,12 @@ public:
     while(true) {
       int row_block_id = block_index++;
       if(row_block_id > block_count) return 0;
-      int block_start =  row_block_id      * block_size;
-      int block_end   = (row_block_id + 1) * block_size;
-      int end = (mat_size < block_end) ? mat_size : block_end; 
-      std::copy(A + block_start, A + end, B + block_start);
+      int row_block_start =  row_block_id      * block_size;
+      int row_block_end   = (row_block_id + 1) * block_size;
+      int end = (mat_size < row_block_end) ? mat_size : row_block_end; 
+      for (int i = row_block_start; i < end; ++i) { 
+         std::copy(A + (i * mat_size), A + (i * mat_size) + mat_size, B + i * mat_size);
+      }
     }
   }
 
