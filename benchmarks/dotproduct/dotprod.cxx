@@ -26,7 +26,13 @@ main(int argc, char *argv[])
     return 0;
   }
   
-   // no topologies in this version
+  cpu_set_t cpu_;
+  CPU_ZERO(&cpu_);
+  for(int i = 0; i < 8; i+=2) {
+    CPU_SET(i, &cpu_);
+  } 
+  set_xitao_mask(cpu_);
+  // no topologies in this version
   A = new double[len];
   B = new double[len];
   C = new double[len];

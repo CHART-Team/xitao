@@ -43,7 +43,7 @@ std::thread *t[MAXTHREADS];
  */
 int set_xitao_mask(cpu_set_t& user_affinity_setup) {
   if(!gotao_initialized) {
-    resources_runtime_conrolled = true;
+    resources_runtime_conrolled = true;                                    // make this true, to refrain from using GOTAO_NTHREADS anywhere
     int cpu_count = CPU_COUNT(&user_affinity_setup);
     runtime_resource_mapper.resize(cpu_count);
     int j = 0;
