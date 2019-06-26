@@ -19,15 +19,15 @@ public:
 #endif
 
   Synth_MatMul(uint32_t _size, int _width): AssemblyTask(_width) {   
-    mat_size = _size;
-    block_size = mat_size / (_width * PSLACK);
+    dim_size = _size;
+    block_size = dim_size / (_width * PSLACK);
     if(block_size == 0) block_size = 1;
     block_index = 0;
-    uint32_t elem_count = mat_size * mat_size;
+    uint32_t elem_count = dim_size * dim_size;
     A = new double[elem_count]; 
     B_Trans = new double[elem_count];
     C = new double[elem_count];
-    block_count = mat_size / block_size;
+    block_count = dim_size / block_size;
   }
 
   int cleanup() { 
@@ -42,13 +42,13 @@ public:
       int row_block_id = block_index++;
       if(row_block_id > block_count) return 0;
       // assume B is transposed, so that you can utilize the performance of transposed matmul 
-      for (int i = row_block_id * block_size; i < mat_size && i < ((row_block_id + 1 ) * block_size); ++i) { 
-        for (int j = 0; j < mat_size; j++) {
+      for (int i = row_block_id * block_size; i < dim_size && i < ((row_block_id + 1 ) * block_size); ++i) { 
+        for (int j = 0; j < dim_size; j++) {
           double res  = 0;
-          for (int k = 0; k < mat_size; k++) {
-            res += A[i*mat_size+k]*B_Trans[j*mat_size+k];
+          for (int k = 0; k < dim_size; k++) {
+            res += A[i*dim_size+k]*B_Trans[j*dim_size+k];
           }
-          C[i*mat_size+j] = res;
+          C[i*dim_size+j] = res;
         }
       }
     }
@@ -67,7 +67,7 @@ public:
 #endif
 private:
   std::atomic<int> block_index; 
-  int mat_size;
+  int dim_size;
   int block_count;
   int block_size;
   double* A, *B_Trans, *C;

@@ -19,14 +19,14 @@ public:
 #endif
 
   Synth_MatCopy(uint32_t _size, int _width): AssemblyTask(_width) {   
-    mat_size = _size;
-    block_size = mat_size / (_width * PSLACK);
+    dim_size = _size;
+    block_size = dim_size / (_width * PSLACK);
     if(block_size == 0) block_size = 1;
     block_index = 0;
-    uint32_t elem_count = mat_size * mat_size;
+    uint32_t elem_count = dim_size * dim_size;
     A = new double[elem_count]; 
     B = new double[elem_count];
-    block_count = mat_size / block_size;
+    block_count = dim_size / block_size;
   }
 
   int cleanup(){ 
@@ -41,9 +41,9 @@ public:
       if(row_block_id > block_count) return 0;
       int row_block_start =  row_block_id      * block_size;
       int row_block_end   = (row_block_id + 1) * block_size;
-      int end = (mat_size < row_block_end) ? mat_size : row_block_end; 
+      int end = (dim_size < row_block_end) ? dim_size : row_block_end; 
       for (int i = row_block_start; i < end; ++i) { 
-         std::copy(A + (i * mat_size), A + (i * mat_size) + mat_size, B + i * mat_size);
+         std::copy(A + (i * dim_size), A + (i * dim_size) + dim_size, B + i * dim_size);
       }
     }
   }
@@ -62,7 +62,7 @@ public:
 private:
   std::atomic<int> block_index; 
   int block_size; 
-  int mat_size;
+  int dim_size;
   int block_count;
   double *A, *B;
 };
