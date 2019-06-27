@@ -73,7 +73,7 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
     size_t pos = 0;
     std::string token;
     int i = 0; 
-    s.erase(0, pos + 1);
+    //s.erase(0, pos + 1);
     while ((pos = s.find(",")) != std::string::npos && i < MAXTHREADS) {
       token = s.substr(0, pos);      
       static_resource_mapper[i++] = stoi(token);
