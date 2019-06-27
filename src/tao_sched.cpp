@@ -79,6 +79,10 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
       static_resource_mapper[i++] = stoi(token);
       s.erase(0, pos + 1);
     }
+    if(i < MAXTHREADS) {
+      token = s.substr(0, s.size());      
+      static_resource_mapper[i++] = stoi(token);
+    }
   } else if(!resources_runtime_conrolled) { 
     std::cout << "Warning: affinity not set. To set it, use export XITAO_AFFINITY =\"[int,[int,...]]\"" << std::endl;
     for(int i = 0; i < MAXTHREADS; ++i)
