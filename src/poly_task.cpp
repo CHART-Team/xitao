@@ -145,7 +145,7 @@ int PolyTask::if_prio(int _nthread, PolyTask * it){
   //   prio=1;
   // } 
   // return prio;
-  return (it->criticality)
+  return (it->criticality);
 } 
 #endif
   
