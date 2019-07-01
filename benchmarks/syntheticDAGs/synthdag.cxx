@@ -42,70 +42,92 @@ main(int argc, char *argv[])
   int parallelism = atoi(argv[6]);
   int total_taos = tao_mul + tao_copy + tao_stencil;
   int nthreads = GOTAO_NTHREADS;
-
+   //DOT graph output
+  std::ofstream graphfile;
+  graphfile.open ("graph.txt");
+  graphfile << "digraph DAG{\n";
   // init XiTAO runtime 
   gotao_init();
   
   int current_type = 0;
-  AssemblyTask* previousTAO;
+  int previous_tao_id = 0;
+  int current_tao_id = 0;
+  AssemblyTask* previous_tao;
   AssemblyTask* startTAO;
-
+  graphfile << previous_tao_id << "  [fillcolor = lightpink, style = filled];\n";
   // create first TAO
   if(tao_mul > 0) {
-    previousTAO = new Synth_MatMul(len, resource_width);
+    previous_tao = new Synth_MatMul(len, resource_width);
     tao_mul--;
   } else if(tao_copy > 0){
-    previousTAO = new Synth_MatCopy(len, resource_width);
+    previous_tao = new Synth_MatCopy(len, resource_width);
     tao_copy--;
   } else if(tao_stencil > 0) {
-    previousTAO = new Synth_MatStencil(len, resource_width);
-    tao_copy--;
+    previous_tao = new Synth_MatStencil(len, resource_width);
+    tao_stencil--;
   }
-  startTAO = previousTAO;
-  previousTAO->criticality = 1;
+  startTAO = previous_tao;
+  previous_tao->criticality = 1;
   total_taos--;
   for(int i = 0; i < total_taos; i+=parallelism) {
+    AssemblyTask* new_previous_tao;
+    int new_previous_id;
     for(int j = 0; j < parallelism; ++j) {
       AssemblyTask* currentTAO;
       switch(current_type) {
         case 0:
           if(tao_mul > 0) { 
             currentTAO = new Synth_MatMul(len, resource_width);
-            previousTAO->make_edge(currentTAO); 
+            previous_tao->make_edge(currentTAO);                                 
+            graphfile << "  " << previous_tao_id << " -> " << ++current_tao_id << " ;\n";
+            graphfile << current_tao_id << "  [fillcolor = lightpink, style = filled];\n";
             tao_mul--;
             break;
           }
         case 1: 
           if(tao_copy > 0) {
             currentTAO = new Synth_MatCopy(len, resource_width);
-            previousTAO->make_edge(currentTAO); 
+            previous_tao->make_edge(currentTAO); 
+            graphfile << "  " << previous_tao_id << " -> " << ++current_tao_id << " ;\n";
+            graphfile << current_tao_id << "  [fillcolor = skyblue, style = filled];\n";
             tao_copy--;
             break;
           }
         case 2: 
           if(tao_stencil > 0) {
             currentTAO = new Synth_MatStencil(len, resource_width);
-            previousTAO->make_edge(currentTAO); 
+            previous_tao->make_edge(currentTAO); 
+            graphfile << "  " << previous_tao_id << " -> " << ++current_tao_id << " ;\n";
+            graphfile << current_tao_id << "  [fillcolor = palegreen, style = filled];\n";
             tao_stencil--;
             break;
           }
         default:
           if(tao_mul > 0) { 
             currentTAO = new Synth_MatMul(len, resource_width);
-            previousTAO->make_edge(currentTAO); 
+            previous_tao->make_edge(currentTAO); 
+            graphfile << "  " << previous_tao_id << " -> " << ++current_tao_id << " ;\n";
+            graphfile << current_tao_id << "  [fillcolor = lightpink, style = filled];\n";
             tao_mul--;
             break;
           }
       }
+      
       if(j == 0) {
-        previousTAO = currentTAO;
-        previousTAO->criticality = 1;
+        new_previous_tao = currentTAO;
+        new_previous_tao->criticality = 1;
+        new_previous_id = current_tao_id;
       }
-
       current_type++;
       if(current_type >= tao_types) current_type = 0;
     }
+    previous_tao = new_previous_tao;
+    previous_tao_id = new_previous_id;
   }
+  //close the output
+  graphfile << "}";
+  graphfile.close();
+
   gotao_push(startTAO, 0);
   std::chrono::time_point<std::chrono::system_clock> start, end;
   start = std::chrono::system_clock::now();
