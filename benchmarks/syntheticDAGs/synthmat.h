@@ -8,7 +8,8 @@
 #include <iostream>
 #include <atomic>
 #include <cmath>
-
+#include <stdio.h>
+#include <string.h>
 #define PSLACK 8  
 
 // Matrix multiplication, tao groupation on written value
@@ -26,8 +27,10 @@ public:
     if(block_size == 0) block_size = 1;
     block_index = 0;
     uint32_t elem_count = dim_size * dim_size;
-    A = new real_t[elem_count]; 
+    A = new real_t[elem_count];
+    memset(A, rand(), elem_count*sizeof(real_t)); 
     B_Trans = new real_t[elem_count];
+    memset(B_Trans, rand(), elem_count*sizeof(real_t)); 
     C = new real_t[elem_count];
     block_count = dim_size / block_size;
   }
