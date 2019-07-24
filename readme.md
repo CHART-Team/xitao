@@ -3,6 +3,7 @@ XiTAO is an execution model and runtime for low-overhead and interference-free e
 
 The following figure shows the architecture of the XiTAO runtime
 
+
 ![Image of the XiTAO Arch](xitao_arch.png)
 
 ## Building the XiTAO Library ##
