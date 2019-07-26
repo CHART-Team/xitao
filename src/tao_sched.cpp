@@ -480,7 +480,7 @@ int worker_loop(int nthread)
       do{
         do{
           random_core = (r_rand(&seed) % gotao_nthreads);
-        } while(random_core == nthread  || random_core < 2);
+        } while(random_core == nthread);
 
         LOCK_ACQUIRE(worker_lock[random_core]);
         if(!worker_ready_q[random_core].empty()){
