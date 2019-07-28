@@ -475,7 +475,14 @@ int worker_loop(int nthread)
   // 3. try to steal 
   // TAO_WIDTH determines which threads participates in stealing
   // STEAL_ATTEMPTS determines number of steals before retrying the loop
-    if(STEAL_ATTEMPTS && !(r_rand(&seed) % STEAL_ATTEMPTS)){
+/*    #ifdef DEBUG
+    LOCK_ACQUIRE(output_lck);
+    std::cout << "****** PREPARE TO STEAL *******\n";
+    LOCK_RELEASE(output_lck);
+    #endif
+*/
+    //if(STEAL_ATTEMPTS && !(r_rand(&seed) % STEAL_ATTEMPTS)){
+    if(STEAL_ATTEMPTS && !(rand() % STEAL_ATTEMPTS)){
       int attempts = 1;
       do{
         do{

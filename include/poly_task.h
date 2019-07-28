@@ -32,11 +32,11 @@ public:
 #if defined(CRIT_PERF_SCHED)
   //Static atomic of current most critical task for criticality-based scheduling
   static std::atomic<int> prev_top_task;     
-  int criticality;
+  //int criticality;
   int marker;
 #endif
   int type;
-
+  int criticality;
 #if defined(DEBUG)
   int taskid;
   static std::atomic<int> created_tasks;
