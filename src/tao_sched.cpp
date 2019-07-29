@@ -308,12 +308,6 @@ int gotao_push_back_init(PolyTask *pt, int queue)
 LFQueue<PolyTask *> worker_assembly_q[MAXTHREADS];
 GENERIC_LOCK(worker_assembly_lock[MAXTHREADS]);
 long int tao_total_steals = 0;
-long int r_rand(long int *s)
-{
-  *s = ((1140671485*(*s) + 12820163) % (1<<24));
-  return *s;
-}
-
 int worker_loop(int nthread)
 {
   int phys_core;
@@ -486,7 +480,7 @@ int worker_loop(int nthread)
       int attempts = 1;
       do{
         do{
-          random_core = (r_rand(&seed) % gotao_nthreads);
+          random_core = (rand() % gotao_nthreads);
         } while(random_core == nthread);
 
         LOCK_ACQUIRE(worker_lock[random_core]);
