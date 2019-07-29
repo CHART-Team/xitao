@@ -308,6 +308,12 @@ int gotao_push_back_init(PolyTask *pt, int queue)
 LFQueue<PolyTask *> worker_assembly_q[MAXTHREADS];
 GENERIC_LOCK(worker_assembly_lock[MAXTHREADS]);
 long int tao_total_steals = 0;
+long int r_rand(long int *s)
+{
+  *s = ((1140671485*(*s) + 12820163) % (1<<24));
+  return *s;
+}
+
 int worker_loop(int nthread)
 {
   int phys_core;
@@ -326,9 +332,8 @@ int worker_loop(int nthread)
   LOCK_ACQUIRE(output_lck);
   std::cout << "[DEBUG] nthread: " << nthread << " mapped to physical core: "<< phys_core << std::endl;
   LOCK_RELEASE(output_lck);
-#endif
-  
-  long int seed = 123456789;
+#endif  
+  unsigned int seed = time(NULL);
   cpu_set_t cpu_mask;
   CPU_ZERO(&cpu_mask);
   CPU_SET(phys_core, &cpu_mask);
@@ -469,18 +474,11 @@ int worker_loop(int nthread)
   // 3. try to steal 
   // TAO_WIDTH determines which threads participates in stealing
   // STEAL_ATTEMPTS determines number of steals before retrying the loop
-/*    #ifdef DEBUG
-    LOCK_ACQUIRE(output_lck);
-    std::cout << "****** PREPARE TO STEAL *******\n";
-    LOCK_RELEASE(output_lck);
-    #endif
-*/
-    //if(STEAL_ATTEMPTS && !(r_rand(&seed) % STEAL_ATTEMPTS)){
-    if(STEAL_ATTEMPTS && !(rand() % STEAL_ATTEMPTS)){
+    if(STEAL_ATTEMPTS && !(rand_r(&seed) % STEAL_ATTEMPTS)){
       int attempts = 1;
       do{
         do{
-          random_core = (rand() % gotao_nthreads);
+          random_core = (rand_r(&seed) % gotao_nthreads);
         } while(random_core == nthread);
 
         LOCK_ACQUIRE(worker_lock[random_core]);
