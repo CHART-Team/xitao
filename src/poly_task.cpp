@@ -101,8 +101,7 @@ int PolyTask::history_mold(int _nthread, PolyTask *it){
     auto&& ptt_val = it->get_timetable(leader, width - 1);
     if(ptt_val == 0.0f) {
       new_width = width;
-      new_leader = leader; 
-      leader = ptt_layout.size(); 
+      new_leader = leader;       
       break;
     }
     comp_perf = width * ptt_val;
@@ -147,23 +146,6 @@ int PolyTask::set_marker(int i){
 int PolyTask::if_prio(int _nthread, PolyTask * it){
   return it->criticality;
 } 
-  // std::cout<<std::endl<<"TAO Copy PTT| ";
-  // //std::cout<< std::setfill(' ') << std::setw(15) << " ";
-  // for(int threads =0; threads<nthreads; threads++)
-  // {
-  //   std::cout << "Th " << std::setfill('0') << std::setw(4) << threads << "   | ";  
-  // }
-  // std::cout<<std::endl<<"---------------------------------------------------------------------------------------------------------------"<<std::endl;
-
-  // for (int count=0; count < TABLEWIDTH; count++)
-  // {
-  //   std::cout << std::setfill(' ') << std::setw(11) << "width = " << wid[count] << "|";
-  //   for(int threads =0; threads< nthreads; threads++)
-  //   {
-  //     std::cout << std::setfill(' ') << std::setw(11) << Synth_MatCopy::time_table[count][threads] << "|";
-  //   }
-  //   std::cout<<std::endl<<"---------------------------------------------------------------------------------------------------------------"<<std::endl;
-  // }
 
 void PolyTask::print_ptt(float table[][XITAO_MAXTHREADS], const char* table_name) { 
   std::cout << std::endl << table_name <<  " PTT Stats: " << std::endl;
