@@ -8,7 +8,8 @@
 //  - reverted changes in c++ naming 
 //  - changed references to pointers 
 //  - removed locks that ensure single producer/consumer. This is already enforced by the GO:TAO design
-
+#ifndef LFQ
+#define LFQ
 #include <atomic>
 
 #define CACHE_LINE_SIZE (64)
@@ -57,3 +58,4 @@ public:
         return true;
     }
 };
+#endif

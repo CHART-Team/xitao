@@ -16,7 +16,7 @@
 extern int gotao_thread_base;
 extern int gotao_nthreads;
 extern int gotao_sys_topo[5];
-extern int physcore[MAXTHREADS];
+extern int physcore[XITAO_MAXTHREADS];
 
 #define GET_TOPO_WIDTH_FROM_LEVEL(x) gotao_sys_topo[x]
 
@@ -33,7 +33,8 @@ extern long int tao_total_steals;
 // classes. The sleeping barrier is used by TAO to synchronize the start of assemblies
 class AssemblyTask: public PolyTask{
 public:
-  AssemblyTask(int w, int nthread=0) : PolyTask(TASK_ASSEMBLY, nthread), leader(-1) {
+  AssemblyTask(int w, int nthread=0) : PolyTask(TASK_ASSEMBLY, nthread) {
+    leader = -1;
     width = w;
 #ifdef NEED_BARRIER
     barrier = new BARRIER(w);
@@ -41,8 +42,7 @@ public:
   }
 #ifdef NEED_BARRIER
   BARRIER *barrier;
-#endif
-  int leader;
+#endif  
   virtual int execute(int thread) = 0;
   ~AssemblyTask(){
 #ifdef NEED_BARRIER

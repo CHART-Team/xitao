@@ -19,7 +19,7 @@ class TAO_Copy : public AssemblyTask
 {
 public:
 #if defined(CRIT_PERF_SCHED)
-  static float time_table[][GOTAO_NTHREADS];
+  static float time_table[][XITAO_MAXTHREADS];
 #endif
   
   TAO_Copy(int *a,  //input

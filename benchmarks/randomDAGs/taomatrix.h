@@ -20,7 +20,7 @@ class TAO_matrix : public AssemblyTask
 public: 
   // initialize static parameters
 #if defined(CRIT_PERF_SCHED)
-  static float time_table[][GOTAO_NTHREADS];
+  static float time_table[][XITAO_MAXTHREADS];
 #endif
 
   TAO_matrix(int res, //TAO width

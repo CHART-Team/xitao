@@ -17,20 +17,23 @@ class Synth_MatStencil : public AssemblyTask
 public: 
 // initialize static parameters
 #if defined(CRIT_PERF_SCHED)
-  static float time_table[][GOTAO_NTHREADS];
+  static float time_table[][XITAO_MAXTHREADS];
 #endif
 
-  Synth_MatStencil(uint32_t _size, int _width) : 
-  A(_size, std::vector<real_t>(_size)), B(_size, std::vector<real_t>(_size)), AssemblyTask(_width) {   
+  Synth_MatStencil(uint32_t _size, int _width) : AssemblyTask(_width) {   
     dim_size = _size;
     block_size = dim_size / (_width * PSLACK);
     if(block_size == 0) block_size = 1;
     block_index = 0;
     uint32_t elem_count = dim_size * dim_size;
+    A = new real_t[elem_count];
+    B = new real_t[elem_count];
     block_count = dim_size / block_size;
   }
 
   int cleanup() { 
+    delete[] A;
+    delete[] B;
 
   }
 
@@ -45,12 +48,12 @@ public:
       if (end == dim_size)      end = dim_size - 1;
       for (int i = row_block_start; i < end; ++i) { 
         for (int j = 1; j < dim_size-1; j++) {
-             B[i][j] = A[i][j] + k * (
-             A[i-1][j] +
-             A[i+1][j] +
-             A[i][j-1] +
-             A[i][j+1] +
-             (-4)*A[i][j] );
+             B[i*dim_size + j] = A[i*dim_size + j] + k * (
+             A[(i-1)*dim_size + j] +
+             A[(i+1)*dim_size + j] +
+             A[i*dim_size + j-1] +
+             A[i*dim_size + j+1] +
+             (-4)*A[i*dim_size + j] );
         }
       }
     }
@@ -73,7 +76,8 @@ private:
   int dim_size;
   int block_count;
   int block_size;
-  std::vector<std::vector<real_t> > A, B;
+  real_t* A, *B;
+  //std::vector<std::vector<real_t> > A, B;
 };
 
 #endif

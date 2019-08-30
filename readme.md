@@ -15,7 +15,6 @@ make lib
 ```bash
 cd benchmarks/dotproduct
 make dotprod
-export GOTAO_NTHREADS=nthreads 
 ./dotprod 8192 2 16
 ```
 
@@ -26,7 +25,6 @@ read documentation.pdf
 ```bash
 cd benchmarks/randomDAGs
 make randombench
-export GOTAO_NTHREADS=nthreads 
 ./randombench 10 5 1000 1000 1000
 ```
 

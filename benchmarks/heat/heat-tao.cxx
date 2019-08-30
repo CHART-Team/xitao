@@ -92,10 +92,10 @@ int main( int argc, char *argv[] )
     }
     print_params(&param);
 
-   if(getenv("GOTAO_NTHREADS"))
-        nthreads = atoi(getenv("GOTAO_NTHREADS"));
+   if(getenv("XITAO_MAXTHREADS"))
+        nthreads = atoi(getenv("XITAO_MAXTHREADS"));
    else 
-        nthreads = GOTAO_NTHREADS;
+        nthreads = XITAO_MAXTHREADS;
 
    if(getenv("GOTAO_THREAD_BASE"))
         thread_base = atoi(getenv("GOTAO_THREAD_BASE"));

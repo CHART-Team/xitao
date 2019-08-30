@@ -23,7 +23,7 @@ int set_xitao_mask(cpu_set_t& user_affinity_setup);
   \param nhwc The number of hardware contexts
 */  
 int gotao_init_hw(int nthr, int thrb, int nhwc);
-//! Initialize the XiTAO Runtime using the environment variables GOTAO_NTHREADS, GOTAO_THREAD_BASE and GOTAO_HW_CONTEXTS respectively
+//! Initialize the XiTAO Runtime using the environment variables XITAO_MAXTHREADS, GOTAO_THREAD_BASE and GOTAO_HW_CONTEXTS respectively
 int gotao_init();
 #define goTAO_start gotao_start
 //! Triggers the start of the TAODAG execution
@@ -37,7 +37,7 @@ int gotao_fini();
  queue and insert it there. This has some overhead, so in general the
  programmer should specify some queue
   \param pt The TAO to push 
-  \param queue The queue to be pushed to (< GOTAO_NTHREADS)
+  \param queue The queue to be pushed to (< XITAO_MAXTHREADS)
 */
 int gotao_push(PolyTask *pt, int queue=-1);
 //! Block master thread until DAG execution is finished, without having to finalize

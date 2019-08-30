@@ -1,21 +1,26 @@
 #include "poly_task.h"
 #include <stdlib.h>
+#include <iostream>
+#include <iomanip>
+#include <algorithm>
+#include <vector>
 #if defined(DEBUG)
 #include <iostream>
 #endif
 //extern int TABLEWIDTH;
 extern int gotao_nthreads;
-extern int wid[GOTAO_NTHREADS];
-extern aligned_lock worker_lock[MAXTHREADS];
+extern std::vector<int> static_resource_mapper;
+extern std::vector<std::vector<int> > ptt_layout;
+extern std::vector<std::vector<std::pair<int, int> > > inclusive_partitions;
+extern GENERIC_LOCK(worker_assembly_lock[XITAO_MAXTHREADS]);
+extern LFQueue<PolyTask *> worker_assembly_q[XITAO_MAXTHREADS];
+//extern int wid[XITAO_MAXTHREADS];
+extern aligned_lock worker_lock[XITAO_MAXTHREADS];
 extern int critical_path;
-extern std::list<PolyTask *> worker_ready_q[MAXTHREADS];
-extern completions task_completions[MAXTHREADS];
-extern completions task_pool[MAXTHREADS];
+extern std::list<PolyTask *> worker_ready_q[XITAO_MAXTHREADS];
+extern completions task_completions[XITAO_MAXTHREADS];
+extern completions task_pool[XITAO_MAXTHREADS];
 extern int TABLEWIDTH;
-#if TX2
-extern int pac0;
-extern int pac1;
-#endif
 #ifdef DEBUG
 extern GENERIC_LOCK(output_lck);
 #endif
@@ -85,34 +90,34 @@ void PolyTask::make_edge(PolyTask *t){
   //History-based molding
 #if defined(CRIT_PERF_SCHED)
 int PolyTask::history_mold(int _nthread, PolyTask *it){
-  int new_width=1; 
-  double shortest_exec=100;
-  double comp_perf = 0.0; 
-  for(int i=0; i<TABLEWIDTH;i++){
-  int width = wid[i];
-#if TX2
-  if(width > std::min(pac0, pac1)){
-    int newcore = ((_nthread-pac0)%width)*width + pac0;
-    comp_perf = (width*(it->get_timetable(newcore,i)));
-  }
-  else{
-    comp_perf = (width*(it->get_timetable((_nthread-(_nthread%(width))),i)));
-  }
-#else
-    comp_perf = (width*(it->get_timetable((_nthread-(_nthread%(width))),i)));
-#endif
-    if (comp_perf < shortest_exec){
+  int new_width = 1; 
+  int new_leader = -1;
+  float shortest_exec = 1000.0f;
+  float comp_perf = 0.0f; 
+  auto&& partitions = inclusive_partitions[_nthread];
+  for(auto&& elem : partitions) {
+    int leader = elem.first;
+    int width  = elem.second;
+    auto&& ptt_val = it->get_timetable(leader, width - 1);
+    if(ptt_val == 0.0f) {
+      new_width = width;
+      new_leader = leader; 
+      leader = ptt_layout.size(); 
+      break;
+    }
+    comp_perf = width * ptt_val;
+    if (comp_perf < shortest_exec) {
       shortest_exec = comp_perf;
       new_width = width;
+      new_leader = leader;      
     }
   }
-  it->width=new_width;
-  return 0;   
+  if(new_leader != -1) {
+    it->leader = new_leader;
+    it->width  = new_width;
+  }
 } 
-#endif
-
   //Recursive function assigning criticality
-#if defined(CRIT_PERF_SCHED)
 int PolyTask::set_criticality(){
   if((criticality)==0){
     int max=0;
@@ -140,76 +145,94 @@ int PolyTask::set_marker(int i){
 
 //Determine if task is critical task
 int PolyTask::if_prio(int _nthread, PolyTask * it){
-  // int prio = 0;
-  // if((it->marker) == 1){
-  //   prio=1;
-  // } 
-  // return prio;
-  return (it->criticality);
+  return it->criticality;
 } 
-#endif
-  
-#if defined(CRIT_PERF_SCHED)
+  // std::cout<<std::endl<<"TAO Copy PTT| ";
+  // //std::cout<< std::setfill(' ') << std::setw(15) << " ";
+  // for(int threads =0; threads<nthreads; threads++)
+  // {
+  //   std::cout << "Th " << std::setfill('0') << std::setw(4) << threads << "   | ";  
+  // }
+  // std::cout<<std::endl<<"---------------------------------------------------------------------------------------------------------------"<<std::endl;
+
+  // for (int count=0; count < TABLEWIDTH; count++)
+  // {
+  //   std::cout << std::setfill(' ') << std::setw(11) << "width = " << wid[count] << "|";
+  //   for(int threads =0; threads< nthreads; threads++)
+  //   {
+  //     std::cout << std::setfill(' ') << std::setw(11) << Synth_MatCopy::time_table[count][threads] << "|";
+  //   }
+  //   std::cout<<std::endl<<"---------------------------------------------------------------------------------------------------------------"<<std::endl;
+  // }
+
+void PolyTask::print_ptt(float table[][XITAO_MAXTHREADS], const char* table_name) { 
+  std::cout << std::endl << table_name <<  " PTT Stats: " << std::endl;
+  for(int leader = 0; leader < ptt_layout.size() && leader < gotao_nthreads; ++leader) {
+    auto row = ptt_layout[leader];
+    std::sort(row.begin(), row.end());
+    std::ostream time_output (std::cout.rdbuf());
+    std::ostream scalability_output (std::cout.rdbuf());
+    std::ostream width_output (std::cout.rdbuf());
+    std::ostream empty_output (std::cout.rdbuf());
+    time_output  << std::scientific << std::setprecision(3);
+    scalability_output << std::setprecision(3);    
+    empty_output << std::left << std::setw(5);
+    std::cout << "Thread = " << leader << std::endl;    
+    std::cout << "==================================" << std::endl;
+    std::cout << " | " << std::setw(5) << "Width" << " | " << std::setw(9) << std::left << "Time" << " | " << "Scalability" << std::endl;
+    std::cout << "==================================" << std::endl;
+    for (int i = 0; i < row.size(); ++i){
+      int curr_width = row[i];
+      auto comp_perf = table[curr_width - 1][leader];
+      std::cout << " | ";
+      width_output << std::left << std::setw(5) << curr_width;
+      std::cout << " | ";      
+      time_output << comp_perf; 
+      std::cout << " | ";
+      if(i == 0) {        
+        empty_output << " - ";
+      } else if(comp_perf != 0.0f) {
+        auto scaling = table[row[0] - 1][leader]/comp_perf;
+        auto efficiency = scaling / curr_width;
+        if(efficiency  < 0.6 || efficiency > 1.3) {
+          scalability_output << "(" <<table[row[0] - 1][leader]/comp_perf << ")";  
+        } else {
+          scalability_output << table[row[0] - 1][leader]/comp_perf;
+        }
+      }
+      std::cout << std::endl;  
+    }
+    std::cout << std::endl;
+  }
+}  
+
 int PolyTask::globalsearch_PTT(int nthread, PolyTask * it){
-  float shortest_exec=100;
-  int new_width_index = 0;
-  for(int i = 0; i < TABLEWIDTH; i++)
-  {
-    for(int j = gotao_nthreads % wid[i]; j < gotao_nthreads; j += wid[i])
-    {
-      float temp = wid[i] * (it->get_timetable(j,i));
-      if(temp < shortest_exec)
-      {
-        shortest_exec = temp;
-        nthread = j;
-        new_width_index = i;
+  float shortest_exec = 1000.0f;
+  float comp_perf = 0.0f; 
+  int new_width = 1; 
+  int new_leader = -1;
+  for(int leader = 0; leader < ptt_layout.size(); ++leader) {
+    for(auto&& width : ptt_layout[leader]) {
+      auto&& ptt_val = it->get_timetable(leader, width - 1);
+      if(ptt_val == 0.0f) {
+        new_width = width;
+        new_leader = leader; 
+        leader = ptt_layout.size(); 
+        break;
+      }
+      comp_perf = width * ptt_val;
+      if (comp_perf < shortest_exec) {
+        shortest_exec = comp_perf;
+        new_width = width;
+        new_leader = leader;      
       }
     }
-  }
-  it->width = wid[new_width_index]; 
-  return nthread;
+  }  
+  it->width = new_width; 
+  it->leader = new_leader;
+  return new_leader;
 }
-  
-  
-//Find suitable thread for prio task
-int PolyTask::find_thread(int nthread, PolyTask * it){
-  //Inital thread is own
-  int ndx = nthread;
-  //Set inital comparison value hihg
-  double shortest_exec=100;
-  int index = 0;
-  for(int k=0; k<TABLEWIDTH; k++){
-    if(it->width == wid[k]){
-      index = k;
-      break;
-    }
-  }
-#if TX2
-  if(it->width <= std::min(pac0, pac1)){
-    for(int k=0; k<gotao_nthreads; (k=k+(it->width))){
-      double temp = (it->get_timetable(k,index));
-      if(temp*(it->width)<shortest_exec){
-        shortest_exec = temp;
-        ndx=k;
-      }
-    }
-  }
-  else{
-#else
-    for(int k=0; k<gotao_nthreads; (k=k+(it->width))){
-      double temp = (it->get_timetable(k,index));
-      if(temp*(it->width)<shortest_exec){
-        shortest_exec = temp;
-        ndx=k;
-      }
-    }
 #endif
-#if TX2
-  }
-#endif
-    return ndx;
-} 
-  #endif
   
 #ifdef WEIGHT_SCHED
 int PolyTask::weight_sched(int nthread, PolyTask * it){
@@ -263,7 +286,8 @@ int PolyTask::weight_sched(int nthread, PolyTask * it){
   return ndx;
 } 
 #endif
-  
+
+
 PolyTask * PolyTask::commit_and_wakeup(int _nthread){
   PolyTask *ret = nullptr;
   for(std::list<PolyTask *>::iterator it = out.begin(); it != out.end(); ++it){
@@ -276,42 +300,41 @@ PolyTask * PolyTask::commit_and_wakeup(int _nthread){
 #endif 
         
 #if defined(CRIT_PERF_SCHED) || defined(WEIGHT_SCHED)
-      int ndx2 = _nthread;
-#ifdef DEBUG
-      std::cout <<"[DEBUG] Task "<< (*it)->taskid <<"run on thread "<< ndx2 <<"originally"<< std::endl;
-#endif
 
 #if defined(CRIT_PERF_SCHED)
       int pr = if_prio(_nthread, (*it));
       if (pr == 1){
-        ndx2 = globalsearch_PTT(_nthread, (*it));
+        globalsearch_PTT(_nthread, (*it));
 #ifdef DEBUG
         LOCK_ACQUIRE(output_lck);
-        std::cout <<"[DEBUG] Priority=1, task "<< (*it)->taskid <<" will run on thread "<< ndx2 << ", width become " << (*it)->width << std::endl;
+        std::cout <<"[DEBUG] Priority=1, task "<< (*it)->taskid <<" will run on thread "<< (*it)->leader << ", width become " << (*it)->width << std::endl;
         LOCK_RELEASE(output_lck);
 #endif
+        for(int i = (*it)->leader; i < (*it)->leader + (*it)->width; i++){
+          LOCK_ACQUIRE(worker_assembly_lock[i]);
+          worker_assembly_q[i].push_back((*it));
+        }
+        for(int i = (*it)->leader; i < (*it)->leader + (*it)->width; i++){
+          LOCK_RELEASE(worker_assembly_lock[i]);
+        }        
       }
-      else{
-#if TX2
-        ndx2 = rand()%pac1+pac0;
-#else
-        ndx2=(rand()%gotao_nthreads);
-#endif
-        history_mold(ndx2,(*it));
+      else{        
 #ifdef DEBUG
         LOCK_ACQUIRE(output_lck);
-        std::cout <<"[DEBUG] Priority=0, task "<< (*it)->taskid <<" will run on thread "<< ndx2 << ", width become " << (*it)->width << std::endl;
+        std::cout <<"[DEBUG] Priority=0, task "<< (*it)->taskid <<" is pushed to WSQ of thread "<< _nthread << std::endl;
         LOCK_RELEASE(output_lck);
 #endif
+        LOCK_ACQUIRE(worker_lock[_nthread]);
+        worker_ready_q[_nthread].push_front(*it);
+        LOCK_RELEASE(worker_lock[_nthread]);
       }
 #elif defined(WEIGHT_SCHED)
-      ndx2 = weight_sched(_nthread, (*it));
-#endif
-        
+      int ndx2 = weight_sched(_nthread, (*it));
       LOCK_ACQUIRE(worker_lock[ndx2]);
       worker_ready_q[ndx2].push_front(*it);
       LOCK_RELEASE(worker_lock[ndx2]);
-        
+#endif
+                
 #else
       if(!ret && (((*it)->affinity_queue == -1) || (((*it)->affinity_queue/(*it)->width) == (_nthread/(*it)->width)))){
         // history_mold(_nthread,(*it)); 

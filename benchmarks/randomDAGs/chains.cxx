@@ -29,9 +29,9 @@ extern "C" {
 void fill_arrays(int **a, int **c, int ysize, int xsize);
 #if defined(CRIT_PERF_SCHED)
 extern int TABLEWIDTH;
-float TAO_matrix::time_table[GOTAO_NTHREADS][GOTAO_NTHREADS];
-float TAOQuickMergeDyn::time_table[GOTAO_NTHREADS][GOTAO_NTHREADS];
-float TAO_Copy::time_table[GOTAO_NTHREADS][GOTAO_NTHREADS];
+float TAO_matrix::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS];
+float TAOQuickMergeDyn::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS];
+float TAO_Copy::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS];
 #endif
 
 
@@ -57,10 +57,10 @@ main(int argc, char* argv[])
 
  // set the number of threads and thread_base
 
-   if(getenv("GOTAO_NTHREADS"))
-        nthreads = atoi(getenv("GOTAO_NTHREADS"));
+   if(getenv("XITAO_MAXTHREADS"))
+        nthreads = atoi(getenv("XITAO_MAXTHREADS"));
    else
-        nthreads = GOTAO_NTHREADS;
+        nthreads = XITAO_MAXTHREADS;
 
    if(getenv("GOTAO_THREAD_BASE"))
         thread_base = atoi(getenv("GOTAO_THREAD_BASE"));
@@ -289,19 +289,19 @@ std::cout << "starting \n";
    std::cout << "Assembly Throughput: " << (matrix_assemblies + heat_assemblies + sort_assemblies) / elapsed_seconds.count() << " A/sec\n";
    std::cout << "Assembly Cycle: " << elapsed_seconds.count() / (matrix_assemblies + heat_assemblies + sort_assemblies)  << " sec/A\n";
 #ifdef CRIT_PERF_SCHED
-   for(int threads =0; threads< GOTAO_NTHREADS; threads++){
+   for(int threads =0; threads< XITAO_MAXTHREADS; threads++){
 	   std::cout <<"Tao Matrix: \n";
 	   for (int count=0; count < TABLEWIDTH; count++){
    		std::cout << "Time table content for core " << threads  <<": " << TAO_matrix::time_table[threads][count] << "\n";
    	   }
    }
-   for(int threads =0; threads< GOTAO_NTHREADS; threads++){
+   for(int threads =0; threads< XITAO_MAXTHREADS; threads++){
 	   std::cout <<"Tao Sort: \n";
 	   for (int count=0; count < TABLEWIDTH; count++){
    		std::cout << "Time table content for core " << threads  <<": " << TAOQuickMergeDyn::time_table[threads][count] << "\n";
    	   }
    }
-   for(int threads =0; threads< GOTAO_NTHREADS; threads++){
+   for(int threads =0; threads< XITAO_MAXTHREADS; threads++){
 	   std::cout <<"Tao Copy: \n";
 	   for (int count=0; count < TABLEWIDTH; count++){
    		std::cout << "Time table content for core " << threads  <<": " << TAO_Copy::time_table[threads][count] << "\n";

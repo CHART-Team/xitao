@@ -4,26 +4,30 @@
 #include <iostream>
 #include <chrono>
 #include <cmath>
+#include <algorithm>
 #include <vector>
+#include <fstream>
 
 // define the topology
 int gotao_sys_topo[5] = TOPOLOGY;
 
 // a PolyTask is either an assembly or a simple task
-std::list<PolyTask *> worker_ready_q[MAXTHREADS];
-GENERIC_LOCK(worker_lock[MAXTHREADS]);
+std::list<PolyTask *> worker_ready_q[XITAO_MAXTHREADS];
+LFQueue<PolyTask *> worker_assembly_q[XITAO_MAXTHREADS];
+GENERIC_LOCK(worker_assembly_lock[XITAO_MAXTHREADS]);
+long int tao_total_steals = 0;
+GENERIC_LOCK(worker_lock[XITAO_MAXTHREADS]);
 GENERIC_LOCK(output_lck);
 BARRIER *starting_barrier;
 cxx_barrier *tao_barrier;
-int wid[MAXTHREADS] = {1};
-std::vector<int> static_resource_mapper(MAXTHREADS);
-struct completions task_completions[MAXTHREADS];
-struct completions task_pool[MAXTHREADS];
+//int wid[XITAO_MAXTHREADS] = {1};
+std::vector<int>                       static_resource_mapper(XITAO_MAXTHREADS);
+std::vector<std::vector<int> >     ptt_layout(XITAO_MAXTHREADS);
+std::vector<std::vector<std::pair<int, int> > > inclusive_partitions(XITAO_MAXTHREADS);
+
+struct completions task_completions[XITAO_MAXTHREADS];
+struct completions task_pool[XITAO_MAXTHREADS];
 cpu_set_t affinity_setup;
-#if TX2
-int pac0;
-int pac1;
-#endif
 int critical_path;
 int gotao_nthreads;
 int gotao_ncontexts;
@@ -34,20 +38,20 @@ bool resources_runtime_conrolled = false;
 std::vector<int> runtime_resource_mapper;                                   // a logical to physical runtime resource mapper
 int TABLEWIDTH;
 int worker_loop(int);
-std::thread *t[MAXTHREADS];
+std::thread *t[XITAO_MAXTHREADS];
 
-// std::vector<thread_info> thread_info_vector(MAXTHREADS);
+// std::vector<thread_info> thread_info_vector(XITAO_MAXTHREADS);
 //! Allocates/deallocates the XiTAO's runtime resources. The size of the vector is equal to the number of available CPU cores. 
 /*!
   \param affinity_control Set the usage per each cpu entry in the cpu_set_t
  */
 int set_xitao_mask(cpu_set_t& user_affinity_setup) {
   if(!gotao_initialized) {
-    resources_runtime_conrolled = true;                                    // make this true, to refrain from using GOTAO_NTHREADS anywhere
+    resources_runtime_conrolled = true;                                    // make this true, to refrain from using XITAO_MAXTHREADS anywhere
     int cpu_count = CPU_COUNT(&user_affinity_setup);
     runtime_resource_mapper.resize(cpu_count);
     int j = 0;
-    for(int i = 0; i < MAXTHREADS; ++i) {
+    for(int i = 0; i < XITAO_MAXTHREADS; ++i) {
       if(CPU_ISSET(i, &user_affinity_setup)) {
         runtime_resource_mapper[j++] = i;
       }
@@ -67,66 +71,108 @@ int set_xitao_mask(cpu_set_t& user_affinity_setup) {
 int gotao_init_hw( int nthr, int thrb, int nhwc)
 {
   gotao_initialized = true;
-  const char* affinity = getenv("XITAO_AFFINITY");
-  if(affinity) {    
-    std::string s(affinity);
-    size_t pos = 0;
-    std::string token;
-    int i = 0; 
-    //s.erase(0, pos + 1);
-    while ((pos = s.find(",")) != std::string::npos && i < MAXTHREADS) {
-      token = s.substr(0, pos);      
-      static_resource_mapper[i++] = stoi(token);
-      s.erase(0, pos + 1);
-    }
-    if(i < MAXTHREADS) {
-      token = s.substr(0, s.size());      
-      static_resource_mapper[i++] = stoi(token);
-    }
-  } else if(!resources_runtime_conrolled) { 
-    std::cout << "Warning: affinity not set. To set it, use export XITAO_AFFINITY =\"[int,[int,...]]\"" << std::endl;
-    for(int i = 0; i < MAXTHREADS; ++i)
-      static_resource_mapper[i] = i;
-  }   
-#if TX2
-  if(resources_runtime_conrolled) std::cout << "Warning: experimental TX2 mode is not available with runtime resource allocation requested. Nondeterminitic behavior may occur" << std::endl;
-  if(nthr>=0){
-    pac0 = nthr; 
-    pac1 = nthr;
-  }
-  else{ 
-    if(getenv("PAC0")){
-      pac0 = atoi(getenv("PAC0"));
-    }
-    else{
-      pac0 = PAC0;
-    }
-    if(getenv("PAC1")){
-      pac1 = atoi(getenv("PAC1"));
-    }
-    else{
-      pac1 = PAC1;
-    }
-  }
-  gotao_nthreads = pac0 + pac1;
-#else
   if(nthr>=0) gotao_nthreads = nthr;
   else {    
-    if(getenv("GOTAO_NTHREADS")) gotao_nthreads = atoi(getenv("GOTAO_NTHREADS"));
-    else gotao_nthreads = GOTAO_NTHREADS;
-  }
-  if(resources_runtime_conrolled) {
+    if(getenv("GOTAO_NTHREADS")) gotao_nthreads = atoi(getenv("GOTAO_NTHREADS"));  
+    else gotao_nthreads = XITAO_MAXTHREADS;    
+  }  
+  if(gotao_nthreads > XITAO_MAXTHREADS) {
+    std::cout << "Fatal error: gotao_nthreads is greater than XITAO_MAXTHREADS of " << XITAO_MAXTHREADS << ". Make sure XITAO_MAXTHREADS environment variable is set properly" << std::endl;    
+    exit(0);
+  }  
+  const char* layout_file = getenv("XITAO_LAYOUT_PATH");
+  if(!resources_runtime_conrolled) {
+    if(layout_file) {
+      std::string line;      
+      std::ifstream myfile(layout_file);
+      int current_thread_id = -1; // exclude the first iteration
+      if (myfile.is_open()) {
+        bool init_affinity = false;
+        while (std::getline(myfile,line)) {          
+          size_t pos = 0;
+          std::string token;
+          if(current_thread_id >= XITAO_MAXTHREADS) {
+            std::cout << "Fatal error: there are more partitions than XITAO_MAXTHREADS of: " << XITAO_MAXTHREADS  << " in file: " << layout_file << std::endl;    
+            exit(0);    
+          }          
+          int thread_count = 0;
+          while ((pos = line.find(",")) != std::string::npos) {
+            token = line.substr(0, pos);      
+            int val = stoi(token);
+            if(!init_affinity) static_resource_mapper[thread_count++] = val;  
+            else { 
+              if(current_thread_id + 1 >= gotao_nthreads) {
+                  std::cout << "Fatal error: more configurations than there are input threads in:" << layout_file << std::endl;    
+                  exit(0);
+              }
+              ptt_layout[current_thread_id].push_back(val);
+              for(int i = 0; i < val; ++i) {     
+                if(current_thread_id + i >= XITAO_MAXTHREADS) {
+                  std::cout << "Fatal error: illegal partition choices for thread: " << current_thread_id <<" spanning id: " << current_thread_id + i << " while having XITAO_MAXTHREADS: " << XITAO_MAXTHREADS  << " in file: " << layout_file << std::endl;    
+                  exit(0);           
+                }
+                inclusive_partitions[current_thread_id + i].push_back(std::make_pair(current_thread_id, val)); 
+              }              
+            }            
+            line.erase(0, pos + 1);
+          }          
+          if(line.size() > 0) {
+            token = line.substr(0, line.size());      
+            int val = stoi(token);
+            if(!init_affinity) static_resource_mapper[thread_count++] = val;
+            else { 
+              ptt_layout[current_thread_id].push_back(val);
+              for(int i = 0; i < val; ++i) {                
+                if(current_thread_id + i >= XITAO_MAXTHREADS) {
+                  std::cout << "Fatal error: illegal partition choices for thread: " << current_thread_id <<" spanning id: " << current_thread_id + i << " while having XITAO_MAXTHREADS: " << XITAO_MAXTHREADS  << " in file: " << layout_file << std::endl;    
+                  exit(0);           
+                }
+                inclusive_partitions[current_thread_id + i].push_back(std::make_pair(current_thread_id, val)); 
+              }              
+            }            
+          }
+          if(!init_affinity) { 
+            gotao_nthreads = thread_count; 
+            init_affinity = true;
+          }
+          current_thread_id++;          
+        }
+        myfile.close();
+      } else {
+        std::cout << "Fatal error: could not open hardware layout path " << layout_file << std::endl;    
+        exit(0);
+      }
+    } else {
+        std::cout << "Warning: XITAO_LAYOUT_PATH is not set. Default values for affinity and symmetric resoruce partitions will be used" << std::endl;    
+        for(int i = 0; i < XITAO_MAXTHREADS; ++i) 
+          static_resource_mapper[i] = i; 
+        std::vector<int> widths;             
+        int count = gotao_nthreads;        
+        widths.push_back(count); // push at least one width just in case resources cannot be symmetricly divided
+        while (count % 2 == 0 && count >> 1)  {             
+          count >>= 1;
+          widths.push_back(count);
+        }       
+        //std::reverse(widths.begin(), widths.end());        
+        for(int i = 0; i < widths.size(); ++i) {
+          for(int j = 0; j < gotao_nthreads; j+=widths[i]){
+            ptt_layout[j].push_back(widths[i]);
+          }
+        }
+        for(int i = 0; i < gotao_nthreads; ++i){
+          for(auto&& val : ptt_layout[i]){
+            for(int j = 0; j < val; ++j) {                
+              inclusive_partitions[i + j].push_back(std::make_pair(i, val)); 
+            }         
+          }
+        }
+      } 
+  } else {    
     if(gotao_nthreads != runtime_resource_mapper.size()) {
       std::cout << "Warning: requested " << runtime_resource_mapper.size() << " at runtime, whereas gotao_nthreads is set to " << gotao_nthreads <<". Runtime value will be used" << std::endl;
       gotao_nthreads = runtime_resource_mapper.size();
-    }  
+    }            
   }
-#endif
-  if(gotao_nthreads > MAXTHREADS) {
-    std::cout << "Fatal error: gotao_nthreads is greater than MAXTHREADS of " << MAXTHREADS << ". Make sure GOTAO_NTHREADS environment variable is set properly" << std::endl;    
-    exit(0);
-  }
-
   if(nhwc>=0){
     gotao_ncontexts = nhwc;
   }
@@ -150,49 +196,27 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
       gotao_thread_base = GOTAO_THREAD_BASE;
     }
   }
-
   starting_barrier = new BARRIER(gotao_nthreads + 1);
   tao_barrier = new cxx_barrier(2);
   for(int i = 0; i < gotao_nthreads; i++){
     t[i]  = new std::thread(worker_loop, i);   
-  }
-#if TX2
-  TABLEWIDTH = 1;
-  int a = 1;
-  for(int i = 2; i <= std::max(pac0,pac1); i++){
-    if((pac0 % i == 0) || (pac1 % i == 0)){
-      TABLEWIDTH++;
-      wid[a] = i;
-      a++;  
+  }  
+  std::cout << "XiTAO initialized with " << gotao_nthreads << " threads " << ", and configured with " << XITAO_MAXTHREADS << " max threads " << std::endl;
+#if DEBUG
+  for(int i = 0; i < static_resource_mapper.size(); ++i) { 
+    std::cout << "[DEBUG] thread " << i << " is configured to be mapped to core id : " << static_resource_mapper[i] << std::endl;     
+    std::cout << "[DEBUG] leader thread " << i << " has partition widths of : "; 
+    for (int j = 0; j < ptt_layout[i].size(); ++j){
+      std::cout << ptt_layout[i][j] << " ";      
     }
-  }
-#else
-  TABLEWIDTH = 2;
-  int a = 1;
-  for(int i = 2; i < gotao_nthreads; i++){
-    if((gotao_nthreads % i == 0)){
-      TABLEWIDTH++;
+    std::cout << std::endl;
+    std::cout << "[DEBUG] thread " << i << " is contained in these [leader,width] pairs : ";
+    for (int j = 0; j < inclusive_partitions[i].size(); ++j){
+      std::cout << "["<<inclusive_partitions[i][j].first << "," << inclusive_partitions[i][j].second << "]"; 
     }
+    std::cout << std::endl;
   }
-
-  for(int i = 2; i < gotao_nthreads; i++){
-    if((gotao_nthreads % i == 0)){
-      wid[a] = i;
-      a++;  
-    }
-  }
-  wid[a] = gotao_nthreads;
-#endif
-#ifdef DEBUG
-  LOCK_ACQUIRE(output_lck);
-  std::cout<<"[DEBUG] Width length = "<<TABLEWIDTH<<". Width: ";
-  for(int i = 0; i < TABLEWIDTH; i++)
-  {
-    std::cout<<wid[i]<<"  ";
-  }
-  std::cout<< "\n";
-  LOCK_RELEASE(output_lck);
-#endif
+#endif    
 }
 
 // Initialize gotao from environment vars or defaults
@@ -305,9 +329,7 @@ int gotao_push_back_init(PolyTask *pt, int queue)
   worker_ready_q[queue].push_back(pt);
 }
 
-LFQueue<PolyTask *> worker_assembly_q[MAXTHREADS];
-GENERIC_LOCK(worker_assembly_lock[MAXTHREADS]);
-long int tao_total_steals = 0;
+
 long int r_rand(long int *s)
 {
   *s = ((1140671485*(*s) + 12820163) % (1<<24));
@@ -326,7 +348,7 @@ int worker_loop(int nthread)
     }
     phys_core = runtime_resource_mapper[nthread];
   } else {
-    phys_core = static_resource_mapper[gotao_thread_base+(nthread%(MAXTHREADS-gotao_thread_base))];   
+    phys_core = static_resource_mapper[gotao_thread_base+(nthread%(XITAO_MAXTHREADS-gotao_thread_base))];   
   }
 #ifdef DEBUG
   LOCK_ACQUIRE(output_lck);
@@ -368,28 +390,11 @@ int worker_loop(int nthread)
       }
       else if(st->type == TASK_ASSEMBLY){
         AssemblyTask *assembly = (AssemblyTask *) st;
-#if TX2       
-        if((assembly->width <= std::min(pac0,pac1)) && ((std::min(pac0,pac1)) % assembly->width == 0) ){
-          assembly->leader = ( nthread / assembly->width) * assembly->width;
-        }
-        else{ 
-          if(nthread < pac0){
-            assembly->leader = pac0;
-          } 
-          else{
-            assembly->leader = pac0 + ( (nthread-pac0) / assembly->width) * assembly->width;
-          }
-        }
-#else 
-        int leader = ( nthread / assembly->width) * assembly->width;
-        assembly->leader = leader;
-#endif
 #ifdef DEBUG
         LOCK_ACQUIRE(output_lck);
         std::cout << "[DEBUG] Distributing assembly task " << assembly->taskid << " with width " << assembly->width << " to workers [" << assembly->leader << "," << assembly->leader + assembly->width << ")" << std::endl;
         LOCK_RELEASE(output_lck);
 #endif
-
         for(int i = assembly->leader; i < assembly->leader + assembly->width; i++){
           LOCK_ACQUIRE(worker_assembly_lock[i]);
           worker_assembly_q[i].push_back(st);
@@ -413,40 +418,34 @@ int worker_loop(int nthread)
 
 #if defined(CRIT_PERF_SCHED)
       std::chrono::time_point<std::chrono::system_clock> t1,t2; 
-      if(!(nthread-(assembly->leader))){
+      if(assembly->leader == nthread){
         t1 = std::chrono::system_clock::now();
       }
 #endif
 
 #ifdef DEBUG
       LOCK_ACQUIRE(output_lck);
-      std::cout << "[DEBUG] Thread "<< nthread << " start executing task " << assembly->taskid << "......\n";
+      std::cout << "[DEBUG] Thread "<< nthread << " starts executing task " << assembly->taskid << "......\n";
       LOCK_RELEASE(output_lck);
 #endif
       assembly->execute(nthread);
 
 #if defined(CRIT_PERF_SCHED)
-      if(!(nthread-(assembly->leader))){
+      if(assembly->leader == nthread){
         t2 = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = t2-t1;
         double ticks = elapsed_seconds.count();
-        int index = 0;
-        for(int k = 0; k<TABLEWIDTH; k++){
-          if(wid[k] == assembly->width){
-            index = k;  
-          }
-        }
+        int width_index = assembly->width - 1;
         //Weight the newly recorded ticks to the old ticks 1:4 and save
-        float oldticks = assembly->get_timetable( nthread,index);
+        float oldticks = assembly->get_timetable( nthread,width_index);
         if(oldticks == 0){
-          assembly->set_timetable(nthread,ticks,index);
+          assembly->set_timetable(nthread,ticks,width_index);
         }
         else {
-          assembly->set_timetable(nthread,((4*oldticks+ticks)/5),index);         
+          assembly->set_timetable(nthread,((4*oldticks+ticks)/5),width_index);         
         }
     }
 #endif
-
     _final = (++assembly->threads_out_tao == assembly->width);
      st = nullptr;
      if(_final){ // the last exiting thread updates
@@ -468,6 +467,12 @@ int worker_loop(int nthread)
       st = worker_ready_q[nthread].front(); 
       worker_ready_q[nthread].pop_front();
       LOCK_RELEASE(worker_lock[nthread]);
+      st->history_mold(nthread, st);
+#ifdef DEBUG
+      LOCK_ACQUIRE(output_lck);
+      std::cout <<"[DEBUG] Priority=0, task "<< st->taskid <<" will run on thread "<< st->leader << ", width become " << st->width << std::endl;
+      LOCK_RELEASE(output_lck);
+#endif
       continue;
     }     
     LOCK_RELEASE(worker_lock[nthread]);        
@@ -489,13 +494,9 @@ int worker_loop(int nthread)
     #ifdef DEBUG
           LOCK_ACQUIRE(output_lck);
           std::cout << "[DEBUG] Thread " << nthread << " steal a task from " << random_core << " successfully. \n";
-          LOCK_RELEASE(output_lck);
-    #endif
-#if TX2          
-          if(nthread < pac0 && st->width == 4){
-            st->width = 2;
-          }
-#endif          
+          LOCK_RELEASE(output_lck);          
+    #endif     
+          st->history_mold(nthread, st);     
         }
         LOCK_RELEASE(worker_lock[random_core]);  
       }while(!st && (attempts-- > 0));

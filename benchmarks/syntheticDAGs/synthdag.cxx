@@ -18,12 +18,12 @@
 #include <vector>
 #include <algorithm>
 
-extern int wid[GOTAO_NTHREADS];
+//extern int wid[XITAO_MAXTHREADS];
 #if defined(CRIT_PERF_SCHED)
 extern int TABLEWIDTH;
-float Synth_MatMul::time_table[GOTAO_NTHREADS][GOTAO_NTHREADS];
-float Synth_MatCopy::time_table[GOTAO_NTHREADS][GOTAO_NTHREADS];
-float Synth_MatStencil::time_table[GOTAO_NTHREADS][GOTAO_NTHREADS];
+float Synth_MatMul::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS];
+float Synth_MatCopy::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS];
+float Synth_MatStencil::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS];
 #endif
 
 int
@@ -41,7 +41,7 @@ main(int argc, char *argv[])
   int tao_stencil = atoi(argv[5]);
   int parallelism = atoi(argv[6]);
   int total_taos = tao_mul + tao_copy + tao_stencil;
-  int nthreads = GOTAO_NTHREADS;
+  int nthreads = XITAO_MAXTHREADS;
    //DOT graph output
   std::ofstream graphfile;
   graphfile.open ("graph.txt");
@@ -148,71 +148,9 @@ main(int argc, char *argv[])
   std::cout << "Assembly Throughput: " << (total_taos) / elapsed_seconds.count() << " A/sec\n"; 
   std::cout << "Total number of steals: " <<  tao_total_steals << "\n";
 
-#if defined(CRIT_PERF_SCHED)
-  int cut = 2;
-  for(int count = 2; count < nthreads; count++)
-  {
-    if(nthreads % count == 0)
-    {
-      cut++;  
-    }
-  }
-  std::cout<<std::endl<<"TAO MMul PTT| ";
-  //std::cout<< std::setfill(' ') << std::setw(15) << " ";
-  for(int threads =0; threads<nthreads; threads++)
-  {
-    std::cout << "Th " << std::setfill('0') << std::setw(4) << threads << "   | "; 
-  }
-  std::cout<<std::endl<<"---------------------------------------------------------------------------------------------------------------"<<std::endl;
-
-
-  for (int count=0; count < TABLEWIDTH; count++)
-  {
-    std::cout << std::setfill(' ') << std::setw(11) << "width = " << wid[count] << "|";
-    for(int threads =0; threads<nthreads; threads++)
-    {
-      std::cout << std::setfill(' ') << std::setw(11) << Synth_MatMul::time_table[count][threads] << "|";
-    }
-    std::cout<<std::endl<<"---------------------------------------------------------------------------------------------------------------"<<std::endl;
-
-  }
-
-  std::cout<<std::endl<<"TAO Copy PTT| ";
-  //std::cout<< std::setfill(' ') << std::setw(15) << " ";
-  for(int threads =0; threads<nthreads; threads++)
-  {
-    std::cout << "Th " << std::setfill('0') << std::setw(4) << threads << "   | ";  
-  }
-  std::cout<<std::endl<<"---------------------------------------------------------------------------------------------------------------"<<std::endl;
-
-  for (int count=0; count < TABLEWIDTH; count++)
-  {
-    std::cout << std::setfill(' ') << std::setw(11) << "width = " << wid[count] << "|";
-    for(int threads =0; threads< nthreads; threads++)
-    {
-      std::cout << std::setfill(' ') << std::setw(11) << Synth_MatCopy::time_table[count][threads] << "|";
-    }
-    std::cout<<std::endl<<"---------------------------------------------------------------------------------------------------------------"<<std::endl;
-  }
-
-  std::cout<<std::endl<<"TAO Sten PTT| ";
-  //std::cout<< std::setfill(' ') << std::setw(15) << " ";
-  for(int threads =0; threads<nthreads; threads++)
-  {
-    std::cout << "Th " << std::setfill('0') << std::setw(4) << threads << "   | "; 
-  }
-  std::cout<<std::endl<<"---------------------------------------------------------------------------------------------------------------"<<std::endl;
-
-
-  for (int count=0; count < TABLEWIDTH; count++)
-  {
-    std::cout << std::setfill(' ') << std::setw(11) << "width = " << wid[count] << "|";
-    for(int threads =0; threads< nthreads; threads++)
-    {
-      std::cout << std::setfill(' ') << std::setw(11) << Synth_MatStencil::time_table[count][threads] << "|";
-    }
-    std::cout<<std::endl<<"---------------------------------------------------------------------------------------------------------------"<<std::endl;
-  }
-  
+#if defined(CRIT_PERF_SCHED)  
+  Synth_MatMul::print_ptt(Synth_MatMul::time_table, "MatMul");
+  Synth_MatCopy::print_ptt(Synth_MatCopy::time_table, "MatCopy");
+  Synth_MatStencil::print_ptt(Synth_MatStencil::time_table, "MatStencil");
 #endif
 }

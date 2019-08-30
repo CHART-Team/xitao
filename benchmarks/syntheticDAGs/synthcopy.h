@@ -16,7 +16,7 @@ class Synth_MatCopy : public AssemblyTask
 public: 
 // initialize static parameters
 #if defined(CRIT_PERF_SCHED)
-  static float time_table[][GOTAO_NTHREADS];
+  static float time_table[][XITAO_MAXTHREADS];
 #endif
 
   Synth_MatCopy(uint32_t _size, int _width): AssemblyTask(_width) {   

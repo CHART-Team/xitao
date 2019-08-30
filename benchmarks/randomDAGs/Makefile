@@ -19,9 +19,8 @@
 ##############################################################################################
 
 include ../../makefile.sched
-include ../../makefile.hardware
 CXXFLAGS += -I../../include 
-CXXFLAGS += -O3
+CXXFLAGS += -O0
 CXXFLAGS += --std=c++11  ${EXTRAEINC}
 
 LIBS = -lm ${EXTRAELIBS} -L../../lib -lxitao -pthread

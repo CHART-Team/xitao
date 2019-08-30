@@ -8,6 +8,7 @@
 #define STEAL_ATTEMPTS 100
 #define TASK_POOL 100
 #define TAO_STA 1
+#define XITAO_MAXTHREADS 8
 
 #define L1_W   1
 #define L2_W   2

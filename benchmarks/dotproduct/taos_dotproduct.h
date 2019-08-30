@@ -29,7 +29,7 @@ public:
   /*!
     It holds the performance trace table for the corresponding TAO.
   */  
-  static float time_table[][GOTAO_NTHREADS];
+  static float time_table[][XITAO_MAXTHREADS];
 #endif  
   //! VecMulSta TAO constructor. 
   /*!
@@ -98,7 +98,7 @@ public:
 };
 
 #if defined(CRIT_PERF_SCHED)
-float VecMulSta::time_table[GOTAO_NTHREADS][GOTAO_NTHREADS]; 
+float VecMulSta::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS]; 
 #endif
 
 /*! this TAO will take two vectors and multiply them. 
@@ -111,7 +111,7 @@ public:
   /*!
     It holds the performance trace table for the corresponding TAO.
   */    
-  static float time_table[][GOTAO_NTHREADS];
+  static float time_table[][XITAO_MAXTHREADS];
 #endif  
   //! VecMulDyn TAO constructor. 
   /*!
@@ -188,7 +188,7 @@ public:
 };
 
 #if defined(CRIT_PERF_SCHED)
-float VecMulDyn::time_table[GOTAO_NTHREADS][GOTAO_NTHREADS]; 
+float VecMulDyn::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS]; 
 #endif
 
 /*! this TAO will take a set of doubles and add them all together
@@ -201,7 +201,7 @@ public:
   /*!
     It holds the performance trace table for the corresponding TAO.
   */      
-  static float time_table[][GOTAO_NTHREADS];
+  static float time_table[][XITAO_MAXTHREADS];
 #endif  
   
   //! VecAdd TAO constructor. 
@@ -266,5 +266,5 @@ public:
   int len;     /*!< TAO implementation specific integer that holds the number of elements */
 };
 #if defined(CRIT_PERF_SCHED)
-float VecAdd::time_table[GOTAO_NTHREADS][GOTAO_NTHREADS]; 
+float VecAdd::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS]; 
 #endif

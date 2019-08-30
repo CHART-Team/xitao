@@ -1,10 +1,9 @@
 CC = gcc 
 CXX = g++ 
 
-DEBUG = 0
+#DEBUG = 1
 
 #include makefile.inc
-include makefile.hardware
 include makefile.sched
 EXAMPLES += benchmarks
 CFLAGS += -std=gnu11 ${EXTRAEINC}

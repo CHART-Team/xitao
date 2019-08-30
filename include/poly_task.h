@@ -7,6 +7,7 @@
 #include <list>
 #include <atomic>
 #include "config.h"
+#include "lfq-fifo.h"
 
 //! A cache-aligned boolean type to implement locks
 struct aligned_lock {
@@ -36,6 +37,8 @@ public:
   int marker;
 #endif
   int type;
+  // The leader task id in the resource partition
+  int leader;
   int criticality;
 #if defined(DEBUG)
   int taskid;
@@ -65,8 +68,9 @@ public:
   //Determine if task is critical task
   int if_prio(int _nthread, PolyTask * it);
   int globalsearch_PTT(int nthread, PolyTask * it);
+  static void print_ptt(float table[][XITAO_MAXTHREADS], const char* table_name);
   //Find suitable thread for prio task
-  int find_thread(int nthread, PolyTask * it);
+  //int find_thread(int nthread, PolyTask * it);
 #endif
   PolyTask(int t, int _nthread);
   

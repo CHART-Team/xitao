@@ -26,14 +26,14 @@ void fill_arrays(int **a, int **c, int ysize, int xsize);
 //vector used to contain nodes
 std::vector<node> nodes;
 
-extern int wid[GOTAO_NTHREADS];
-extern float num_task[MAXTHREADS*3];
+extern int wid[XITAO_MAXTHREADS];
+extern float num_task[XITAO_MAXTHREADS*3];
 extern int critical_path;
 #if defined(CRIT_PERF_SCHED)
 extern int TABLEWIDTH;
-float TAO_matrix::time_table[GOTAO_NTHREADS][GOTAO_NTHREADS];
-float TAOQuickMergeDyn::time_table[GOTAO_NTHREADS][GOTAO_NTHREADS];
-float TAO_Copy::time_table[GOTAO_NTHREADS][GOTAO_NTHREADS];
+float TAO_matrix::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS];
+float TAOQuickMergeDyn::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS];
+float TAO_Copy::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS];
 #endif
 
 int main(int argc, char* argv[])
@@ -90,10 +90,10 @@ int main(int argc, char* argv[])
 
   nthreads = pac0 + pac1;
 #else
-  if(getenv("GOTAO_NTHREADS"))
-    nthreads = atoi(getenv("GOTAO_NTHREADS"));
+  if(getenv("XITAO_MAXTHREADS"))
+    nthreads = atoi(getenv("XITAO_MAXTHREADS"));
   else
-    nthreads = GOTAO_NTHREADS;
+    nthreads = XITAO_MAXTHREADS;
 #endif
   if(getenv("GOTAO_THREAD_BASE"))
     thread_base = atoi(getenv("GOTAO_THREAD_BASE"));
@@ -441,67 +441,9 @@ if(getenv("R_SEED"))
   std::cout << "Total number of steals: " <<  tao_total_steals << "\n";
 
 #if defined(CRIT_PERF_SCHED)
-  int cut = 2;
-  for(int count = 2; count < nthreads; count++)
-  {
-    if(nthreads % count == 0)
-    {
-      cut++;  
-    }
-  }
-  std::cout<<"TAO Matrix PTT:\n";
-  std::cout<<"\t";
-  for(int threads =0; threads<nthreads; threads++)
-  {
-    std::cout<<"Th " << threads << "\t"; 
-  }
-  std::cout<<"\n";
-
-  for (int count=0; count < TABLEWIDTH; count++)
-  {
-    std::cout << "width=" << wid[count] << "  ";
-    for(int threads =0; threads<nthreads; threads++)
-    {
-      std::cout << TAO_matrix::time_table[count][threads] << "  ";
-    }
-    std::cout << "\n";
-  }
-
-  std::cout<<"TAO Copy PTT:\n";
-  std::cout<<"\t";
-  for(int threads =0; threads<nthreads; threads++)
-  {
-    std::cout<<"Th " << threads << "    ";
-  }
-  std::cout<<"\n";
-
-  for (int count=0; count < TABLEWIDTH; count++)
-  {
-    std::cout << "width=" << wid[count] << "  ";
-    for(int threads =0; threads< nthreads; threads++)
-    {
-      std::cout << TAO_Copy::time_table[count][threads] << "  ";
-    }
-    std::cout << "\n";
-  }
-
-  std::cout<<"TAO Sort PTT:\n";
-  std::cout<<"\t";
-  for(int threads =0; threads<nthreads; threads++)
-  {
-    std::cout<<"Th " << threads << "    ";
-  }
-  std::cout<<"\n";
-
-  for (int count=0; count < TABLEWIDTH; count++)
-  {
-    std::cout << "width=" << wid[count] << "  ";
-    for(int threads =0; threads<nthreads; threads++)
-    {
-      std::cout << TAOQuickMergeDyn::time_table[count][threads] << "  ";
-    }
-    std::cout << "\n";
-  }
+  TAO_matrix::print_ptt(TAO_matrix::time_table, "MatMul");
+  TAOQuickMergeDyn::print_ptt(TAOQuickMergeDyn::time_table, "MatCopy");
+  TAO_Copy::print_ptt(TAO_Copy::time_table, "MatCopy");
 #endif
   std::cout << "***************** XITAO RUNTIME *****************\n";
     //Free memory
