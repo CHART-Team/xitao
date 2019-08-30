@@ -1,6 +1,7 @@
 /* assembly_sched.cxx -- integrated work stealing with assembly scheduling */
 
 #include "tao.h"
+// #include "debug_info.h"
 #include <iostream>
 #include <chrono>
 #include <cmath>
@@ -201,8 +202,8 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
   for(int i = 0; i < gotao_nthreads; i++){
     t[i]  = new std::thread(worker_loop, i);   
   }  
-  std::cout << "XiTAO initialized with " << gotao_nthreads << " threads " << ", and configured with " << XITAO_MAXTHREADS << " max threads " << std::endl;
-#if DEBUG
+  std::cout << "XiTAO initialized with " << gotao_nthreads << " threads and configured with " << XITAO_MAXTHREADS << " max threads " << std::endl;
+#ifdef DEBUG
   for(int i = 0; i < static_resource_mapper.size(); ++i) { 
     std::cout << "[DEBUG] thread " << i << " is configured to be mapped to core id : " << static_resource_mapper[i] << std::endl;     
     std::cout << "[DEBUG] leader thread " << i << " has partition widths of : "; 
