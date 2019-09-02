@@ -149,11 +149,14 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
           static_resource_mapper[i] = i; 
         std::vector<int> widths;             
         int count = gotao_nthreads;        
-        widths.push_back(count); // push at least one width just in case resources cannot be symmetricly divided
-        while (count % 2 == 0 && count >> 1)  {             
-          count >>= 1;
-          widths.push_back(count);
-        }       
+        std::vector<int> temp;        // hold the big divisors, so that the final list of widths is in sorted order 
+        for(int i = 1; i < sqrt(gotao_nthreads); ++i){ 
+          if(gotao_nthreads % i == 0) {
+            widths.push_back(i);
+            temp.push_back(gotao_nthreads / i); 
+          } 
+        }
+        widths.insert(widths.end(), temp.begin(), temp.end());
         //std::reverse(widths.begin(), widths.end());        
         for(int i = 0; i < widths.size(); ++i) {
           for(int j = 0; j < gotao_nthreads; j+=widths[i]){
@@ -161,9 +164,9 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
           }
         }
         for(int i = 0; i < gotao_nthreads; ++i){
-          for(auto&& val : ptt_layout[i]){
-            for(int j = 0; j < val; ++j) {                
-              inclusive_partitions[i + j].push_back(std::make_pair(i, val)); 
+          for(auto&& width : ptt_layout[i]){
+            for(int j = 0; j < width; ++j) {                
+              inclusive_partitions[i + j].push_back(std::make_pair(i, width)); 
             }         
           }
         }
