@@ -368,8 +368,8 @@ int worker_loop(int nthread)
   // When resources are reclaimed, this will preempt the thread if it has no work in its local queue to do.
   
   PolyTask *st = nullptr;
-  starting_barrier->wait();
-
+  starting_barrier->wait();  
+  auto&&  partitions = inclusive_partitions[nthread];
   while(true)
   {    
     int random_core = 0;
@@ -394,6 +394,9 @@ int worker_loop(int nthread)
       }
       else if(st->type == TASK_ASSEMBLY){
         AssemblyTask *assembly = (AssemblyTask *) st;
+#ifndef CRIT_PERF_SCHED 
+        assembly->leader = nthread / assembly->width * assembly->width; // homogenous calculation of leader core
+#endif        
 #ifdef DEBUG
         LOCK_ACQUIRE(output_lck);
         std::cout << "[DEBUG] Distributing assembly task " << assembly->taskid << " with width " << assembly->width << " to workers [" << assembly->leader << "," << assembly->leader + assembly->width << ")" << std::endl;
@@ -471,7 +474,9 @@ int worker_loop(int nthread)
       st = worker_ready_q[nthread].front(); 
       worker_ready_q[nthread].pop_front();
       LOCK_RELEASE(worker_lock[nthread]);
+#if defined(CRIT_PERF_SCHED)
       st->history_mold(nthread, st);
+#endif      
 #ifdef DEBUG
       LOCK_ACQUIRE(output_lck);
       std::cout <<"[DEBUG] Priority=0, task "<< st->taskid <<" will run on thread "<< st->leader << ", width become " << st->width << std::endl;
@@ -500,7 +505,9 @@ int worker_loop(int nthread)
           std::cout << "[DEBUG] Thread " << nthread << " steal a task from " << random_core << " successfully. \n";
           LOCK_RELEASE(output_lck);          
     #endif     
+#if defined(CRIT_PERF_SCHED)          
           st->history_mold(nthread, st);     
+#endif          
         }
         LOCK_RELEASE(worker_lock[random_core]);  
       }while(!st && (attempts-- > 0));

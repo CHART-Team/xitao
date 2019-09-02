@@ -144,13 +144,13 @@ main(int argc, char *argv[])
   auto epoch1_end = end1_ms.time_since_epoch();
   std::chrono::duration<double> elapsed_seconds = end-start;
 
-  std::cout << total_taos + 1 <<" Tasks completed in "<< elapsed_seconds.count() << "s\n";
-  std::cout << "Assembly Throughput: " << (total_taos) / elapsed_seconds.count() << " A/sec\n"; 
-  std::cout << "Total number of steals: " <<  tao_total_steals << "\n";
-
 #if defined(CRIT_PERF_SCHED)  
   Synth_MatMul::print_ptt(Synth_MatMul::time_table, "MatMul");
   Synth_MatCopy::print_ptt(Synth_MatCopy::time_table, "MatCopy");
   Synth_MatStencil::print_ptt(Synth_MatStencil::time_table, "MatStencil");
 #endif
+
+  std::cout << total_taos + 1 <<" Tasks completed in "<< elapsed_seconds.count() << "s\n";
+  std::cout << "Assembly Throughput: " << (total_taos) / elapsed_seconds.count() << " A/sec\n"; 
+  std::cout << "Total number of steals: " <<  tao_total_steals << "\n";
 }
