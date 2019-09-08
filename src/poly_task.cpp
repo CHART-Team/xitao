@@ -95,21 +95,27 @@ int PolyTask::history_mold(int _nthread, PolyTask *it){
   float shortest_exec = 1000.0f;
   float comp_perf = 0.0f; 
   auto&& partitions = inclusive_partitions[_nthread];
-  for(auto&& elem : partitions) {
-    int leader = elem.first;
-    int width  = elem.second;
-    auto&& ptt_val = it->get_timetable(leader, width - 1);
-    if(ptt_val == 0.0f) {
-      new_width = width;
-      new_leader = leader;       
-      break;
+  if(rand()%10 != 0) { 
+    for(auto&& elem : partitions) {
+      int leader = elem.first;
+      int width  = elem.second;
+      auto&& ptt_val = it->get_timetable(leader, width - 1);
+      if(ptt_val == 0.0f) {
+        new_width = width;
+        new_leader = leader;       
+        break;
+      }
+      comp_perf = width * ptt_val;
+      if (comp_perf < shortest_exec) {
+        shortest_exec = comp_perf;
+        new_width = width;
+        new_leader = leader;      
+      }
     }
-    comp_perf = width * ptt_val;
-    if (comp_perf < shortest_exec) {
-      shortest_exec = comp_perf;
-      new_width = width;
-      new_leader = leader;      
-    }
+  } else { 
+    auto&& rand_partition = partitions[rand() % partitions.size()];
+    new_leader = rand_partition.first;
+    new_width  = rand_partition.second;
   }
   if(new_leader != -1) {
     it->leader = new_leader;
