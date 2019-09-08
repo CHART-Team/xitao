@@ -156,6 +156,7 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
             temp.push_back(gotao_nthreads / i); 
           } 
         }
+        std::reverse(temp.begin(), temp.end());
         widths.insert(widths.end(), temp.begin(), temp.end());
         //std::reverse(widths.begin(), widths.end());        
         for(int i = 0; i < widths.size(); ++i) {
