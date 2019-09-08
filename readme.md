@@ -43,16 +43,27 @@ vi makefile.sched
 
 ## Changing PTT Hardware Topology ##
 Create a file with number of lines = number of threads + 1
+
 -- first line contains affinity for each thread
+
 -- the subsequent lines correspond to the threads listed in order, in which the thread is a leader. The line contains the allow resource partition widths
+
 -- set environment variable XITAO_LAYOUT_PATH to the absolute path of the layout file
+
 Example: suppose you have 6 threads, and you would like to allow widths 1 and 2 where appropriate. A possible file (assuming contiguous cord ids)
+
 0 1 2 3 4 5
-1 2 
-1
+
 1 2
+
 1
-1 2 
+
+1 2
+
+1
+
+1 2
+
 1
 
 
