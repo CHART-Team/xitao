@@ -50,7 +50,7 @@ Create a file with number of lines = number of threads + 1
 
 -- set environment variable XITAO_LAYOUT_PATH to the absolute path of the layout file
 
-Example: suppose you have 6 threads, and you would like to allow widths 1 and 2 where appropriate. A possible file (assuming contiguous cord ids)
+Example: suppose you have 6 threads, and you would like to allow widths 1 and 2 where appropriate. A possible file (assuming contiguous core affinity ids)
 
 0 1 2 3 4 5
 
