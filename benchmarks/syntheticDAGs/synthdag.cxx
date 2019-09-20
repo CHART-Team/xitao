@@ -33,6 +33,17 @@ main(int argc, char *argv[])
     std::cout << "./synbench <Block Side Length> <Resource Width> <TAO Mul Count> <TAO Copy Count> <TAO Stencil Count> <Degree of Parallelism>" << std::endl; 
     return 0;
   }
+	
+	const int arr_size = 1 << 28;
+  real_t *A = new real_t[arr_size];
+  real_t *B = new real_t[arr_size];
+  real_t *C = new real_t[arr_size];
+  memset(A, rand(), sizeof(real_t) * arr_size);
+  memset(B, rand(), sizeof(real_t) * arr_size);
+  memset(C, rand(), sizeof(real_t) * arr_size);
+
+	int indx = 0;	
+
   const int tao_types = 3;
   int len = atoi(argv[1]);
   int resource_width = atoi(argv[2]); 
@@ -57,14 +68,23 @@ main(int argc, char *argv[])
   graphfile << previous_tao_id << "  [fillcolor = lightpink, style = filled];\n";
   // create first TAO
   if(tao_mul > 0) {
-    previous_tao = new Synth_MatMul(len, resource_width);
+    //previous_tao = new Synth_MatMul(len, resource_width);
+		previous_tao = new Synth_MatMul(len, resource_width,  A + indx * len * len, B + indx * len * len, C + indx * len * len);
     tao_mul--;
+		indx++;
+		if((indx + 1) * len * len > arr_size) indx = 0;
   } else if(tao_copy > 0){
-    previous_tao = new Synth_MatCopy(len, resource_width);
+    //previous_tao = new Synth_MatCopy(len, resource_width);
+		previous_tao = new Synth_MatCopy(len, resource_width,  A + indx * len * len, B + indx * len * len);
     tao_copy--;
+		indx++;
+		if((indx + 1) * len * len > arr_size) indx = 0;
   } else if(tao_stencil > 0) {
-    previous_tao = new Synth_MatStencil(len, resource_width);
+    //previous_tao = new Synth_MatStencil(len, resource_width);
+		previous_tao = new Synth_MatStencil(len, resource_width, A + indx * len * len, B + indx * len * len);
     tao_stencil--;
+		indx++;
+    if((indx + 1) * len * len > arr_size) indx = 0;
   }
   startTAO = previous_tao;
   previous_tao->criticality = 1;
@@ -77,34 +97,44 @@ main(int argc, char *argv[])
       switch(current_type) {
         case 0:
           if(tao_mul > 0) { 
-            currentTAO = new Synth_MatMul(len, resource_width);
+            //currentTAO = new Synth_MatMul(len, resource_width);
+						currentTAO = new Synth_MatMul(len, resource_width, A + indx * len * len, B + indx * len * len, C + indx * len * len);
             previous_tao->make_edge(currentTAO);                                 
             graphfile << "  " << previous_tao_id << " -> " << ++current_tao_id << " ;\n";
             graphfile << current_tao_id << "  [fillcolor = lightpink, style = filled];\n";
             tao_mul--;
+						indx++;
+            if((indx + 1) * len * len > arr_size) indx = 0;
             break;
           }
         case 1: 
           if(tao_copy > 0) {
-            currentTAO = new Synth_MatCopy(len, resource_width);
+            //currentTAO = new Synth_MatCopy(len, resource_width);
+						currentTAO = new Synth_MatCopy(len, resource_width, A + indx * len * len, B + indx * len * len);
             previous_tao->make_edge(currentTAO); 
             graphfile << "  " << previous_tao_id << " -> " << ++current_tao_id << " ;\n";
             graphfile << current_tao_id << "  [fillcolor = skyblue, style = filled];\n";
             tao_copy--;
+						indx++;
+            if((indx + 1) * len * len > arr_size) indx = 0;
             break;
           }
         case 2: 
           if(tao_stencil > 0) {
-            currentTAO = new Synth_MatStencil(len, resource_width);
+            //currentTAO = new Synth_MatStencil(len, resource_width);
+						currentTAO = new Synth_MatStencil(len, resource_width, A + indx * len * len, B + indx * len * len);
             previous_tao->make_edge(currentTAO); 
             graphfile << "  " << previous_tao_id << " -> " << ++current_tao_id << " ;\n";
             graphfile << current_tao_id << "  [fillcolor = palegreen, style = filled];\n";
             tao_stencil--;
+						indx++;
+            if((indx + 1) * len * len > arr_size) indx = 0;
             break;
           }
         default:
           if(tao_mul > 0) { 
-            currentTAO = new Synth_MatMul(len, resource_width);
+            //currentTAO = new Synth_MatMul(len, resource_width);
+						currentTAO = new Synth_MatMul(len, resource_width, A + indx * len * len, B + indx * len * len, C + indx * len * len);
             previous_tao->make_edge(currentTAO); 
             graphfile << "  " << previous_tao_id << " -> " << ++current_tao_id << " ;\n";
             graphfile << current_tao_id << "  [fillcolor = lightpink, style = filled];\n";

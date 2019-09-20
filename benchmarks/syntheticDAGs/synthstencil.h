@@ -20,20 +20,21 @@ public:
   static float time_table[][XITAO_MAXTHREADS];
 #endif
 
-  Synth_MatStencil(uint32_t _size, int _width) : AssemblyTask(_width) {   
+  Synth_MatStencil(uint32_t _size, int _width, real_t *_A, real_t *_B) : AssemblyTask(_width), A(_A), B(_B) {   
     dim_size = _size;
     block_size = dim_size / (_width * PSLACK);
     if(block_size == 0) block_size = 1;
     block_index = 0;
     uint32_t elem_count = dim_size * dim_size;
-    A = new real_t[elem_count];
+/*    A = new real_t[elem_count];
     B = new real_t[elem_count];
+    */
     block_count = dim_size / block_size;
   }
 
   int cleanup() { 
-    delete[] A;
-    delete[] B;
+    //delete[] A;
+    //delete[] B;
 
   }
 
