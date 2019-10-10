@@ -33,6 +33,11 @@ struct loi_kernel_info heat_kernels = {
 
 #endif
 
+#if defined(CRIT_PERF_SCHED)
+float copy2D::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS];
+float jacobi2D::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS];
+#endif
+
 void usage( char *s )
 {
     fprintf(stderr, 
@@ -294,7 +299,8 @@ int main( int argc, char *argv[] )
 // necessary because we do not do renaming
           stc[iter][x][y]->make_edge(cpb[iter][x][y]);
           cpb[iter][x][y]->clone_sta(stc[iter][x][y]);
-
+          cpb[iter][x][y]->criticality = 0; 
+          stc[iter][x][y]->criticality = 0; 
           if((x-1)>=0)       stc[iter][x-1][y]->make_edge(cpb[iter][x][y]);
           if((x+1)<exdecomp) stc[iter][x+1][y]->make_edge(cpb[iter][x][y]);
           if((y-1)>=0)       stc[iter][x][y-1]->make_edge(cpb[iter][x][y]);
@@ -322,6 +328,8 @@ int main( int argc, char *argv[] )
 
           cpb[iter-1][x][y]->make_edge(stc[iter][x][y]);
           stc[iter][x][y]->clone_sta(cpb[iter-1][x][y]);
+          cpb[iter-1][x][y]->criticality = 0; 
+          stc[iter][x][y]->criticality = 0; 
 
           if((x-1)>=0)       cpb[iter-1][x-1][y]->make_edge(stc[iter][x][y]);
           if((x+1)<exdecomp) cpb[iter-1][x+1][y]->make_edge(stc[iter][x][y]);
@@ -453,6 +461,11 @@ int main( int argc, char *argv[] )
     write_image( resfile, param.uvis, param.padding,
          param.visres+2, 
          param.visres+2 );
+
+#if defined(CRIT_PERF_SCHED)  
+  copy2D::print_ptt(copy2D::time_table, "copy2D");
+  jacobi2D::print_ptt(jacobi2D::time_table, "jacobi2D");
+#endif
 
     finalize( &param );
 
