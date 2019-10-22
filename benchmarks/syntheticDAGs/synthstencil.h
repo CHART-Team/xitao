@@ -1,7 +1,7 @@
 #ifndef SYNTH_STENCIL
 #define SYNTH_STENCIL
 
-#include "tao.h"
+#include "xitao.h"
 #include "dtypes.h"
 
 #include <chrono>

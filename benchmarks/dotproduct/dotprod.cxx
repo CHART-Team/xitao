@@ -7,6 +7,8 @@
  \param block := how many elements to process per TAO
 */
 #include "taos_dotproduct.h"
+#include "xitao.h"
+using namespace xitao;
 int
 main(int argc, char *argv[])
 {

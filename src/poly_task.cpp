@@ -3,27 +3,11 @@
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
-#include <vector>
 #if defined(DEBUG)
 #include <iostream>
 #endif
-//extern int TABLEWIDTH;
-extern int gotao_nthreads;
-extern std::vector<int> static_resource_mapper;
-extern std::vector<std::vector<int> > ptt_layout;
-extern std::vector<std::vector<std::pair<int, int> > > inclusive_partitions;
-extern GENERIC_LOCK(worker_assembly_lock[XITAO_MAXTHREADS]);
-extern LFQueue<PolyTask *> worker_assembly_q[XITAO_MAXTHREADS];
-//extern int wid[XITAO_MAXTHREADS];
-extern aligned_lock worker_lock[XITAO_MAXTHREADS];
-extern int critical_path;
-extern std::list<PolyTask *> worker_ready_q[XITAO_MAXTHREADS];
-extern completions task_completions[XITAO_MAXTHREADS];
-extern completions task_pool[XITAO_MAXTHREADS];
-extern int TABLEWIDTH;
-#ifdef DEBUG
-extern GENERIC_LOCK(output_lck);
-#endif
+#include "xitao_workspace.h"
+using namespace xitao;
 
 //The pending PolyTasks count 
 std::atomic<int> PolyTask::pending_tasks;

@@ -8,40 +8,11 @@
 #include <algorithm>
 #include <vector>
 #include <fstream>
+#include "xitao_workspace.h"
+using namespace xitao;
 
-// define the topology
-int gotao_sys_topo[5] = TOPOLOGY;
+int worker_loop(int nthread);
 
-// a PolyTask is either an assembly or a simple task
-std::list<PolyTask *> worker_ready_q[XITAO_MAXTHREADS];
-LFQueue<PolyTask *> worker_assembly_q[XITAO_MAXTHREADS];
-GENERIC_LOCK(worker_assembly_lock[XITAO_MAXTHREADS]);
-long int tao_total_steals = 0;
-GENERIC_LOCK(worker_lock[XITAO_MAXTHREADS]);
-GENERIC_LOCK(output_lck);
-BARRIER *starting_barrier;
-cxx_barrier *tao_barrier;
-//int wid[XITAO_MAXTHREADS] = {1};
-std::vector<int>                       static_resource_mapper(XITAO_MAXTHREADS);
-std::vector<std::vector<int> >     ptt_layout(XITAO_MAXTHREADS);
-std::vector<std::vector<std::pair<int, int> > > inclusive_partitions(XITAO_MAXTHREADS);
-
-struct completions task_completions[XITAO_MAXTHREADS];
-struct completions task_pool[XITAO_MAXTHREADS];
-cpu_set_t affinity_setup;
-int critical_path;
-int gotao_nthreads;
-int gotao_ncontexts;
-int gotao_thread_base;
-bool gotao_can_exit = false;
-bool gotao_initialized = false;
-bool resources_runtime_conrolled = false;
-std::vector<int> runtime_resource_mapper;                                   // a logical to physical runtime resource mapper
-int TABLEWIDTH;
-int worker_loop(int);
-std::thread *t[XITAO_MAXTHREADS];
-
-// std::vector<thread_info> thread_info_vector(XITAO_MAXTHREADS);
 //! Allocates/deallocates the XiTAO's runtime resources. The size of the vector is equal to the number of available CPU cores. 
 /*!
   \param affinity_control Set the usage per each cpu entry in the cpu_set_t
@@ -345,10 +316,8 @@ int worker_loop(int nthread)
 {
   int phys_core;
   if(resources_runtime_conrolled) {
-    if(nthread >= runtime_resource_mapper.size()) {
-      LOCK_ACQUIRE(output_lck);
-      std::cout << "Error: thread cannot be created due to resource limitation" << std::endl;
-      LOCK_RELEASE(output_lck);
+    if(nthread >= runtime_resource_mapper.size()) {      
+      std::cout << "Error: thread cannot be created due to resource limitation" << std::endl;      
       exit(0);
     }
     phys_core = runtime_resource_mapper[nthread];

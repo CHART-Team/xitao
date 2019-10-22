@@ -17,7 +17,7 @@
 #include <atomic>
 #include <vector>
 #include <algorithm>
-
+using namespace xitao;
 //extern int wid[XITAO_MAXTHREADS];
 #if defined(CRIT_PERF_SCHED)
 extern int TABLEWIDTH;

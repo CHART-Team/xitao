@@ -1,7 +1,7 @@
 #ifndef SYNTH_MUL
 #define SYNTH_MUL
 
-#include "tao.h"
+#include "xitao.h"
 #include "dtypes.h"
 
 #include <chrono>

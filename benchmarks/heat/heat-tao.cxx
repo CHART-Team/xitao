@@ -5,12 +5,13 @@
  * Iterative solver for heat distribution
  */
 
-#include "tao.h"
+#include "xitao.h"
 #include "solver-tao.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include "heat.h"
+
+using namespace xitao;
 
 #ifdef DO_LOI
 #include "loi.h"

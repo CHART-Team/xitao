@@ -1,7 +1,7 @@
 #ifndef SYNTH_COPY
 #define SYNTH_COPY
 
-#include "tao.h"
+#include "xitao.h"
 #include "dtypes.h"
 #include <chrono>
 #include <iostream>

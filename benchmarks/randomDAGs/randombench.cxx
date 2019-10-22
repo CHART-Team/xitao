@@ -11,12 +11,13 @@
 #include "taosort.h"
 #include "taocopy.h"
 #include "randombench.h"
+#include "xitao.h"
 extern "C" {
 #include <stdio.h>
 #include <stdlib.h> 
 #include <unistd.h>
 }
-
+using namespace xitao;
 #define min(a,b) ( ((a) < (b)) ? (a) : (b) )
 //used for the size of the sort kernel
 #define BLOCKSIZE (2*1024)
@@ -26,9 +27,6 @@ void fill_arrays(int **a, int **c, int ysize, int xsize);
 //vector used to contain nodes
 std::vector<node> nodes;
 
-extern int wid[XITAO_MAXTHREADS];
-extern float num_task[XITAO_MAXTHREADS*3];
-extern int critical_path;
 #if defined(CRIT_PERF_SCHED)
 extern int TABLEWIDTH;
 float TAO_matrix::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS];

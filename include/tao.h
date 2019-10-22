@@ -13,18 +13,15 @@
 #include "poly_task.h"
 #include "barriers.h"
 
-extern int gotao_thread_base;
-extern int gotao_nthreads;
-extern int gotao_sys_topo[5];
-extern int physcore[XITAO_MAXTHREADS];
+// extern int gotao_thread_base;
+// extern int gotao_sys_topo[5];
+// extern int physcore[XITAO_MAXTHREADS];
 
 #define GET_TOPO_WIDTH_FROM_LEVEL(x) gotao_sys_topo[x]
 
 typedef void (*task)(void *, int);
 #define TASK_SIMPLE   0x0
 #define TASK_ASSEMBLY 0x1
-
-extern long int tao_total_steals;
 
 //#define BARRIER cxx_barrier
 #define BARRIER spin_barrier
