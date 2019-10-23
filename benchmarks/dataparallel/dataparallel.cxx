@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
   int i = 0;
   int end = 10;
   int N       = (argc > 1) ? atoi(argv[1]) : 1000;
-  int workers = (argc > 2) ? atoi(argv[2]) : gotao_nthreads;
+  int workers = (argc > 2) ? atoi(argv[2]) : 4;
   int **A, **B, **C;
   A = new int*[N];
   B = new int*[N];
