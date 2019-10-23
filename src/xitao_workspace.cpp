@@ -13,6 +13,7 @@ namespace xitao {
   int gotao_thread_base;
   bool gotao_can_exit = false;
   bool gotao_initialized = false;
+  bool gotao_started = false;
   bool resources_runtime_conrolled = false;
   std::vector<int> runtime_resource_mapper;                                   // a logical to physical runtime resource mapper
   std::thread* t[XITAO_MAXTHREADS];

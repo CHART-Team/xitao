@@ -10,6 +10,11 @@ of the TAODAG, finalization, etc.
 #ifndef _XITAO_API
 #define _XITAO_API
 #define goTAO_init gotao_init
+
+#include "xitao.h"
+template <typename Proc, typename IterType>
+class ParForTask;
+
 class PolyTask;
 //! Allocates/deallocates the XiTAO's runtime resources
 /*!
@@ -42,6 +47,29 @@ int gotao_fini();
 int gotao_push(PolyTask *pt, int queue=-1);
 //! Block master thread until DAG execution is finished, without having to finalize
 void gotao_barrier();
+
+//! Initialize the XiTAO Runtime
+/*!
+  \param iter_start is the iterator start
+  \param end is the end of the loop
+  \param func the spmd lambda function taking the iterator as an argument
+*/ 
+template <typename Proc, typename IterTyper>
+ParForTask<Proc, IterTyper>* xitao_vec(IterTyper& iter_start, IterTyper const& end, Proc func) {
+  ParForTask<Proc, IterTyper>* parfor = new ParForTask<Proc, IterTyper>(8, iter_start, end, func);
+  return parfor;
+}
+
+template <typename Proc, typename IterTyper>
+ParForTask<Proc, IterTyper>* xitao_vec_immediate(int parallelism, IterTyper& iter_start, IterTyper const& end, Proc func) {
+  ParForTask<Proc, IterTyper>* parfor = new ParForTask<Proc, IterTyper>(parallelism, iter_start, end, func);
+  gotao_push(parfor, 0);
+  gotao_start();
+  return parfor;
+}
+//! wrapper for what constitutes and SPMD region
+#define __xitao_vec_code(i, end, code) xitao_vec(i, end, [&](int& i){code;});
+#define __xitao_vec_region(parallelism,i , end, code) xitao_vec_immediate(parallelism, i, end, [&](int& i){code;});
 #endif
 
 // push work into polytask queue

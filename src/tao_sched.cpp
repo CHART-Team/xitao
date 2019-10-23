@@ -203,6 +203,7 @@ int gotao_init()
 
 int gotao_start()
 {
+ if(gotao_started) return -1;
 #ifdef WEIGHT_SCHED
   //Store inital weight value
   PolyTask::bias.store(1.5);
@@ -228,12 +229,14 @@ int gotao_start()
   }
 #endif
   starting_barrier->wait();
+  gotao_started = true;
 }
 
 int gotao_fini()
 {
   resources_runtime_conrolled = false;
   gotao_can_exit = true;
+  gotao_started = false;
   gotao_initialized = false;
   for(int i = 0; i < gotao_nthreads; i++){
     t[i]->join();

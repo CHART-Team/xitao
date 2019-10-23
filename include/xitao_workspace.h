@@ -1,9 +1,13 @@
+#ifndef XITAO_WORKSPACE
+#define XITAO_WORKSPACE
+
 #include <list>
 #include <vector>
 #include "tao.h"
-
-#ifndef XITAO_WORKSPACE
-#define XITAO_WORKSPACE
+#include "poly_task.h"
+#include "barriers.h"
+//#define BARRIER cxx_barrier
+#define BARRIER spin_barrier
 
 namespace xitao {
   // a PolyTask is either an assembly or a simple task
@@ -23,6 +27,7 @@ namespace xitao {
   extern int gotao_thread_base;
   extern bool gotao_can_exit;
   extern bool gotao_initialized;
+  extern bool gotao_started;
   extern bool resources_runtime_conrolled;
   extern std::vector<int> runtime_resource_mapper;                                   // a logical to physical runtime resource mapper
   extern std::thread *t[XITAO_MAXTHREADS];
