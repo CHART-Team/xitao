@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
   std::cout << "Total time XiTAO: " << elapsed_seconds.count()  << std::endl;
   std::cout << "Total successful steals: " << tao_total_steals << std::endl;
   start_time = std::chrono::system_clock::now();
-#pragma omp parallel for num_threads(workers) schedule(static,2) 
+#pragma omp parallel for
   for(int i = 0; i < N; ++i)
     for (int j = 0; j < N; ++j) 
      { 
