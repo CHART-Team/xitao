@@ -8,19 +8,7 @@
 #include <atomic>
 #include "config.h"
 #include "lfq-fifo.h"
-
-//! A cache-aligned boolean type to implement locks
-struct aligned_lock {
-  std::atomic<bool> lock __attribute__((aligned(64)));
-};
-
-//! A cache-aligned integer to track the number of completed tasks by a master thread
-struct completions{
-  int tasks __attribute__((aligned(64)));
-};
-#define GENERIC_LOCK(l)  aligned_lock l;
-#define LOCK_ACQUIRE(l)  while(l.lock.exchange(true)) {while(l.lock.load()){ }}
-#define LOCK_RELEASE(l)  l.lock.store(false);
+//#include "xitao.h"
 
 /*! the basic PolyTask type */
 class PolyTask {

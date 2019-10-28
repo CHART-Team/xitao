@@ -13,10 +13,28 @@
 using namespace xitao;
 int main(int argc, char *argv[]) {
   // init XiTAO runtime
+  if(argc != 4) {
+    std::cout << "./dataparallel <veclength> <TAOwidth> <0:static, 1:dynamic>" << std::endl; 
+    return 0;
+  }
   int i = 0;
   int end = 10;
-  int N       = (argc > 1) ? atoi(argv[1]) : 1000;
-  int workers = (argc > 2) ? atoi(argv[2]) : 4;
+  int N       = (argc > 1) ? atoi(argv[1]) : 1000; // problem size
+  int workers = (argc > 2) ? atoi(argv[2]) : 4;    // parallelism
+  int sched   = (argc > 3) ? atoi(argv[3]) : 0;    // static or dynamic scheduling  
+  std::cout << "N: " << N << std::endl;
+  std::cout << "P: " << workers << std::endl;
+  if(sched == xitao_vec_static) {
+    omp_set_schedule(omp_sched_t::omp_sched_static, 0);
+    std::cout << "Vector region scheduling: static" << std::endl;
+  }
+  else {
+    omp_set_schedule(omp_sched_t::omp_sched_dynamic, 0);
+    std::cout << "Vector region scheduling: dynamic" << std::endl;
+  }
+  omp_set_num_threads(workers);  
+  
+  
   int **A, **B, **C;
   A = new int*[N];
   B = new int*[N];
@@ -33,7 +51,7 @@ int main(int argc, char *argv[]) {
   gotao_start();
   std::chrono::time_point<std::chrono::system_clock> start_time, end_time;
   start_time = std::chrono::system_clock::now();
-  __xitao_vec_region(workers, i, N,     
+  __xitao_vec_region(workers, i, N, sched, 
     for (int j = 0; j < N; j++) 
      { 
        C[i][i] = 0; 

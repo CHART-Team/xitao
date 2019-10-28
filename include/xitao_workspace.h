@@ -3,14 +3,30 @@
 
 #include <list>
 #include <vector>
-#include "tao.h"
-#include "poly_task.h"
+#include <iomanip>
+#include <atomic>
+#include <thread>
+#include "lfq-fifo.h"
 #include "barriers.h"
+#include "config.h"
+//! A cache-aligned boolean type to implement locks
+struct aligned_lock {
+  std::atomic<bool> lock __attribute__((aligned(64)));
+};
+
+//! A cache-aligned integer to track the number of completed tasks by a master thread
+struct completions{
+  int tasks __attribute__((aligned(64)));
+};
 //#define BARRIER cxx_barrier
 #define BARRIER spin_barrier
-
-namespace xitao {
-  // a PolyTask is either an assembly or a simple task
+#define GENERIC_LOCK(l)  aligned_lock l;
+#define LOCK_ACQUIRE(l)  while(l.lock.exchange(true)) {while(l.lock.load()){ }}
+#define LOCK_RELEASE(l)  l.lock.store(false);
+const int xitao_vec_static = 0;
+const int xitao_vec_dynamic = 1;
+class PolyTask;
+namespace xitao {     
   extern std::list<PolyTask *> worker_ready_q[XITAO_MAXTHREADS];
   extern LFQueue<PolyTask *> worker_assembly_q[XITAO_MAXTHREADS];  
   extern long int tao_total_steals;  
@@ -32,7 +48,7 @@ namespace xitao {
   extern bool suppress_init_warnings;
   extern std::vector<int> runtime_resource_mapper;                                   // a logical to physical runtime resource mapper
   extern std::thread *t[XITAO_MAXTHREADS];
-  extern std::mutex smpd_region_lock;
+  extern std::mutex smpd_region_lock;  
   extern GENERIC_LOCK(worker_lock[XITAO_MAXTHREADS]);
   extern GENERIC_LOCK(worker_assembly_lock[XITAO_MAXTHREADS]);
 #ifdef DEBUG

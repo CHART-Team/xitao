@@ -11,10 +11,11 @@ of the TAODAG, finalization, etc.
 #define _XITAO_API
 #define goTAO_init gotao_init
 #include "xitao.h"
+#include "tao.h"
 #include <functional>
 #include <mutex>
 #include <atomic>
-template <typename IterType>
+template <typename Proc, typename IterType>
 class ParForTask;
 
 class PolyTask;
@@ -58,14 +59,14 @@ void gotao_barrier();
   \param func the spmd lambda function taking the iterator as an argument
 */ 
 template <typename Proc, typename IterType>
-ParForTask<IterType>* xitao_vec(IterType& iter_start, IterType const& end, Proc func) {
-  ParForTask<IterType>* par_for = new ParForTask<IterType>(8, iter_start, end, func);
+ParForTask<Proc, IterType>* xitao_vec(int parallelism, IterType& iter_start, IterType const& end, Proc func, int sched_type) {
+  ParForTask<Proc, IterType>* par_for = new ParForTask<Proc, IterType>(sched_type, iter_start, end, func, parallelism);
   return par_for;
 }
 
 template <typename Proc, typename IterType>
-ParForTask<IterType>* xitao_vec_immediate(int parallelism, IterType& iter_start, IterType const& end, Proc func) {
-  ParForTask<IterType>* par_for = new ParForTask<IterType>(parallelism, iter_start, end, func);
+ParForTask<Proc, IterType>* xitao_vec_immediate(int parallelism, IterType& iter_start, IterType const& end, Proc func, int sched_type) {
+  ParForTask<Proc, IterType>* par_for = new ParForTask<Proc, IterType>(sched_type, iter_start, end, func, parallelism);
   gotao_push(par_for, 0);
   gotao_start();
   return par_for;
@@ -74,8 +75,8 @@ ParForTask<IterType>* xitao_vec_immediate(int parallelism, IterType& iter_start,
 void __xitao_lock();
 void __xitao_unlock();
 //! wrapper for what constitutes and SPMD region
-#define __xitao_vec_code(i, end, code) xitao_vec(i, end, [&](int& i){code;});
-#define __xitao_vec_region(parallelism, i , end, code) xitao_vec_immediate(parallelism, i, end, [&](int& i, int& __xitao_thread_id){code;});
+#define __xitao_vec_code(parallelism, i, end, sched, code) xitao_vec(parallelism, i, end, [&](int& i, int& __xitao_thread_id){code;}, sched);
+#define __xitao_vec_region(parallelism, i , end, sched, code) xitao_vec_immediate(parallelism, i, end, [&](int& i, int& __xitao_thread_id){code;}, sched);
 #endif
 
 // push work into polytask queue
