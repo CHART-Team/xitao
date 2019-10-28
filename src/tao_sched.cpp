@@ -49,7 +49,7 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
     else gotao_nthreads = XITAO_MAXTHREADS;    
   }  
   if(gotao_nthreads > XITAO_MAXTHREADS) {
-    std::cout << "Fatal error: gotao_nthreads is greater than XITAO_MAXTHREADS of " << XITAO_MAXTHREADS << ". Make sure XITAO_MAXTHREADS environment variable is set properly" << std::endl;    
+    if(!suppress_init_warnings) std::cout << "Fatal error: gotao_nthreads is greater than XITAO_MAXTHREADS of " << XITAO_MAXTHREADS << ". Make sure XITAO_MAXTHREADS environment variable is set properly" << std::endl;    
     exit(0);
   }  
   const char* layout_file = getenv("XITAO_LAYOUT_PATH");
@@ -64,7 +64,7 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
           size_t pos = 0;
           std::string token;
           if(current_thread_id >= XITAO_MAXTHREADS) {
-            std::cout << "Fatal error: there are more partitions than XITAO_MAXTHREADS of: " << XITAO_MAXTHREADS  << " in file: " << layout_file << std::endl;    
+            if(!suppress_init_warnings) std::cout << "Fatal error: there are more partitions than XITAO_MAXTHREADS of: " << XITAO_MAXTHREADS  << " in file: " << layout_file << std::endl;    
             exit(0);    
           }          
           int thread_count = 0;
@@ -74,13 +74,13 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
             if(!init_affinity) static_resource_mapper[thread_count++] = val;  
             else { 
               if(current_thread_id + 1 >= gotao_nthreads) {
-                  std::cout << "Fatal error: more configurations than there are input threads in:" << layout_file << std::endl;    
+                  if(!suppress_init_warnings) std::cout << "Fatal error: more configurations than there are input threads in:" << layout_file << std::endl;    
                   exit(0);
               }
               ptt_layout[current_thread_id].push_back(val);
               for(int i = 0; i < val; ++i) {     
                 if(current_thread_id + i >= XITAO_MAXTHREADS) {
-                  std::cout << "Fatal error: illegal partition choices for thread: " << current_thread_id <<" spanning id: " << current_thread_id + i << " while having XITAO_MAXTHREADS: " << XITAO_MAXTHREADS  << " in file: " << layout_file << std::endl;    
+                  if(!suppress_init_warnings) std::cout << "Fatal error: illegal partition choices for thread: " << current_thread_id <<" spanning id: " << current_thread_id + i << " while having XITAO_MAXTHREADS: " << XITAO_MAXTHREADS  << " in file: " << layout_file << std::endl;    
                   exit(0);           
                 }
                 inclusive_partitions[current_thread_id + i].push_back(std::make_pair(current_thread_id, val)); 
@@ -96,7 +96,7 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
               ptt_layout[current_thread_id].push_back(val);
               for(int i = 0; i < val; ++i) {                
                 if(current_thread_id + i >= XITAO_MAXTHREADS) {
-                  std::cout << "Fatal error: illegal partition choices for thread: " << current_thread_id <<" spanning id: " << current_thread_id + i << " while having XITAO_MAXTHREADS: " << XITAO_MAXTHREADS  << " in file: " << layout_file << std::endl;    
+                  if(!suppress_init_warnings) std::cout << "Fatal error: illegal partition choices for thread: " << current_thread_id <<" spanning id: " << current_thread_id + i << " while having XITAO_MAXTHREADS: " << XITAO_MAXTHREADS  << " in file: " << layout_file << std::endl;    
                   exit(0);           
                 }
                 inclusive_partitions[current_thread_id + i].push_back(std::make_pair(current_thread_id, val)); 
@@ -111,11 +111,11 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
         }
         myfile.close();
       } else {
-        std::cout << "Fatal error: could not open hardware layout path " << layout_file << std::endl;    
+        if(!suppress_init_warnings) std::cout << "Fatal error: could not open hardware layout path " << layout_file << std::endl;    
         exit(0);
       }
     } else {
-        std::cout << "Warning: XITAO_LAYOUT_PATH is not set. Default values for affinity and symmetric resoruce partitions will be used" << std::endl;    
+        if(!suppress_init_warnings) std::cout << "Warning: XITAO_LAYOUT_PATH is not set. Default values for affinity and symmetric resoruce partitions will be used" << std::endl;    
         for(int i = 0; i < XITAO_MAXTHREADS; ++i) 
           static_resource_mapper[i] = i; 
         std::vector<int> widths;             
@@ -145,7 +145,7 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
       } 
   } else {    
     if(gotao_nthreads != runtime_resource_mapper.size()) {
-      std::cout << "Warning: requested " << runtime_resource_mapper.size() << " at runtime, whereas gotao_nthreads is set to " << gotao_nthreads <<". Runtime value will be used" << std::endl;
+      if(!suppress_init_warnings) std::cout << "Warning: requested " << runtime_resource_mapper.size() << " at runtime, whereas gotao_nthreads is set to " << gotao_nthreads <<". Runtime value will be used" << std::endl;
       gotao_nthreads = runtime_resource_mapper.size();
     }            
   }
@@ -177,7 +177,7 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
   for(int i = 0; i < gotao_nthreads; i++){
     t[i]  = new std::thread(worker_loop, i);   
   }  
-  std::cout << "XiTAO initialized with " << gotao_nthreads << " threads and configured with " << XITAO_MAXTHREADS << " max threads " << std::endl;
+  if(!suppress_init_warnings) std::cout << "XiTAO initialized with " << gotao_nthreads << " threads and configured with " << XITAO_MAXTHREADS << " max threads " << std::endl;
 #ifdef DEBUG
   for(int i = 0; i < static_resource_mapper.size(); ++i) { 
     std::cout << "[DEBUG] thread " << i << " is configured to be mapped to core id : " << static_resource_mapper[i] << std::endl;     
@@ -192,7 +192,8 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
     }
     std::cout << std::endl;
   }
-#endif    
+#endif
+  suppress_init_warnings = true;    
 }
 
 // Initialize gotao from environment vars or defaults
@@ -313,6 +314,17 @@ long int r_rand(long int *s)
 {
   *s = ((1140671485*(*s) + 12820163) % (1<<24));
   return *s;
+}
+
+void __xitao_lock()
+{
+  smpd_region_lock.lock();
+  //LOCK_ACQUIRE(smpd_region_lock);
+}
+void __xitao_unlock()
+{
+  smpd_region_lock.unlock();
+  //LOCK_RELEASE(smpd_region_lock);
 }
 
 int worker_loop(int nthread)

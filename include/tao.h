@@ -13,6 +13,7 @@
 #include "poly_task.h"
 #include "barriers.h"
 #include <atomic>
+#include <functional>
 // extern int gotao_thread_base;
 // extern int gotao_sys_topo[5];
 // extern int physcore[XITAO_MAXTHREADS];
@@ -55,13 +56,13 @@ public:
 };
 
 
-template <typename Proc, typename IterType>
+template <typename IterType>
 class ParForTask: public AssemblyTask {
 private:
 #if defined(CRIT_PERF_SCHED)
   static float time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS];
-#endif
-  Proc& _spmd_region;
+#endif  
+  std::function<void(int&, int&)> _spmd_region;
   IterType _start;
   IterType _end;
   IterType _block_size; 
@@ -70,7 +71,7 @@ private:
   std::atomic<int> next; /*!< TAO implementation specific atomic variable to provide thread safe tracker of the number of processed blocks */
   const size_t slackness = 4;
 public:
-  ParForTask(int width, IterType start, IterType end, Proc spmd): AssemblyTask(width), _start(start), _end(end), _spmd_region(spmd) { 
+  ParForTask(int width, IterType start, IterType end, std::function<void(int&, int&)> spmd): AssemblyTask(width), _start(start), _end(end), _spmd_region(spmd) { 
     IterType size = end - start; 
     _block_iter = 0;
     _block_size = size / (width * slackness);
@@ -83,7 +84,7 @@ public:
     int block_id = next++;
     while(block_id < _blocks) {
       for(int i = block_id * _block_size; (i < _end) && (i < (block_id + 1) * _block_size); i++)
-        _spmd_region(i);
+        _spmd_region(i, thread);
       block_id = next++;
     }
   } 
@@ -114,7 +115,7 @@ public:
 #endif
 };
 #if defined(CRIT_PERF_SCHED)
-template <typename Proc, typename IterType>
-float ParForTask<Proc, IterType>::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS]; 
+template <typename IterType>
+float ParForTask<IterType>::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS]; 
 #endif
 #endif // _TAO_H

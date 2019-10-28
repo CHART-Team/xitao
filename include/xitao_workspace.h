@@ -29,8 +29,10 @@ namespace xitao {
   extern bool gotao_initialized;
   extern bool gotao_started;
   extern bool resources_runtime_conrolled;
+  extern bool suppress_init_warnings;
   extern std::vector<int> runtime_resource_mapper;                                   // a logical to physical runtime resource mapper
   extern std::thread *t[XITAO_MAXTHREADS];
+  extern std::mutex smpd_region_lock;
   extern GENERIC_LOCK(worker_lock[XITAO_MAXTHREADS]);
   extern GENERIC_LOCK(worker_assembly_lock[XITAO_MAXTHREADS]);
 #ifdef DEBUG

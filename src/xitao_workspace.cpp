@@ -15,6 +15,7 @@ namespace xitao {
   bool gotao_initialized = false;
   bool gotao_started = false;
   bool resources_runtime_conrolled = false;
+  bool suppress_init_warnings = false;
   std::vector<int> runtime_resource_mapper;                                   // a logical to physical runtime resource mapper
   std::thread* t[XITAO_MAXTHREADS];
   std::vector<int> static_resource_mapper(XITAO_MAXTHREADS);
@@ -22,6 +23,7 @@ namespace xitao {
   std::vector<std::vector<std::pair<int, int> > > inclusive_partitions(XITAO_MAXTHREADS);
   GENERIC_LOCK(worker_lock[XITAO_MAXTHREADS]);
   GENERIC_LOCK(worker_assembly_lock[XITAO_MAXTHREADS]);
+  std::mutex smpd_region_lock;
 #ifdef DEBUG
   GENERIC_LOCK(output_lck);
 #endif

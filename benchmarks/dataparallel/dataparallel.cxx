@@ -29,11 +29,11 @@ int main(int argc, char *argv[]) {
     C[r] = new int[N];
     std::memset(C[r], 0, sizeof(int) * N);
   }
-  gotao_init();
+  gotao_init_hw(workers, -1 , -1);
   gotao_start();
   std::chrono::time_point<std::chrono::system_clock> start_time, end_time;
   start_time = std::chrono::system_clock::now();
-  __xitao_vec_region(workers, i, N, 
+  __xitao_vec_region(workers, i, N,     
     for (int j = 0; j < N; j++) 
      { 
        C[i][i] = 0; 
@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
   std::cout << "Total time XiTAO: " << elapsed_seconds.count()  << std::endl;
   std::cout << "Total successful steals: " << tao_total_steals << std::endl;
   start_time = std::chrono::system_clock::now();
-#pragma omp parallel for num_threads(workers) 
+#pragma omp parallel for num_threads(workers) schedule(static,2) 
   for(int i = 0; i < N; ++i)
     for (int j = 0; j < N; ++j) 
      { 
