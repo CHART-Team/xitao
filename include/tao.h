@@ -157,7 +157,7 @@ public:
 #endif
 };
 #if defined(CRIT_PERF_SCHED)
-template <typename IterType>
-float ParForTask<IterType>::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS]; 
+template <typename FuncType, typename IterType>
+float ParForTask<FuncType, IterType>::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS]; 
 #endif
 #endif // _TAO_H
