@@ -12,3 +12,11 @@ html
 latex
 heat-tao
 heat-tbb
+benchmarks/bfs/data/bfs/inputGen/*.txt
+benchmarks/dataparallel/dataparallel
+benchmarks/dataparallel/dataparallel.cxx.experiments
+benchmarks/dataparallel/.Makefile.swp
+benchmarks/kmeans/
+ptt_layout_4
+ptt_layout_4_compact
+
