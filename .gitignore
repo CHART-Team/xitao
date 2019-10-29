@@ -17,6 +17,7 @@ benchmarks/dataparallel/dataparallel
 benchmarks/dataparallel/dataparallel.cxx.experiments
 benchmarks/dataparallel/.Makefile.swp
 benchmarks/kmeans/
+benchmarks/bfs/data/bfs/*.txt
 ptt_layout_4
 ptt_layout_4_compact
 
