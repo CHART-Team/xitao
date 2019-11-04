@@ -1,7 +1,7 @@
 # XiTAO RUNTIME #
-XiTAO is an execution model and runtime for low-overhead and interference-free execution of mixed-mode DAGs on manycores. XiTAO generalizes the concept of task by providing it with (1) internal concurrency, (2) an embedded scheduler and (3) a resizeable resource container. Hence, XiTAO tasks, called TAOs: "Task Assembly Objects" become moldable entities. Via a elastic resource partitioning, XiTAO provides better mapping between tasks and hardware resources such as cores, caches or interconnect bandwidth. Therefore, XiTAO provides fast parallelism at low overhead, with constructive sharing and interference-avoidance. 
+XiTAO is an lightweight layer built on top of modern C++ features with the goals of being low-overhead and serving as a development platform for testing scheduling and resource management algorithms. XiTAO is built on a generalized model of task which that assembles (1) concurrency, (2) an embedded scheduler and (3) a resizeable resource container. These TAOs (Task Assembly Objects) are moldable entities that can be scheduled into elastic resource partitioning, aka "elastic places". XiTAO targets better mapping between tasks and hardware resources such as cores, caches or interconnect bandwidth. Therefore, among other features, XiTAO provides fast parallelism at low overhead, with constructive sharing and interference-avoidance. Recently, XiTAO has been extended with novel high-level programming constructs, and with instrospective scheduling techniques that allow it to adapt to dynamic events as well as better target the goals of energy-efficiency. 
 
-The following figure shows the architecture of the XiTAO runtime
+The following figure shows the simplified architecture of the XiTAO runtime
 
 
 ![Image of the XiTAO Arch](xitao_arch.png)
