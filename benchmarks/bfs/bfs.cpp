@@ -125,7 +125,7 @@ void BFSGraph( int argc, char** argv)
            gotao_init_hw(num_omp_threads, -1 , -1);
             stop=false;
             int tid=0;
-            __xitao_vec_region(num_omp_threads, tid, no_of_nodes, 0, 
+            __xitao_vec_region(num_omp_threads, tid, no_of_nodes, 1, 
             {
                 if (h_graph_mask[tid] == true){ 
                     h_graph_mask[tid]=false;
@@ -143,7 +143,7 @@ void BFSGraph( int argc, char** argv)
             gotao_fini();
             gotao_init_hw(num_omp_threads, -1 , -1);
 			      tid = 0;
-            __xitao_vec_region(num_omp_threads, tid, no_of_nodes, 0, 
+            __xitao_vec_region(num_omp_threads, tid, no_of_nodes, 1, 
             {
                 if (h_updating_graph_mask[tid] == true){
                     h_graph_mask[tid]=true;

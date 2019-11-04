@@ -49,14 +49,17 @@ int gotao_fini();
   \param queue The queue to be pushed to (< XITAO_MAXTHREADS)
 */
 int gotao_push(PolyTask *pt, int queue=-1);
+
 //! Block master thread until DAG execution is finished, without having to finalize
 void gotao_barrier();
 
-//! Initialize the XiTAO Runtime
+//! Returns a handle to a ParForTask
 /*!
+  \param parallelism is the number of workers to execute the parallel for region
   \param iter_start is the iterator start
   \param end is the end of the loop
   \param func the spmd lambda function taking the iterator as an argument
+  \param 0 for static scheduling, 1 for dynamic scheduling
 */ 
 template <typename Proc, typename IterType>
 ParForTask<Proc, IterType>* xitao_vec(int parallelism, IterType& iter_start, IterType const& end, Proc func, int sched_type) {
@@ -64,6 +67,14 @@ ParForTask<Proc, IterType>* xitao_vec(int parallelism, IterType& iter_start, Ite
   return par_for;
 }
 
+//! Executes and returns a handle to a ParForTask
+/*!
+  \param parallelism is the number of workers to execute the parallel for region
+  \param iter_start is the iterator start
+  \param end is the end of the loop
+  \param func the spmd lambda function taking the iterator as an argument
+  \param 0 for static scheduling, 1 for dynamic scheduling
+*/ 
 template <typename Proc, typename IterType>
 ParForTask<Proc, IterType>* xitao_vec_immediate(int parallelism, IterType& iter_start, IterType const& end, Proc func, int sched_type) {
   ParForTask<Proc, IterType>* par_for = new ParForTask<Proc, IterType>(sched_type, iter_start, end, func, parallelism);
@@ -71,15 +82,9 @@ ParForTask<Proc, IterType>* xitao_vec_immediate(int parallelism, IterType& iter_
   gotao_start();
   return par_for;
 }
-
+//! Generic lock (not recommended, but added for correctness temporarily)
 void __xitao_lock();
-void __xitao_unlock();
-//! wrapper for what constitutes and SPMD region
-#define __xitao_vec_code(parallelism, i, end, sched, code) xitao_vec(parallelism, i, end, [&](int& i, int& __xitao_thread_id){code;}, sched);
-#define __xitao_vec_region(parallelism, i , end, sched, code) xitao_vec_immediate(parallelism, i, end, [&](int& i, int& __xitao_thread_id){code;}, sched);
-#endif
 
-// push work into polytask queue
-// if no particular queue is specified then try to determine which is the local
-// queue and insert it there. This has some overhead, so in general the
-// programmer should specify some queue
+//! Generic unlock
+void __xitao_unlock();
+#endif

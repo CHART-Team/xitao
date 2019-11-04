@@ -57,7 +57,7 @@ public:
   task f;
 };
 template<class F>
-struct XITAO_LOOPER {
+struct xitao_looper {
   F fn;
   void operator()(int start, int end, int thread) const {
     for (int i = start; i < end; ++i)
@@ -66,7 +66,7 @@ struct XITAO_LOOPER {
 };
 
 template<class F>
-XITAO_LOOPER<F> looper(F f) {
+xitao_looper<F> looper(F f) {
   return {std::move(f)};
 }
 
