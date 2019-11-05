@@ -89,7 +89,8 @@ int PolyTask::history_mold(int _nthread, PolyTask *it){
         new_leader = leader;       
         break;
       }
-      comp_perf = width * ptt_val;
+      //comp_perf = width * ptt_val;
+      comp_perf = ptt_val;
       if (comp_perf < shortest_exec) {
         shortest_exec = comp_perf;
         new_width = width;
@@ -153,8 +154,9 @@ void PolyTask::print_ptt(float table[][XITAO_MAXTHREADS], const char* table_name
     std::cout << "==================================" << std::endl;
     std::cout << " | " << std::setw(5) << "Width" << " | " << std::setw(9) << std::left << "Time" << " | " << "Scalability" << std::endl;
     std::cout << "==================================" << std::endl;
-    for (int i = 0; i < row.size(); ++i){
+    for (int i = 0; i < row.size(); ++i) {
       int curr_width = row[i];
+      if(curr_width <= 0) continue;
       auto comp_perf = table[curr_width - 1][leader];
       std::cout << " | ";
       width_output << std::left << std::setw(5) << curr_width;
@@ -185,6 +187,7 @@ int PolyTask::globalsearch_PTT(int nthread, PolyTask * it){
   int new_leader = -1;
   for(int leader = 0; leader < ptt_layout.size(); ++leader) {
     for(auto&& width : ptt_layout[leader]) {
+      if(width <= 0) continue;
       auto&& ptt_val = it->get_timetable(leader, width - 1);
       if(ptt_val == 0.0f) {
         new_width = width;

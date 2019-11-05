@@ -70,12 +70,11 @@ xitao_looper<F> looper(F f) {
   return {std::move(f)};
 }
 
+
+// a "ParForTask" that executes a partition on an SPMD region with either dynamic or static scheduling
 template <typename FuncType, typename IterType>
-class ParForTask: public AssemblyTask {
+class ParForTask: public AssemblyTask {  
 private:
-#if defined(CRIT_PERF_SCHED)
-  static float time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS];
-#endif  
   int const _sched_type;
   IterType _start;
   IterType _end;
@@ -85,8 +84,11 @@ private:
   IterType _blocks; 
   IterType _size; 
   std::atomic<int> next; /*!< TAO implementation specific atomic variable to provide thread safe tracker of the number of processed blocks */
-  const size_t slackness = 4;
+  const size_t slackness = 8;
 public: 
+#if defined(CRIT_PERF_SCHED)
+  static float time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS];
+#endif    
   ParForTask(int sched, IterType start, IterType end, FuncType spmd, int width): 
                 AssemblyTask(width), _sched_type(sched), _start(start), _end(end), _spmd_region(spmd) { 
     _size = _end - _start; 

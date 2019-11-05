@@ -1,6 +1,7 @@
 #ifndef XITAO_MACROS
 #define XITAO_MACROS
 #include "xitao_api.h"
+#include <type_traits>
 //! wrapper for what constitutes and SPMD region returns a handle to a ParForTask for later insertion in a DAG
 #define __xitao_vec_code(parallelism, i, end, sched, code) xitao_vec(							\
 															parallelism, i, end,				\
@@ -16,4 +17,21 @@
 																code;							\
 															},									\
 															sched);
+
+//! wrapper for what constitutes and SPMD region executed by concurrent tasks. 
+#define __xitao_vec_multiparallel_region(parallelism, i , end, sched, block_size, code) xitao_vec_immediate_multiparallel(\
+															parallelism, i, end,				\
+															[&](int& i, int& __xitao_thread_id){\
+																code;							\
+															},									\
+															sched, block_size);
+
+//! wrapper for printing the PTT results on the data parallel region
+#if CRIT_PERF_SCHED
+#define __xitao_print_ptt(ref) 								std::remove_reference<decltype(ref)>::type::print_ptt( \
+															std::remove_reference<decltype(ref)>::type::time_table,\
+															"Vec Region PTT");
+#else 
+		__xitao_print_ptt(ref) 						
+#endif		
 #endif

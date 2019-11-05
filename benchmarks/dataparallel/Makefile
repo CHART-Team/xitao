@@ -20,9 +20,9 @@
 
 include ../../makefile.sched
 CXXFLAGS += -I../../include -I.
-CXXFLAGS += -O3
+CXXFLAGS += -O2
 
-CXXFLAGS += -fopenmp --std=c++11  ${EXTRAEINC}
+CXXFLAGS += -fopenmp --std=c++11 -fno-unroll-loops ${EXTRAEINC}
 
 LIBS = -fopenmp -lm ${EXTRAELIBS} -L../../lib -lxitao -pthread
 PROGRAM_OBJS=dataparallel.o 
@@ -36,8 +36,7 @@ dataparallel: $(PROGRAM_OBJS)
 	$(CXX) $^ -o $@ ${LIBS}
 
 run: dataparallel 
-	./dataparallel 1000 4 0
+	./dataparallel 1000 4 0 64
 
 clean:
 	rm -rf dataparallel $(PROGRAM_OBJS) html latex
-
