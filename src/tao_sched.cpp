@@ -41,8 +41,13 @@ int set_xitao_mask(cpu_set_t& user_affinity_setup) {
   \param nhwc is the number of hardware contexts
 */ 
 int gotao_init_hw( int nthr, int thrb, int nhwc)
-{
-  gotao_initialized = true;
+{  
+  if(gotao_initialized) {
+    for(int i = 0; i < XITAO_MAXTHREADS; ++i) {
+      inclusive_partitions[i].clear();
+      ptt_layout[i].clear();
+    }
+  }
   if(nthr>=0) gotao_nthreads = nthr;
   else {    
     if(getenv("GOTAO_NTHREADS")) gotao_nthreads = atoi(getenv("GOTAO_NTHREADS"));  
@@ -76,14 +81,16 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
               if(current_thread_id + 1 >= gotao_nthreads) {
                   if(!suppress_init_warnings) std::cout << "Fatal error: more configurations than there are input threads in:" << layout_file << std::endl;    
                   exit(0);
-              }
+              }              
               ptt_layout[current_thread_id].push_back(val);
+              if(val > 0) {
               for(int i = 0; i < val; ++i) {     
                 if(current_thread_id + i >= XITAO_MAXTHREADS) {
                   if(!suppress_init_warnings) std::cout << "Fatal error: illegal partition choices for thread: " << current_thread_id <<" spanning id: " << current_thread_id + i << " while having XITAO_MAXTHREADS: " << XITAO_MAXTHREADS  << " in file: " << layout_file << std::endl;    
                   exit(0);           
                 }
-                inclusive_partitions[current_thread_id + i].push_back(std::make_pair(current_thread_id, val)); 
+                  inclusive_partitions[current_thread_id + i].push_back(std::make_pair(current_thread_id, val)); 
+                }
               }              
             }            
             line.erase(0, pos + 1);
@@ -194,6 +201,7 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
   }
 #endif
   suppress_init_warnings = true;    
+  gotao_initialized = true;  
 }
 
 // Initialize gotao from environment vars or defaults
@@ -238,7 +246,8 @@ int gotao_fini()
   resources_runtime_conrolled = false;
   gotao_can_exit = true;
   gotao_started = false;
-  gotao_initialized = false;
+  //gotao_initialized = false;
+  tao_total_steals = 0;
   for(int i = 0; i < gotao_nthreads; i++){
     t[i]->join();
   }
@@ -271,7 +280,13 @@ int gotao_push(PolyTask *pt, int queue)
       queue = sched_getcpu();
     }
   }
-  if(resources_runtime_conrolled) queue = check_and_get_available_queue(queue);
+  if(resources_runtime_conrolled) {
+    queue = check_and_get_available_queue(queue);
+  } else { // check if the insertion happens in invalid queue (according to PTT layout)
+    while(inclusive_partitions[queue].size() == 0){
+      queue = (queue + 1) % gotao_nthreads;
+    }
+  }
   LOCK_ACQUIRE(worker_lock[queue]);
   worker_ready_q[queue].push_front(pt);
   LOCK_RELEASE(worker_lock[queue]);
@@ -338,7 +353,7 @@ int worker_loop(int nthread)
     phys_core = runtime_resource_mapper[nthread];
   } else {
     phys_core = static_resource_mapper[gotao_thread_base+(nthread%(XITAO_MAXTHREADS-gotao_thread_base))];   
-  }
+  }  
 #ifdef DEBUG
   LOCK_ACQUIRE(output_lck);
   std::cout << "[DEBUG] nthread: " << nthread << " mapped to physical core: "<< phys_core << std::endl;
@@ -355,6 +370,10 @@ int worker_loop(int nthread)
   PolyTask *st = nullptr;
   starting_barrier->wait();  
   auto&&  partitions = inclusive_partitions[nthread];
+  if(partitions.size() == 0) {
+    std::cout << "Thread " << nthread << " is deactivated since it is not included in any PTT partition" << std::endl;      
+    return 0;
+  }
   while(true)
   {    
     int random_core = 0;
