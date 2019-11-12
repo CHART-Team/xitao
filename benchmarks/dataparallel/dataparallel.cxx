@@ -97,6 +97,15 @@ int main(int argc, char *argv[]) {
 #endif  
   // Start the worker threads
   for (int iter = 0; iter < iter_count; ++iter) {
+    // invalidate the caches 
+    for(int r = 0 ; r < N; ++r) {
+      A[r] = new int[N];
+      std::memset(A[r], rand(), sizeof(int) * N);
+      B[r] = new int[N];
+      std::memset(B[r], rand(), sizeof(int) * N);
+      C[r] = new int[N];
+      std::memset(C[r], rand(), sizeof(int) * N);
+    }
     // Init XiTAO with workers 
     gotao_init_hw(workers, -1 , -1);
     start_time = std::chrono::system_clock::now();
@@ -116,6 +125,15 @@ int main(int argc, char *argv[]) {
     std::cout << "Total successful steals: " << tao_total_steals << std::endl;      
   }
  for (int iter = 0; iter < iter_count; ++iter) {  
+    // invalidate the caches 
+    for(int r = 0 ; r < N; ++r) {
+      A[r] = new int[N];
+      std::memset(A[r], rand(), sizeof(int) * N);
+      B[r] = new int[N];
+      std::memset(B[r], rand(), sizeof(int) * N);
+      C[r] = new int[N];
+      std::memset(C[r], rand(), sizeof(int) * N);
+    }  
   start_time = std::chrono::system_clock::now();
 #pragma omp parallel for
   for(int i = 0; i < N; ++i)
