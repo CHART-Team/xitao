@@ -37,11 +37,11 @@ int main(int argc, char *argv[]) {
   std::cout << "Block: " << block_length << std::endl;
   // Set an OMP scheduling that matches that of XiTAO 
   if(sched == xitao_vec_static) {
-    omp_set_schedule(omp_sched_t::omp_sched_static, 0);
+    omp_set_schedule(omp_sched_t::omp_sched_static, block_length);
     std::cout << "Vector region scheduling: static" << std::endl;
   }
   else {
-    omp_set_schedule(omp_sched_t::omp_sched_dynamic, 0);
+    omp_set_schedule(omp_sched_t::omp_sched_dynamic, block_length);
     std::cout << "Vector region scheduling: dynamic" << std::endl;
   }
   // Set threads to match those of the XiTAO parallel region
