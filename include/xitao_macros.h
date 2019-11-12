@@ -32,6 +32,6 @@
 															std::remove_reference<decltype(ref)>::type::time_table,\
 															"Vec Region PTT");
 #else 
-		__xitao_print_ptt(ref) 						
+#define __xitao_print_ptt(ref) 						
 #endif		
 #endif
