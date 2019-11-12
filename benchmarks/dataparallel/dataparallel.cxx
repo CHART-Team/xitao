@@ -16,8 +16,8 @@
 using namespace xitao;
 #define TEST_XITAO_BASIC_DATAPARALLEL 0
 int main(int argc, char *argv[]) {  
-  if(argc < 5) {
-    std::cout << "./dataparallel <veclength> <TAOwidth> <0:static, 1:dynamic> <TAO block length> <Optional: PTT training attempts>" << std::endl; 
+  if(argc < 7) {
+    std::cout << "./dataparallel <veclength> <workers> <0:static, 1:dynamic> <TAO block length> <TAO initial width> <PTT training attempts>" << std::endl; 
     return 0;
   }  
   int i = 0;                                        
@@ -30,8 +30,10 @@ int main(int argc, char *argv[]) {
   int sched   = (argc > 3) ? atoi(argv[3]) : 0;      
   // the fine grain TAO block size (in case of multiparallel SPMD region)
   int block_length   = (argc > 4) ? atoi(argv[4]) : 0;      
+  // the fine grain TAO block size (in case of multiparallel SPMD region)
+  int tao_width   = (argc > 5) ? atoi(argv[5]) : 0;        
   // the number of iterations for multiparallel region
-  int iter_count     = (argc > 5) ? atoi(argv[5]) : 1;      
+  int iter_count     = (argc > 6) ? atoi(argv[6]) : 1;      
   std::cout << "N: " << N << std::endl;           
   std::cout << "P: " << workers << std::endl;
   std::cout << "Block: " << block_length << std::endl;
@@ -80,7 +82,7 @@ int main(int argc, char *argv[]) {
   // Start the worker threads
   gotao_start();  
   start_time = std::chrono::system_clock::now();
-  __xitao_vec_region(workers, i, N, sched, 
+  __xitao_vec_region(tao_width, i, N, sched, 
     for (int j = 0; j < N; j++) 
      { 
        C[i][i] = 0; 
@@ -109,7 +111,7 @@ int main(int argc, char *argv[]) {
     // Init XiTAO with workers 
     gotao_init_hw(workers, -1 , -1);
     start_time = std::chrono::system_clock::now();
-    __xitao_vec_multiparallel_region(workers, i, N, sched, block_length, 
+    __xitao_vec_multiparallel_region(tao_width, i, N, sched, block_length, 
       for (int j = 0; j < N; j++) 
        { 
          C[i][i] = 0; 

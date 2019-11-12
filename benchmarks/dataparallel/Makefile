@@ -36,7 +36,7 @@ dataparallel: $(PROGRAM_OBJS)
 	$(CXX) $^ -o $@ ${LIBS}
 
 run: dataparallel 
-	./dataparallel 1000 4 0 64
+	./dataparallel 1500 4 1 10 1 10
 
 clean:
 	rm -rf dataparallel $(PROGRAM_OBJS) html latex
