@@ -6,9 +6,6 @@
 #include <iostream>
 using namespace xitao;
 
-/*! basic tao_type_info that can be used as a key to PTT tables*/
-//std::pair<std::type_index, size_t> tao_type_info;
-
 /*! a class the manages the runtime ptt tables*/
 class xitao_ptt {
 public:
