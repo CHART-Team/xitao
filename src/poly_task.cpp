@@ -152,6 +152,48 @@ int PolyTask::set_timetable(int thread, float t, int index) {
   return 0; 
 }
 
+void PolyTask::print_ptt(const char* table_name) { 
+  std::cout << std::endl << table_name <<  " PTT Stats: " << std::endl;
+  auto&& table = *_ptt;
+  for(int leader = 0; leader < ptt_layout.size() && leader < gotao_nthreads; ++leader) {
+    auto row = ptt_layout[leader];
+    std::sort(row.begin(), row.end());
+    std::ostream time_output (std::cout.rdbuf());
+    std::ostream scalability_output (std::cout.rdbuf());
+    std::ostream width_output (std::cout.rdbuf());
+    std::ostream empty_output (std::cout.rdbuf());
+    time_output  << std::scientific << std::setprecision(3);
+    scalability_output << std::setprecision(3);    
+    empty_output << std::left << std::setw(5);
+    std::cout << "Thread = " << leader << std::endl;    
+    std::cout << "==================================" << std::endl;
+    std::cout << " | " << std::setw(5) << "Width" << " | " << std::setw(9) << std::left << "Time" << " | " << "Scalability" << std::endl;
+    std::cout << "==================================" << std::endl;
+    for (int i = 0; i < row.size(); ++i) {
+      int curr_width = row[i];
+      if(curr_width <= 0) continue;
+      auto comp_perf = table[(curr_width - 1) * XITAO_MAXTHREADS + leader];
+      std::cout << " | ";
+      width_output << std::left << std::setw(5) << curr_width;
+      std::cout << " | ";      
+      time_output << comp_perf; 
+      std::cout << " | ";
+      if(i == 0) {        
+        empty_output << " - ";
+      } else if(comp_perf != 0.0f) {
+        auto scaling = table[(row[0] - 1) * XITAO_MAXTHREADS + leader]/comp_perf;
+        auto efficiency = scaling / curr_width;
+        if(efficiency  < 0.6 || efficiency > 1.3) {
+          scalability_output << "(" <<table[(row[0] - 1) * XITAO_MAXTHREADS + leader]/comp_perf << ")";  
+        } else {
+          scalability_output << table[(row[0] - 1) * XITAO_MAXTHREADS + leader]/comp_perf;
+        }
+      }
+      std::cout << std::endl;  
+    }
+    std::cout << std::endl;
+  }
+}
 void PolyTask::print_ptt(float table[][XITAO_MAXTHREADS], const char* table_name) { 
   std::cout << std::endl << table_name <<  " PTT Stats: " << std::endl;
   for(int leader = 0; leader < ptt_layout.size() && leader < gotao_nthreads; ++leader) {

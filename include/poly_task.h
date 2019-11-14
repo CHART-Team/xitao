@@ -71,6 +71,11 @@ public:
   //Determine if task is critical task
   int if_prio(int _nthread, PolyTask * it);
   int globalsearch_PTT(int nthread, PolyTask * it);
+  //! print runtime managed PTT 
+  /*!
+    \param table_name the table name
+  */
+  void print_ptt(const char* table_name);
   static void print_ptt(float table[][XITAO_MAXTHREADS], const char* table_name);
   //Find suitable thread for prio task
   //int find_thread(int nthread, PolyTask * it);
