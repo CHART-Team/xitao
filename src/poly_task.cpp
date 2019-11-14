@@ -138,6 +138,20 @@ int PolyTask::if_prio(int _nthread, PolyTask * it){
   return it->criticality;
 } 
 
+// get value at specific location (leader, width) in ptt
+float PolyTask::get_timetable(int thread, int index) {
+  // return the ptt measurement at location
+  return (*_ptt)[index * XITAO_MAXTHREADS + thread];
+}
+
+// set value at specific location (leader, width) in ptt
+int PolyTask::set_timetable(int thread, float t, int index) {
+  // set the ptt measurement at location
+  (*_ptt)[index * XITAO_MAXTHREADS + thread] = t;
+  // unneeded (maintained for now to reduce conflicts)
+  return 0; 
+}
+
 void PolyTask::print_ptt(float table[][XITAO_MAXTHREADS], const char* table_name) { 
   std::cout << std::endl << table_name <<  " PTT Stats: " << std::endl;
   for(int leader = 0; leader < ptt_layout.size() && leader < gotao_nthreads; ++leader) {
