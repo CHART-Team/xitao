@@ -15,7 +15,7 @@ public :
   xitao_ptt_key(std::size_t _workload, std::type_index _type_index);
 
   // an equality operator for enabling hashmap lookup for ptt tables 
-  bool operator==(const xitao_ptt_key &other) const;  
+  bool operator == (const xitao_ptt_key &other) const;  
   
 };
 
@@ -23,7 +23,7 @@ class xitao_ptt_hash {
 
 public: 
    // hash function for xitao_ptt_key
-  std::size_t operator () (const xitao_ptt_key &p) const;
+  std::size_t operator ()(const xitao_ptt_key &p) const;
 }; 
 
 //! A boost like function to combine the hash values

@@ -288,7 +288,7 @@ int gotao_push(PolyTask *pt, int queue)
     }
   }
 #ifdef CRIT_PERF_SCHED  
-  pt->_ptt = xitao_ptt::try_insert_table(*pt, 0);   
+  pt->_ptt = xitao_ptt::try_insert_table(pt, 0);    /*be sure that a single orphaned task has a PTT*/
 #endif  
   LOCK_ACQUIRE(worker_lock[queue]);
   worker_ready_q[queue].push_front(pt);

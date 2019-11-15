@@ -30,7 +30,7 @@ PolyTask::PolyTask(int t, int _nthread=0) : type(t){
   taskid = created_tasks += 1;
 #endif
   LOCK_ACQUIRE(worker_lock[_nthread]);
-  if(task_pool[_nthread].tasks == 0){
+  if(task_pool[_nthread].tasks == 0) {
     pending_tasks += TASK_POOL;
     task_pool[_nthread].tasks = TASK_POOL-1;
       #ifdef DEBUG
@@ -42,7 +42,7 @@ PolyTask::PolyTask(int t, int _nthread=0) : type(t){
   threads_out_tao = 0;
 #if defined(CRIT_PERF_SCHED)
   criticality=0;
-  marker = 0;
+  marker = 0;  
 #endif
 }
                                           // Internally, GOTAO works only with queues, not stas
@@ -69,9 +69,11 @@ int PolyTask::clone_sta(PolyTask *pt) {
 void PolyTask::make_edge(PolyTask *t){
   out.push_back(t);
   t->refcount++;
+#ifdef CRIT_PERF_SCHED    
+  t->_ptt = xitao_ptt::try_insert_table(t, 0);               /*be sure that the dependent task has a PTT*/  
+#endif    
 }
 
-  //History-based molding
 #if defined(CRIT_PERF_SCHED)
 int PolyTask::history_mold(int _nthread, PolyTask *it){
   int new_width = 1; 
@@ -152,48 +154,6 @@ int PolyTask::set_timetable(int thread, float t, int index) {
   return 0; 
 }
 
-void PolyTask::print_ptt(const char* table_name) { 
-  std::cout << std::endl << table_name <<  " PTT Stats: " << std::endl;
-  auto&& table = *_ptt;
-  for(int leader = 0; leader < ptt_layout.size() && leader < gotao_nthreads; ++leader) {
-    auto row = ptt_layout[leader];
-    std::sort(row.begin(), row.end());
-    std::ostream time_output (std::cout.rdbuf());
-    std::ostream scalability_output (std::cout.rdbuf());
-    std::ostream width_output (std::cout.rdbuf());
-    std::ostream empty_output (std::cout.rdbuf());
-    time_output  << std::scientific << std::setprecision(3);
-    scalability_output << std::setprecision(3);    
-    empty_output << std::left << std::setw(5);
-    std::cout << "Thread = " << leader << std::endl;    
-    std::cout << "==================================" << std::endl;
-    std::cout << " | " << std::setw(5) << "Width" << " | " << std::setw(9) << std::left << "Time" << " | " << "Scalability" << std::endl;
-    std::cout << "==================================" << std::endl;
-    for (int i = 0; i < row.size(); ++i) {
-      int curr_width = row[i];
-      if(curr_width <= 0) continue;
-      auto comp_perf = table[(curr_width - 1) * XITAO_MAXTHREADS + leader];
-      std::cout << " | ";
-      width_output << std::left << std::setw(5) << curr_width;
-      std::cout << " | ";      
-      time_output << comp_perf; 
-      std::cout << " | ";
-      if(i == 0) {        
-        empty_output << " - ";
-      } else if(comp_perf != 0.0f) {
-        auto scaling = table[(row[0] - 1) * XITAO_MAXTHREADS + leader]/comp_perf;
-        auto efficiency = scaling / curr_width;
-        if(efficiency  < 0.6 || efficiency > 1.3) {
-          scalability_output << "(" <<table[(row[0] - 1) * XITAO_MAXTHREADS + leader]/comp_perf << ")";  
-        } else {
-          scalability_output << table[(row[0] - 1) * XITAO_MAXTHREADS + leader]/comp_perf;
-        }
-      }
-      std::cout << std::endl;  
-    }
-    std::cout << std::endl;
-  }
-}
 void PolyTask::print_ptt(float table[][XITAO_MAXTHREADS], const char* table_name) { 
   std::cout << std::endl << table_name <<  " PTT Stats: " << std::endl;
   for(int leader = 0; leader < ptt_layout.size() && leader < gotao_nthreads; ++leader) {
