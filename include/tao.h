@@ -86,9 +86,6 @@ private:
   std::atomic<int> next; /*!< TAO implementation specific atomic variable to provide thread safe tracker of the number of processed blocks */
   const size_t slackness = 8;
 public: 
-#if defined(CRIT_PERF_SCHED)
-  static float time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS];
-#endif    
   ParForTask(int sched, IterType start, IterType end, FuncType spmd, int width): 
                 AssemblyTask(width), _sched_type(sched), _start(start), _end(end), _spmd_region(spmd) { 
     _size = _end - _start; 
@@ -133,33 +130,5 @@ public:
     }
   } 
   int cleanup() { }
-#if defined(CRIT_PERF_SCHED)
-  //! Inherited pure virtual function that is called by the performance based scheduler to set an entry in PTT
-  /*!
-    \param threadid logical thread id that executes the TAO
-    \param ticks the number of elapsed ticks
-    \param index the index of the width type
-    \sa time_table()
-  */
-  int set_timetable(int threadid, float ticks, int index) {
-    time_table[index][threadid] = ticks;
-  }
-  
-  //! Inherited pure virtual function that is called by the performance based scheduler to get an entry in PTT
-  /*!
-    \param threadid logical thread id that executes the TAO
-    \param index the index of the width type
-    \sa time_table()
-  */
-  float get_timetable(int threadid, int index) { 
-    float time=0;
-    time = time_table[index][threadid];
-    return time;
-  }
-#endif
 };
-#if defined(CRIT_PERF_SCHED)
-template <typename FuncType, typename IterType>
-float ParForTask<FuncType, IterType>::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS]; 
-#endif
 #endif // _TAO_H

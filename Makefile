@@ -34,7 +34,7 @@ XITAO_LIB = ./lib
 
 LIBS = -pthread -lm -L$(XITAO_LIB) -lxitao ${EXTRAELIBS}
 
-TAO_OBJS = src/tao_sched.o  src/poly_task.o src/xitao_workspace.o src/barriers.o 
+TAO_OBJS = src/tao_sched.o src/xitao_ptt_key.o src/xitao_ptt.o src/poly_task.o src/xitao_workspace.o src/barriers.o 
 
 all: lib
 	cd $(EXAMPLES)/dotproduct && $(MAKE) clean && $(MAKE) 

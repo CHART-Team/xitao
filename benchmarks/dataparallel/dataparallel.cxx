@@ -66,13 +66,13 @@ int main(int argc, char *argv[]) {
   std::chrono::time_point<std::chrono::system_clock> start_time, end_time;
   start_time = std::chrono::system_clock::now();
   for(int i = 0; i < N; ++i)
-    for (int j = 0; j < N; ++j) 
-    { 
-      C[i][i] = 0; 
-      for (int k = 0; k < N; ++k) 
-        C[i][j] += A[i][k] *  
-                   B[k][j]; 
-    }  
+   for (int j = 0; j < N; ++j) 
+   { 
+     C[i][i] = 0; 
+     for (int k = 0; k < N; ++k) 
+       C[i][j] += A[i][k] *  
+                  B[k][j]; 
+   }  
   end_time = std::chrono::system_clock::now();  
   std::chrono::duration<double> elapsed_seconds = end_time - start_time;
   std::cout << "Total time serial: " << elapsed_seconds.count()  << std::endl;

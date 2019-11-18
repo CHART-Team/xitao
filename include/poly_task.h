@@ -8,6 +8,8 @@
 #include <atomic>
 #include "config.h"
 #include "lfq-fifo.h"
+#include "xitao_workspace.h"
+#include "xitao_ptt.h"
 //#include "xitao.h"
 
 /*! the basic PolyTask type */
@@ -23,12 +25,17 @@ public:
   static std::atomic<int> prev_top_task;     
   //int criticality;
   int marker;
+  // A pointer to the corresponding ptt table
+  xitao::ptt_shared_type _ptt;  
+  // An integer descriptor to distinguish the workload of several TAOs of the same type
+  // it is mainly used by the scheduler when picking up the correct PTT
+  size_t workload_hint;
 #endif
   int type;
   // The leader task id in the resource partition
   int leader;
   int criticality;
-#if defined(DEBUG)
+  #if defined(DEBUG)
   int taskid;
   static std::atomic<int> created_tasks;
 #endif
@@ -46,8 +53,19 @@ public:
 
   //Virtual declaration of performance table get/set within tasks
 #if defined(CRIT_PERF_SCHED)
-  virtual float get_timetable(int thread, int index) = 0;
-  virtual int set_timetable(int thread, float t, int index) = 0;
+  //! Virtual function that is called by the performance based scheduler to get an entry in PTT
+  /*!
+    \param threadid logical thread id that executes the TAO
+    \param index the index of the width type 
+    */
+  virtual float get_timetable(int thread, int index);
+  //! Virtual function that is called by the performance based scheduler to set an entry in PTT
+  /*!
+    \param threadid logical thread id that executes the TAO
+    \param ticks the number of elapsed ticks
+    \param index the index of the width type 
+    */  
+  virtual int set_timetable(int thread, float ticks, int index);
   //History-based molding
   int history_mold(int _nthread, PolyTask *it);
   //Recursive function assigning criticality

@@ -30,7 +30,7 @@ PolyTask::PolyTask(int t, int _nthread=0) : type(t){
   taskid = created_tasks += 1;
 #endif
   LOCK_ACQUIRE(worker_lock[_nthread]);
-  if(task_pool[_nthread].tasks == 0){
+  if(task_pool[_nthread].tasks == 0) {
     pending_tasks += TASK_POOL;
     task_pool[_nthread].tasks = TASK_POOL-1;
       #ifdef DEBUG
@@ -42,7 +42,9 @@ PolyTask::PolyTask(int t, int _nthread=0) : type(t){
   threads_out_tao = 0;
 #if defined(CRIT_PERF_SCHED)
   criticality=0;
-  marker = 0;
+  marker = 0;  
+  // setting the hint to 0. can be overwritten by the constructor of the child class 
+  workload_hint = 0;
 #endif
 }
                                           // Internally, GOTAO works only with queues, not stas
@@ -69,9 +71,11 @@ int PolyTask::clone_sta(PolyTask *pt) {
 void PolyTask::make_edge(PolyTask *t){
   out.push_back(t);
   t->refcount++;
+#ifdef CRIT_PERF_SCHED    
+  t->_ptt = xitao_ptt::try_insert_table(t, t->workload_hint);               /*be sure that the dependent task has a PTT*/  
+#endif    
 }
 
-  //History-based molding
 #if defined(CRIT_PERF_SCHED)
 int PolyTask::history_mold(int _nthread, PolyTask *it){
   int new_width = 1; 
@@ -137,6 +141,20 @@ int PolyTask::set_marker(int i){
 int PolyTask::if_prio(int _nthread, PolyTask * it){
   return it->criticality;
 } 
+
+// get value at specific location (leader, width) in ptt
+float PolyTask::get_timetable(int thread, int index) {
+  // return the ptt measurement at location
+  return (*_ptt)[index * XITAO_MAXTHREADS + thread];
+}
+
+// set value at specific location (leader, width) in ptt
+int PolyTask::set_timetable(int thread, float t, int index) {
+  // set the ptt measurement at location
+  (*_ptt)[index * XITAO_MAXTHREADS + thread] = t;
+  // unneeded (maintained for now to reduce conflicts)
+  return 0; 
+}
 
 void PolyTask::print_ptt(float table[][XITAO_MAXTHREADS], const char* table_name) { 
   std::cout << std::endl << table_name <<  " PTT Stats: " << std::endl;

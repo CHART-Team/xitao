@@ -18,13 +18,6 @@
 #include <vector>
 #include <algorithm>
 using namespace xitao;
-//extern int wid[XITAO_MAXTHREADS];
-#if defined(CRIT_PERF_SCHED)
-extern int TABLEWIDTH;
-float Synth_MatMul::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS];
-float Synth_MatCopy::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS];
-float Synth_MatStencil::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS];
-#endif
 
 int
 main(int argc, char *argv[])
@@ -175,9 +168,9 @@ main(int argc, char *argv[])
   std::chrono::duration<double> elapsed_seconds = end-start;
 
 #if defined(CRIT_PERF_SCHED)  
-  Synth_MatMul::print_ptt(Synth_MatMul::time_table, "MatMul");
-  Synth_MatCopy::print_ptt(Synth_MatCopy::time_table, "MatCopy");
-  Synth_MatStencil::print_ptt(Synth_MatStencil::time_table, "MatStencil");
+  xitao_ptt::print_table<Synth_MatMul>("MatMul");
+  xitao_ptt::print_table<Synth_MatCopy>("MaCopy");
+  xitao_ptt::print_table<Synth_MatStencil>("MatStencil");
 #endif
 
   std::cout << total_taos + 1 <<" Tasks completed in "<< elapsed_seconds.count() << "s\n";

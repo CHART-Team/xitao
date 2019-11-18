@@ -6,9 +6,12 @@
 #include <iomanip>
 #include <atomic>
 #include <thread>
+#include <unordered_map>
 #include "lfq-fifo.h"
 #include "barriers.h"
 #include "config.h"
+#include "xitao_ptt_key.h"
+
 //! A cache-aligned boolean type to implement locks
 struct aligned_lock {
   std::atomic<bool> lock __attribute__((aligned(64)));
@@ -18,6 +21,7 @@ struct aligned_lock {
 struct completions{
   int tasks __attribute__((aligned(64)));
 };
+
 //#define BARRIER cxx_barrier
 #define BARRIER spin_barrier
 #define GENERIC_LOCK(l)  aligned_lock l;
@@ -26,7 +30,20 @@ struct completions{
 const int xitao_vec_static = 0;
 const int xitao_vec_dynamic = 1;
 class PolyTask;
-namespace xitao {     
+//struct tao_type_info;
+namespace xitao {   
+  //typedef std::pair<std::type_index, size_t> ptt_key_type;
+  typedef xitao_ptt_key ptt_key_type;
+
+   /*! a typedef of underlying ptt table type*/
+  typedef std::vector<float> ptt_value_type; 
+
+  /*! a typedef of the shared pointer to ptt table type*/
+  typedef std::shared_ptr<ptt_value_type> ptt_shared_type;  
+
+  /*! a typedef of map that keeps track of the active PTT tables*/
+  typedef std::unordered_map<ptt_key_type, ptt_shared_type, xitao_ptt_hash> tmap;    
+
   extern std::list<PolyTask *> worker_ready_q[XITAO_MAXTHREADS];
   extern LFQueue<PolyTask *> worker_assembly_q[XITAO_MAXTHREADS];  
   extern long int tao_total_steals;  
