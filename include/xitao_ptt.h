@@ -38,11 +38,34 @@ public:
 
   //! prints the PTT table that correspond to TAO type and workload
   /*!
-    \param pt the polymorphic tao type 
-    \param workload_hint hint to the runtime about the workload of the underlying TAO (if workload_a != workload_b, then workload_hint_a != workload_hine_b)
+    \param table the table to be printed
     \param table_name a descriptive name for the table
   */  
-  static void print_table(PolyTask* pt, size_t const& workload_hint, const char* table_name);
+  static void print_table(ptt_shared_type ptt, const char* table_name);
+
+  template<typename tao_type>
+  static void print_table(const char* table_name, size_t workload_hint = 0) {
+     // declare the tao_info to capture its type
+    xitao_ptt_key tao_info (workload_hint, typeid(tao_type));
+    
+    // the PTT table   
+    ptt_shared_type _ptt;
+    
+    // check if entry is new  
+    if(runtime_ptt_tables.find(tao_info) != runtime_ptt_tables.end()) {      
+    
+      // get the existing value
+      _ptt = runtime_ptt_tables[tao_info];            
+    } else {
+
+      // the PTT does not exist
+      std::cout <<"PTT does not exist for " << tao_info.tao_type_index.name() << std::endl;
+
+      // exit the function
+      return;
+    } 
+    print_table(_ptt, table_name);
+  }
 };
 
 

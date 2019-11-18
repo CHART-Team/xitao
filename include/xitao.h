@@ -3,4 +3,5 @@
 #include "xitao_workspace.h"
 #include "xitao_api.h"
 #include "xitao_macros.h"
+#include "xitao_ptt.h"
 #endif

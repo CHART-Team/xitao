@@ -55,30 +55,9 @@ void xitao_ptt::reset_table(PolyTask* pt, size_t const& workload_hint){
   } 
 }
 
-
-void xitao_ptt::print_table(PolyTask* pt, size_t const& workload_hint, const char* table_name) { 
-   // declare the tao_info to capture its type
-  xitao_ptt_key tao_info (workload_hint, typeid(*pt));
-  
-  // the PTT table   
-  ptt_shared_type _ptt;
-  
-  // check if entry is new  
-  if(runtime_ptt_tables.find(tao_info) != runtime_ptt_tables.end()) {      
-  
-    // get the existing value
-    _ptt = runtime_ptt_tables[tao_info];            
-  } else {
-
-    // the PTT does not exist
-    std::cout <<"PTT does not exist for " << tao_info.tao_type_index.name() << std::endl;
-
-    // exit the function
-    return;
-  } 
-
+void xitao_ptt::print_table(ptt_shared_type ptt, const char* table_name) { 
   // capture the underlying table
-  auto&& table = *_ptt;
+  auto&& table = *ptt;
 
   // print table details
   std::cout << std::endl << table_name <<  " PTT Stats: " << std::endl;

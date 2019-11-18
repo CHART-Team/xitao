@@ -15,10 +15,6 @@
 class Synth_MatStencil : public AssemblyTask 
 {
 public: 
-// initialize static parameters
-#if defined(CRIT_PERF_SCHED)
-  static float time_table[][XITAO_MAXTHREADS];
-#endif
 
   Synth_MatStencil(uint32_t _size, int _width, real_t *_A, real_t *_B) : AssemblyTask(_width), A(_A), B(_B) {   
     dim_size = _size;
@@ -60,17 +56,6 @@ public:
     }
   }
 
-#if defined(CRIT_PERF_SCHED)
-  int set_timetable(int threadid, float ticks, int index) {
-    time_table[index][threadid] = ticks;
-  }
-
-  float get_timetable(int threadid, int index) { 
-    float time=0;
-    time = time_table[index][threadid];
-    return time;
-  }
-#endif
 private:
   const real_t k = 0.001;
   std::atomic<int> block_index; 
