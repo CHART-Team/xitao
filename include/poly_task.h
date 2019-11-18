@@ -27,6 +27,9 @@ public:
   int marker;
   // A pointer to the corresponding ptt table
   xitao::ptt_shared_type _ptt;  
+  // An integer descriptor to distinguish the workload of several TAOs of the same type
+  // it is mainly used by the scheduler when picking up the correct PTT
+  size_t workload_hint;
 #endif
   int type;
   // The leader task id in the resource partition

@@ -43,6 +43,8 @@ PolyTask::PolyTask(int t, int _nthread=0) : type(t){
 #if defined(CRIT_PERF_SCHED)
   criticality=0;
   marker = 0;  
+  // setting the hint to 0. can be overwritten by the constructor of the child class 
+  workload_hint = 0;
 #endif
 }
                                           // Internally, GOTAO works only with queues, not stas
@@ -70,7 +72,7 @@ void PolyTask::make_edge(PolyTask *t){
   out.push_back(t);
   t->refcount++;
 #ifdef CRIT_PERF_SCHED    
-  t->_ptt = xitao_ptt::try_insert_table(t, 0);               /*be sure that the dependent task has a PTT*/  
+  t->_ptt = xitao_ptt::try_insert_table(t, t->workload_hint);               /*be sure that the dependent task has a PTT*/  
 #endif    
 }
 
