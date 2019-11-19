@@ -78,12 +78,12 @@ private:
   int const _sched_type;
   IterType _start;
   IterType _end;
-  FuncType _spmd_region;  
+  FuncType const& _spmd_region;  
   IterType _block_size; 
   IterType _block_iter;
   IterType _blocks; 
   IterType _size; 
-  std::atomic<int> next; /*!< TAO implementation specific atomic variable to provide thread safe tracker of the number of processed blocks */
+  std::atomic<int> next_block; /*!< TAO implementation specific atomic variable to provide thread safe tracker of the number of processed blocks */
   const size_t slackness = 8;
 public: 
   ParForTask(int sched, IterType start, IterType end, FuncType spmd, int width): 
@@ -94,13 +94,13 @@ public:
       exit(0);
     }
     _block_iter = 0;
+    next_block = 0;
     switch(_sched_type) {
       case xitao_vec_static: break;
       case xitao_vec_dynamic: 
         _block_size = _size / (width * slackness);
         if(_block_size <= 0) _block_size = 1;
-        _blocks = _size / _block_size;
-        next = 0;
+        _blocks = (_size + _block_size -1) / _block_size;
       break;
       default:
         std::cout << "Error: undefined sched type in XiTAO vector code" << std::endl;
@@ -110,23 +110,23 @@ public:
 
   int execute(int thread) {   
     if(_sched_type == xitao_vec_dynamic) {
-      int block_id = next++;
+      int block_id = next_block++;
       while(block_id < _blocks) {
-        for(int i = block_id * _block_size; (i < _end) && (i < (block_id + 1) * _block_size); i++)
-          _spmd_region(i, thread);
-        block_id = next++;
+        int local_block_start = _start + block_id * _block_size;
+        int local_block_end   = (block_id >= _blocks - 1)? _end : local_block_start + _block_size;
+        _spmd_region(local_block_start, local_block_end, thread);
+        block_id = next_block++;
       }
-    } else { // xitao_vec_static*/
+    } else { // xitao_vec_static*/      
       _block_size = _size / width;
       if(_block_size < 1) {
         std::cout << "Error: not enough work to do" << std::endl;
         exit(0);
       }      
       int thread_id = thread - leader;
-      int i = thread_id * _block_size;
-      int end = (thread_id == width - 1)? _end : i + _block_size;
-      auto fn = looper(_spmd_region);
-      fn(i, end, thread);   
+      int local_block_start = _start + thread_id * _block_size;
+      int local_block_end   = (thread_id >= width - 1)? _end : local_block_start + _block_size;
+      _spmd_region(local_block_start, local_block_end, thread);
     }
   } 
   int cleanup() { }

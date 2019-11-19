@@ -93,8 +93,8 @@ int PolyTask::history_mold(int _nthread, PolyTask *it){
         new_leader = leader;       
         break;
       }
-      //comp_perf = width * ptt_val;
-      comp_perf = ptt_val;
+      comp_perf = width * ptt_val;
+      //comp_perf = ptt_val;
       if (comp_perf < shortest_exec) {
         shortest_exec = comp_perf;
         new_width = width;
