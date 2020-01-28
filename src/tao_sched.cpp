@@ -213,30 +213,6 @@ int gotao_init()
 int gotao_start()
 {
  if(gotao_started) return -1;
-#ifdef WEIGHT_SCHED
-  //Store inital weight value
-  PolyTask::bias.store(1.5);
-#endif
-  
-#if defined(CRIT_PERF_SCHED) 
-  //Analyse DAG based on tasks in ready q and asign criticality values
-  for(int j=0; j<gotao_nthreads; j++){
-    //Iterate over all ready tasks for all threads
-    for(std::list<PolyTask *>::iterator it = worker_ready_q[j].begin(); it != worker_ready_q[j].end(); ++it){
-      //Call recursive function setting criticality
-      (*it)->set_criticality();
-    }
-  }
-  for(int j = 0; j < gotao_nthreads; j++){
-    for(std::list<PolyTask *>::iterator it = worker_ready_q[j].begin(); it != worker_ready_q[j].end(); ++it){
-      if ((*it)->criticality == critical_path){
-        (*it)->marker = 1;
-        (*it) -> set_marker(1);
-        break;
-      }
-    }
-  }
-#endif
   starting_barrier->wait();
   gotao_started = true;
 }
