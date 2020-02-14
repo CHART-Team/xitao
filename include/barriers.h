@@ -8,7 +8,7 @@ class cxx_barrier
 {
 public:
   cxx_barrier(unsigned int threads);
-  bool wait ();
+  void wait ();
   // monitors
   std::mutex barrier_lock;
   std::condition_variable threadBarrier;

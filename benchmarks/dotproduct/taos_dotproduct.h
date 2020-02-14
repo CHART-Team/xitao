@@ -49,46 +49,46 @@ public:
   }
 
   //! Inherited pure virtual function that is called by the runtime to cleanup any resources (if any), held by a TAO. 
-  int cleanup(){ 
-  
+  void cleanup() {  
+    
   }
   //! Inherited pure virtual function that is called by the runtime upon executing the TAO
   /*!
     \param threadid logical thread id that executes the TAO
   */
-  int execute(int threadid)
+  void execute(int threadid)
   {
     int tid = threadid - leader; 
     for(int i = tid*block; (i < len)  && (i < (tid+1)*block); i++)
           C[i] = A[i] * B[i];
   }
 
-#if defined(CRIT_PERF_SCHED)
-  //! Inherited pure virtual function that is called by the performance based scheduler to set an entry in PTT
-  /*!
-    \param threadid logical thread id that executes the TAO
-    \param ticks the number of elapsed ticks
-    \param index the index of the width type
-    \sa time_table()
-  */
-  int set_timetable(int threadid, float ticks, int index)
-  {
-    time_table[index][threadid] = ticks;
-  }
+// #if defined(CRIT_PERF_SCHED)
+//   //! Inherited pure virtual function that is called by the performance based scheduler to set an entry in PTT
+//   /*!
+//     \param threadid logical thread id that executes the TAO
+//     \param ticks the number of elapsed ticks
+//     \param index the index of the width type
+//     \sa time_table()
+//   */
+//   int set_timetable(int threadid, float ticks, int index)
+//   {
+//     time_table[index][threadid] = ticks;
+//   }
   
-  //! Inherited pure virtual function that is called by the performance based scheduler to get an entry in PTT
-  /*!
-    \param threadid logical thread id that executes the TAO
-    \param index the index of the width type
-    \sa time_table()
-  */
-  float get_timetable(int threadid, int index)
-  { 
-    float time=0;
-    time = time_table[index][threadid];
-    return time;
-  }
-#endif
+//   //! Inherited pure virtual function that is called by the performance based scheduler to get an entry in PTT
+//   /*!
+//     \param threadid logical thread id that executes the TAO
+//     \param index the index of the width type
+//     \sa time_table()
+//   */
+//   float get_timetable(int threadid, int index)
+//   { 
+//     float time=0;
+//     time = time_table[index][threadid];
+//     return time;
+//   }
+// #endif
   
   int block; /*!< TAO implementation specific integer that holds the number of blocks per TAO */
   int len;   /*!< TAO implementation specific integer that holds the vector length */
@@ -134,7 +134,8 @@ public:
   }
 
   //! Inherited pure virtual function that is called by the runtime to cleanup any resources (if any), held by a TAO. 
-  int cleanup(){ 
+  void cleanup(){ 
+  
   }
 
   //! Inherited pure virtual function that is called by the runtime upon executing the TAO. 
@@ -142,41 +143,41 @@ public:
     \param threadid logical thread id that executes the TAO
     This assembly can work totally asynchronously
   */
-  int execute(int threadid)
+  void execute(int threadid)
   {
    //  int tid = threadid - leader;
     while(1){
       int blockid = next++;
-      if(blockid > blocks) return 0;
+      if(blockid > blocks) return;
       for(int i = blockid*blocksize; (i < len) && (i < (blockid+1)*blocksize); i++)
           C[i] = A[i] * B[i];
     }
   }
 #if defined(CRIT_PERF_SCHED)
-  //! Inherited pure virtual function that is called by the performance based scheduler to set an entry in PTT
-  /*!
-    \param threadid logical thread id that executes the TAO
-    \param ticks the number of elapsed ticks
-    \param index the index of the width type
-    \sa time_table()
-  */
-  int set_timetable(int threadid, float ticks, int index)
-  {
-    time_table[index][threadid] = ticks;
-  }
+  // //! Inherited pure virtual function that is called by the performance based scheduler to set an entry in PTT
+  // /*!
+  //   \param threadid logical thread id that executes the TAO
+  //   \param ticks the number of elapsed ticks
+  //   \param index the index of the width type
+  //   \sa time_table()
+  // */
+  // int set_timetable(int threadid, float ticks, int index)
+  // {
+  //   time_table[index][threadid] = ticks;
+  // }
   
-  //! Inherited pure virtual function that is called by the performance based scheduler to get an entry in PTT
-  /*!
-    \param threadid logical thread id that executes the TAO
-    \param index the index of the width type
-    \sa time_table()
-  */
-  float get_timetable(int threadid, int index)
-  { 
-    float time=0;
-    time = time_table[index][threadid];
-    return time;
-  }
+  // //! Inherited pure virtual function that is called by the performance based scheduler to get an entry in PTT
+  // /*!
+  //   \param threadid logical thread id that executes the TAO
+  //   \param index the index of the width type
+  //   \sa time_table()
+  // */
+  // float get_timetable(int threadid, int index)
+  // { 
+  //   float time=0;
+  //   time = time_table[index][threadid];
+  //   return time;
+  // }
 #endif
   int blocks;    /*!< TAO implementation specific integer that holds the number of blocks per TAO */
   int blocksize; /*!< TAO implementation specific integer that holds the number of elements per block */
@@ -217,49 +218,49 @@ public:
 
   }
   //! Inherited pure virtual function that is called by the runtime to cleanup any resources (if any), held by a TAO. 
-  int cleanup(){ 
+  void cleanup() {     
   }
 
   //! Inherited pure virtual function that is called by the runtime upon executing the TAO. 
   /*!
     \param threadid logical thread id that executes the TAO. For this TAO, we let logical core 0 only do the addition to avoid reduction
   */
-  int execute(int threadid)
+  void execute(int threadid)
   {
     // let the leader do all the additions, 
     // otherwise we need to code a reduction here, which becomes too ugly
-    if(threadid != leader) return 0;
+    if(threadid != leader) return;
     *out = 0.0;
     for (int i=0; i < len; i++)
        *out += in[i];
   }
 
-#if defined(CRIT_PERF_SCHED)
-  //! Inherited pure virtual function that is called by the performance based scheduler to set an entry in PTT
-  /*!
-    \param threadid logical thread id that executes the TAO
-    \param ticks the number of elapsed ticks
-    \param index the index of the width type
-    \sa time_table()
-  */  
-  int set_timetable(int threadid, float ticks, int index)
-  {
-    time_table[index][threadid] = ticks;
-  }
+// #if defined(CRIT_PERF_SCHED)
+//   //! Inherited pure virtual function that is called by the performance based scheduler to set an entry in PTT
+//   /*!
+//     \param threadid logical thread id that executes the TAO
+//     \param ticks the number of elapsed ticks
+//     \param index the index of the width type
+//     \sa time_table()
+//   */  
+//   int set_timetable(int threadid, float ticks, int index)
+//   {
+//     time_table[index][threadid] = ticks;
+//   }
 
-  //! Inherited pure virtual function that is called by the performance based scheduler to get an entry in PTT
-  /*!
-    \param threadid logical thread id that executes the TAO
-    \param index the index of the width type
-    \sa time_table()
-  */
-  float get_timetable(int threadid, int index)
-  { 
-    float time=0;
-    time = time_table[index][threadid];
-    return time;
-  }
-#endif
+//   //! Inherited pure virtual function that is called by the performance based scheduler to get an entry in PTT
+//   /*!
+//     \param threadid logical thread id that executes the TAO
+//     \param index the index of the width type
+//     \sa time_table()
+//   */
+//   float get_timetable(int threadid, int index)
+//   { 
+//     float time=0;
+//     time = time_table[index][threadid];
+//     return time;
+//   }
+// #endif
   
   double *in;  /*!< TAO implementation specific double vector that holds the input to be accumulated */
   double *out; /*!< TAO implementation specific double point to the summation*/

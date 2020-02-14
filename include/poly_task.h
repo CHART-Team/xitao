@@ -65,9 +65,9 @@ public:
     \param ticks the number of elapsed ticks
     \param index the index of the width type 
     */  
-  virtual int set_timetable(int thread, float ticks, int index);
+  virtual void set_timetable(int thread, float ticks, int index);
   //History-based molding
-  int history_mold(int _nthread, PolyTask *it);
+  void history_mold(int _nthread, PolyTask *it);
   //Recursive function assigning criticality
   int set_criticality();
   int set_marker(int i);
@@ -110,6 +110,6 @@ public:
   PolyTask * commit_and_wakeup(int _nthread);
   
   //! cleanup any dynamic memory that the TAO may have allocated
-  virtual int cleanup() = 0;
+  virtual void cleanup() = 0;
 };
 #endif

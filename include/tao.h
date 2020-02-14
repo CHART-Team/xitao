@@ -40,7 +40,7 @@ public:
 #ifdef NEED_BARRIER
   BARRIER *barrier;
 #endif  
-  virtual int execute(int thread) = 0;
+  virtual void execute(int thread) = 0;
   ~AssemblyTask(){
 #ifdef NEED_BARRIER
     delete barrier;
@@ -108,7 +108,7 @@ public:
     }
   }
 
-  int execute(int thread) {   
+  void execute(int thread) {   
     if(_sched_type == xitao_vec_dynamic) {
       int block_id = next_block++;
       while(block_id < _blocks) {
@@ -129,6 +129,6 @@ public:
       _spmd_region(local_block_start, local_block_end, thread);
     }
   } 
-  int cleanup() { }
+  void cleanup() { }
 };
 #endif // _TAO_H

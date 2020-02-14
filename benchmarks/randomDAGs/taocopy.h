@@ -34,10 +34,10 @@ public:
     job_lock.lock = false;
   }
 
-  int cleanup(){ 
+  void cleanup(){ 
   }
 
-  int execute(int threadid)
+  void execute(int threadid)
   {
     int slize = pow(width,2);
     int i;
@@ -60,7 +60,7 @@ public:
   GENERIC_LOCK(job_lock);
      
 #if defined(CRIT_PERF_SCHED)
-  int set_timetable(int threadid, float ticks, int index){
+  void set_timetable(int threadid, float ticks, int index){
     time_table[index][threadid] = ticks;
   }
 

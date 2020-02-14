@@ -105,14 +105,14 @@ class TAO_PAR_FOR_2D_BASE : public AssemblyTask
                 int internal_chunk_size_x;
                 int internal_chunk_size_y;
 
-                int cleanup(){ 
+                void cleanup(){ 
                     }
 
 
                 // this function actually performs the computation
                 virtual int compute_for2D(int off_x, int off_y, int chunk_x, int chunk_y) = 0;
 
-                int execute(int threadid)
+                void execute(int threadid)
                 {
                 int tid = threadid - leader;
 
@@ -124,7 +124,6 @@ class TAO_PAR_FOR_2D_BASE : public AssemblyTask
                                unit->chunkx, 
                                unit->chunky);
                    }
-                   return 0; 
                 }
 
                 int steps;

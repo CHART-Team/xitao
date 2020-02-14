@@ -226,10 +226,10 @@ public:
     readyq.push_front(&dow[3]);
  }
 
- int cleanup(){ 
+ void cleanup(){ 
  }
 
- int execute(int phys_id){
+ void execute(int phys_id){
   quickmerge_uow_dyn *unit = nullptr, *fwd = nullptr;
 
   int virt_id = phys_id - leader;
@@ -269,7 +269,7 @@ public:
   }
 }
 #if defined(CRIT_PERF_SCHED)
-int set_timetable(int threadid, float ticks, int index){
+void set_timetable(int threadid, float ticks, int index){
   time_table[index][threadid] = ticks;
 }
 float get_timetable(int threadid, int index){

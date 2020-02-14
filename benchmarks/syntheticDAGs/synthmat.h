@@ -32,17 +32,17 @@ public:
     block_count = dim_size / block_size;
   }
 
-  int cleanup() { 
+  void cleanup() { 
   //  delete[] A;
   //  delete[] B_Trans;
   //  delete[] C;
   }
 
   // this assembly can work totally asynchronously
-  int execute(int threadid) {
+  void execute(int threadid) {
     while(true) {
       int row_block_id = block_index++;
-      if(row_block_id > block_count) return 0;
+      if(row_block_id > block_count) return;
       // assume B is transposed, so that you can utilize the performance of transposed matmul 
       for (int i = row_block_id * block_size; i < dim_size && i < ((row_block_id + 1 ) * block_size); ++i) { 
         for (int j = 0; j < dim_size; j++) {

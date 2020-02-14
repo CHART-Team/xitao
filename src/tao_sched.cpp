@@ -17,7 +17,7 @@ int worker_loop(int nthread);
 /*!
   \param affinity_control Set the usage per each cpu entry in the cpu_set_t
  */
-int set_xitao_mask(cpu_set_t& user_affinity_setup) {
+void set_xitao_mask(cpu_set_t& user_affinity_setup) {
   if(!gotao_initialized) {
     resources_runtime_conrolled = true;                                    // make this true, to refrain from using XITAO_MAXTHREADS anywhere
     int cpu_count = CPU_COUNT(&user_affinity_setup);
@@ -31,7 +31,7 @@ int set_xitao_mask(cpu_set_t& user_affinity_setup) {
     if(cpu_count < gotao_nthreads) std::cout << "Warning: only " << cpu_count << " physical cores available, whereas " << gotao_nthreads << " are requested!" << std::endl;      
   } else {
     std::cout << "Warning: unable to set XiTAO affinity. Runtime is already initialized. This call will be ignored" << std::endl;      
-  }  
+  }    
 }
 
 //! Initialize the XiTAO Runtime
@@ -40,7 +40,7 @@ int set_xitao_mask(cpu_set_t& user_affinity_setup) {
   \param thrb is the logical thread id offset from the physical core mapping
   \param nhwc is the number of hardware contexts
 */ 
-int gotao_init_hw( int nthr, int thrb, int nhwc)
+void gotao_init_hw( int nthr, int thrb, int nhwc)
 {  
   if(gotao_initialized) {
     for(int i = 0; i < XITAO_MAXTHREADS; ++i) {
@@ -205,14 +205,14 @@ int gotao_init_hw( int nthr, int thrb, int nhwc)
 }
 
 // Initialize gotao from environment vars or defaults
-int gotao_init()
+void gotao_init()
 {
-  return gotao_init_hw(-1, -1, -1);
+  gotao_init_hw(-1, -1, -1);
 }
 
-int gotao_start()
+void gotao_start()
 {
- if(gotao_started) return -1;
+ if(gotao_started) return;
 #ifdef WEIGHT_SCHED
   //Store inital weight value
   PolyTask::bias.store(1.5);
@@ -241,13 +241,13 @@ int gotao_start()
   gotao_started = true;
 }
 
-int gotao_fini()
+void gotao_fini()
 {
   resources_runtime_conrolled = false;
   gotao_can_exit = true;
   gotao_started = false;
   //gotao_initialized = false;
-  tao_total_steals = 0;
+  tao_total_steals = 0;  
   for(int i = 0; i < gotao_nthreads; i++){
     t[i]->join();
   }
@@ -293,6 +293,7 @@ int gotao_push(PolyTask *pt, int queue)
   LOCK_ACQUIRE(worker_lock[queue]);
   worker_ready_q[queue].push_front(pt);
   LOCK_RELEASE(worker_lock[queue]);
+  return 1;
 }
 
 // Push work when not yet running. This version does not require locks
@@ -311,22 +312,8 @@ int gotao_push_init(PolyTask *pt, int queue)
   }
   if(resources_runtime_conrolled) queue = check_and_get_available_queue(queue);
   worker_ready_q[queue].push_front(pt);
+  return 1; 
 }
-
-// alternative version that pushes to the back
-int gotao_push_back_init(PolyTask *pt, int queue)
-{
-  if((queue == -1) && (pt->affinity_queue != -1)){
-    queue = pt->affinity_queue;
-  }
-  else{
-    if(queue == -1){
-      queue = gotao_thread_base;
-    }
-  }
-  worker_ready_q[queue].push_back(pt);
-}
-
 
 long int r_rand(long int *s)
 {

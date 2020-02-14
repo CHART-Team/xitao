@@ -1,7 +1,7 @@
-CC = gcc 
-CXX = g++ 
+CC = gcc-8 
+CXX = g++-8 
 
-#DEBUG = 1
+DEBUG=1 
 
 #include makefile.inc
 include makefile.sched
@@ -10,11 +10,11 @@ CFLAGS += -std=gnu11 ${EXTRAEINC}
 CXXFLAGS += --std=c++11 -fPIC ${EXTRAEINC}
 
 ifeq ($(DEBUG),1)
-  CFLAGS += -g3 -O0
+  CFLAGS += -g3 -O0 
   CXXFLAGS += -g3 -O0
 else
-  CFLAGS += -O3
-  CXXFLAGS += -O3
+  CFLAGS += -O3 
+  CXXFLAGS += -O3 
 endif
 
 INCS = include/
@@ -51,6 +51,10 @@ lib: clean libxitao.a
 libxitao.a: $(SORTLIB_OBJS) $(TAO_OBJS)
 	@mkdir -p $(XITAO_LIB)
 	ar $(ARFLAGS) $(XITAO_LIB)/$@ $^
+
+libxitao.so: $(SORTLIB_OBJS) $(TAO_OBJS)
+	@mkdir -p $(XITAO_LIB)
+	$(CXX) -shared $(TAO_OBJS) -o $(XITAO_LIB)/$@
 
 clean:
 	rm -f randombench $(TAO_OBJS) $(XITAO_LIB)/libxitao.a graph.txt

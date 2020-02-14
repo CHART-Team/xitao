@@ -1,6 +1,6 @@
 #include "barriers.h"
 cxx_barrier::cxx_barrier(unsigned int threads) : nthreads(threads), pending_threads(threads) {}
-bool cxx_barrier::wait () {
+void cxx_barrier::wait () {
   std::unique_lock<std::mutex> locker(barrier_lock);
 
   if(!pending_threads) 

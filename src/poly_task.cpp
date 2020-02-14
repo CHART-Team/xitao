@@ -77,7 +77,7 @@ void PolyTask::make_edge(PolyTask *t){
 }
 
 #if defined(CRIT_PERF_SCHED)
-int PolyTask::history_mold(int _nthread, PolyTask *it){
+void PolyTask::history_mold(int _nthread, PolyTask *it){
   int new_width = 1; 
   int new_leader = -1;
   float shortest_exec = 1000.0f;
@@ -149,11 +149,9 @@ float PolyTask::get_timetable(int thread, int index) {
 }
 
 // set value at specific location (leader, width) in ptt
-int PolyTask::set_timetable(int thread, float t, int index) {
+void PolyTask::set_timetable(int thread, float t, int index) {
   // set the ptt measurement at location
-  (*_ptt)[index * XITAO_MAXTHREADS + thread] = t;
-  // unneeded (maintained for now to reduce conflicts)
-  return 0; 
+  (*_ptt)[index * XITAO_MAXTHREADS + thread] = t;  
 }
 
 void PolyTask::print_ptt(float table[][XITAO_MAXTHREADS], const char* table_name) { 

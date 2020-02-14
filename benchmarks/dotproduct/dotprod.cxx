@@ -28,12 +28,12 @@ main(int argc, char *argv[])
     return 0;
   }
   
-  cpu_set_t cpu_;
-  CPU_ZERO(&cpu_);
-  for(int i = 0; i < 8; i+=2) {
-    CPU_SET(i, &cpu_);
-  } 
-  set_xitao_mask(cpu_);
+  //cpu_set_t cpu_;
+  //CPU_ZERO(&cpu_);
+  //for(int i = 0; i < 8; i+=2) {
+  //  CPU_SET(i, &cpu_);
+  //} 
+  //set_xitao_mask(cpu_);
   // no topologies in this version
   A = new double[len];
   B = new double[len];
@@ -46,7 +46,7 @@ main(int argc, char *argv[])
   }
 
   // init XiTAO runtime 
-  gotao_init();
+  gotao_init_hw(4, -1, -1);
   
   // create numvm TAOs 
   int numvm = len / block;
@@ -73,10 +73,8 @@ main(int argc, char *argv[])
   } 
   //Start the TAODAG exeuction
   gotao_start();
-
   //Finalize and claim resources back
   gotao_fini();
-
   std::cout << "Result is " << D << std::endl;
   std::cout << "Done!\n";
   std::cout << "Total successful steals: " << tao_total_steals << std::endl;

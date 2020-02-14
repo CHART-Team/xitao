@@ -41,11 +41,11 @@ public:
     ROW_SIZE = r_size;    
   }
 
-  int cleanup(){ 
+  void cleanup(){ 
   }
 
   // this assembly can work totally asynchronously
-  int execute(int threadid){
+  void execute(int threadid){
     int temp_j, temp_i;
     while (1){ 
       //mutex for i to make each Processing unit work on one row.
@@ -70,7 +70,7 @@ public:
   GENERIC_LOCK(i_lock);
   
 #if defined(CRIT_PERF_SCHED)
-  int set_timetable(int threadid, float ticks, int index){
+  void set_timetable(int threadid, float ticks, int index){
     time_table[index][threadid] = ticks;
   }
 

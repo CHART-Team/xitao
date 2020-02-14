@@ -24,22 +24,22 @@ class PolyTask;
 /*!
   \param affinity_control Set the available resources for XiTAO
  */
-int set_xitao_mask(cpu_set_t& user_affinity_setup);
+void set_xitao_mask(cpu_set_t& user_affinity_setup);
 //! Initialize the XiTAO Runtime
 /*!
   \param nthr The number of XiTAO threads 
   \param thrb The logical thread id offset from the physical core mapping
   \param nhwc The number of hardware contexts
 */  
-int gotao_init_hw(int nthr, int thrb, int nhwc);
+void gotao_init_hw(int nthr, int thrb, int nhwc);
 //! Initialize the XiTAO Runtime using the environment variables XITAO_MAXTHREADS, GOTAO_THREAD_BASE and GOTAO_HW_CONTEXTS respectively
-int gotao_init();
+void gotao_init();
 #define goTAO_start gotao_start
 //! Triggers the start of the TAODAG execution
-int gotao_start();
+void gotao_start();
 #define goTAO_fini gotao_fini
 //! Finalize the runtime and makes sure that all workers have finished 
-int gotao_fini();
+void gotao_fini();
 #define goTAO_push gotao_push
 
 /*! Push work into Polytask queue. if no particular queue is specified then try to determine which is the local. 

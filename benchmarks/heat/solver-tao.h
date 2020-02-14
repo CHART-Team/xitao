@@ -86,7 +86,7 @@ class jacobi2D : public TAO_PAR_FOR_2D_BASE
                 }
 
 #if defined(CRIT_PERF_SCHED)
-  int set_timetable(int threadid, float ticks, int index){
+  void set_timetable(int threadid, float ticks, int index){
     time_table[index][threadid] = ticks;
   }
 
@@ -162,7 +162,7 @@ class copy2D : public TAO_PAR_FOR_2D_BASE
                    }
 
 #if defined(CRIT_PERF_SCHED)
-  int set_timetable(int threadid, float ticks, int index){
+  void set_timetable(int threadid, float ticks, int index){
     time_table[index][threadid] = ticks;
   }
 

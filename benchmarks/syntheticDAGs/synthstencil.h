@@ -28,16 +28,16 @@ public:
     block_count = dim_size / block_size;
   }
 
-  int cleanup() { 
+  void cleanup() { 
     //delete[] A;
     //delete[] B;
 
   }
 
-  int execute(int threadid) {
+  void execute(int threadid) {
     while(true) {
       int row_block_id = block_index++;
-      if(row_block_id > block_count) return 0;
+      if(row_block_id > block_count) return;
       int row_block_start =  row_block_id      * block_size;
       int row_block_end   = (row_block_id + 1) * block_size;
       int end = (dim_size < row_block_end) ? dim_size : row_block_end; 
