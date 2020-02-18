@@ -83,6 +83,7 @@ class jacobi2D : public TAO_PAR_FOR_2D_BASE
 //                          << " ystart " << ystart << " ystop " << ystop
 //                          << " affinity "  << get_affinity()
 //                          << " local residual is " << sum << std::endl;
+		return 0;
                 }
 
 #if defined(CRIT_PERF_SCHED)
@@ -159,6 +160,7 @@ class copy2D : public TAO_PAR_FOR_2D_BASE
       }
 #endif
 #endif
+    return 0;
                    }
 
 #if defined(CRIT_PERF_SCHED)

@@ -122,7 +122,7 @@ void gotao_init_hw( int nthr, int thrb, int nhwc)
         exit(0);
       }
     } else {
-        if(!suppress_init_warnings) std::cout << "Warning: XITAO_LAYOUT_PATH is not set. Default values for affinity and symmetric resoruce partitions will be used" << std::endl;    
+        if(!suppress_init_warnings) std::cout << "Warning: XITAO_LAYOUT_PATH is not set. Default values for affinity and symmetric resource partitions will be used" << std::endl;    
         for(int i = 0; i < XITAO_MAXTHREADS; ++i) 
           static_resource_mapper[i] = i; 
         std::vector<int> widths;             
