@@ -1,7 +1,7 @@
-CC = gcc-8 
-CXX = g++-8 
+CC = gcc 
+CXX = g++ 
 
-DEBUG=1 
+DEBUG=0 
 
 #include makefile.inc
 include makefile.sched
