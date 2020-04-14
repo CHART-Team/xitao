@@ -67,7 +67,7 @@ public:
     */  
   virtual void set_timetable(int thread, float ticks, int index);
   //History-based molding
-  void history_mold(int _nthread, PolyTask *it);
+  virtual void history_mold(int _nthread, PolyTask *it);
   //Recursive function assigning criticality
   int set_criticality();
   int set_marker(int i);
