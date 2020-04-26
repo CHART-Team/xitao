@@ -17,5 +17,7 @@ benchmarks/dataparallel/dataparallel
 benchmarks/dataparallel/dataparallel.cxx.experiments
 benchmarks/dataparallel/.Makefile.swp
 benchmarks/kmeans/
+benchmarks/fibonacci/fibonacci
+benchmarks/fibonacci/fibonacci.o
 benchmarks/bfs/data/bfs/*.txt
 ptt_layout*
