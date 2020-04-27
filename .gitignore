@@ -20,4 +20,6 @@ benchmarks/kmeans/
 benchmarks/fibonacci/fibonacci
 benchmarks/fibonacci/fibonacci.o
 benchmarks/bfs/data/bfs/*.txt
+benchmarks/helloworld/helloworld
+benchmarks/helloworld/helloworld.o
 ptt_layout*
