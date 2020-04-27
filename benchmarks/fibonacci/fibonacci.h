@@ -49,7 +49,7 @@ public:
  			// calculate the value  												
  			val = prev1->val + prev2->val;
  	}
- 	void cleanup(){ }
+ 	void cleanup(){  }
 };
 
 // build the DAG by reversing the recursion tree 
