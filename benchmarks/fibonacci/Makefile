@@ -16,7 +16,7 @@ fibonacci: $(PROGRAM_OBJS)
 	$(CXX) $^ -o $@ ${LIBS}
 
 run: fibonacci
-	./fibonacci 45 43
+	./fibonacci 45 25
 
 clean:
 	rm -rf fibonacci $(PROGRAM_OBJS) html latex
