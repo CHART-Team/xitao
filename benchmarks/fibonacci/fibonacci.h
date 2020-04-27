@@ -55,7 +55,7 @@ public:
 // build the DAG by reversing the recursion tree 
 fibTAO* buildDAG(uint32_t term) {
 	// gaurd against negative terms
-	if(term <= 0) term = 0;
+	if(term <  0) term = 0;
 	// if this is terminal term
 	if(term <= 1) { 
 		// create the terminal tao
