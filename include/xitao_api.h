@@ -106,6 +106,30 @@ std::vector<ParForTask<Proc, IterType>* > xitao_vec_immediate_multiparallel(int 
   gotao_start();
   return par_for;
 }
+
+//! Executes and returns a handle to a ParForTask. However, subdivides the loop into finer grain tasks in order 
+// to boost concurrency and adopt moldability 
+/*!
+  \param width is the internal parallelism (width) of the underlying TAOs
+  \param iter_start is the iterator start
+  \param end is the end of the loop
+  \param func the spmd lambda function taking the iterator as an argument
+  \param 0 for static scheduling, 1 for dynamic scheduling
+  \param block_size number of data elements per internal task/tao
+*/ 
+template <typename Proc, typename IterType>
+std::vector<ParForTask<Proc, IterType>* > xitao_vec_multiparallel(int width, IterType& iter_start, IterType const& end, Proc const& func, int sched_type, int block_size) {     
+  int nblocks = (end - iter_start + block_size - 1) / block_size;   
+  std::vector<ParForTask<Proc, IterType>* > par_for;
+  for(int i = 0; i < nblocks; ++i){
+    IterType block_start = i * block_size; 
+    IterType block_end   =(i < nblocks - 1)? block_start + block_size : end;
+    par_for.push_back(new ParForTask<Proc, IterType>(sched_type, block_start, block_end, func, width));
+    gotao_push(par_for[i], i % gotao_nthreads);
+  }    
+  return par_for;
+}
+
 //! Generic lock (not recommended, but added for correctness temporarily)
 void __xitao_lock();
 
