@@ -29,17 +29,15 @@ public:
     int tid = nthread - leader; 
     if(tid == 0){
       for(int r = 0 ; r < N; ++r) {
-        A[r] = new int[N];
         std::memset(A[r], 0, sizeof(int) * N);
-        B[r] = new int[N];
         std::memset(B[r], 0, sizeof(int) * N);
-        C[r] = new int[N];
         std::memset(C[r], 0, sizeof(int) * N);
       }
     }
 
   }
-  void cleanup () { }
+  void cleanup () { 
+  }
 };
 
 
@@ -69,6 +67,11 @@ int main(int argc, char *argv[]) {
   A = new int*[N];
   B = new int*[N];
   C = new int*[N];
+  for(int r = 0 ; r < N; ++r) {
+    A[r] = new int[N];
+    B[r] = new int[N];
+    C[r] = new int[N];
+  }
   gotao_init_hw(workers, -1 , -1);
   ResetMatTAO* resetTAO = new ResetMatTAO(A, B, C, N);
   ResetMatTAO* headTAO = resetTAO;
