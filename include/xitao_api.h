@@ -125,7 +125,7 @@ std::vector<ParForTask<Proc, IterType>* > xitao_vec_multiparallel(int width, Ite
     IterType block_start = i * block_size; 
     IterType block_end   =(i < nblocks - 1)? block_start + block_size : end;
     par_for.push_back(new ParForTask<Proc, IterType>(sched_type, block_start, block_end, func, width));
-    gotao_push(par_for[i], i % gotao_nthreads);
+    // gotao_push(par_for[i], i % gotao_nthreads);
   }    
   return par_for;
 }
