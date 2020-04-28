@@ -1,6 +1,6 @@
 include ../../makefile.sched
 CXXFLAGS += -I../../include -I.
-CXXFLAGS += -g
+CXXFLAGS += -O3
 CXXFLAGS += --std=c++11  ${EXTRAEINC}
 CXX=g++
 LIBS = -lm ${EXTRAELIBS} -L../../lib -lxitao -pthread

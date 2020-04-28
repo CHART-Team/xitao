@@ -22,12 +22,14 @@ class ResetMatTAO : public AssemblyTask {
   int **B;
   int **C;
   int N;
+  int iter;
 public:
-  ResetMatTAO(int **_A, int **_B, int **_C, int _N) :
-   AssemblyTask(1), A(_A), B(_B), C(_C), N(_N) { }
+  ResetMatTAO(int **_A, int **_B, int **_C, int _N, int _iter) :
+   AssemblyTask(1), A(_A), B(_B), C(_C), N(_N), iter(_iter) { }
   void execute(int nthread) {
     int tid = nthread - leader; 
     if(tid == 0){
+      std::cout << "Iteration: " << iter << std::endl;
       for(int r = 0 ; r < N; ++r) {
         std::memset(A[r], 0, sizeof(int) * N);
         std::memset(B[r], 0, sizeof(int) * N);
@@ -73,7 +75,7 @@ int main(int argc, char *argv[]) {
     C[r] = new int[N];
   }
   gotao_init_hw(workers, -1 , -1);
-  ResetMatTAO* resetTAO = new ResetMatTAO(A, B, C, N);
+  ResetMatTAO* resetTAO = new ResetMatTAO(A, B, C, N, 0);
   ResetMatTAO* headTAO = resetTAO;
   for (int iter = 0; iter < iter_count; ++iter) {
     auto vec = __xitao_vec_non_immediate_multiparallel_region(tao_width, i, N, sched, block_length, 
@@ -89,7 +91,7 @@ int main(int argc, char *argv[]) {
       resetTAO->make_edge(dataparallelNode);
     }
 
-    resetTAO = new ResetMatTAO(A, B, C, N);
+    resetTAO = new ResetMatTAO(A, B, C, N, iter + 1);
     for(auto dataparallelNode : vec) {
       dataparallelNode->make_edge(resetTAO);
     }

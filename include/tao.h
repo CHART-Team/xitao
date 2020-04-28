@@ -78,7 +78,7 @@ private:
   int const _sched_type;
   IterType _start;
   IterType _end;
-  FuncType const& _spmd_region;  
+  FuncType  _spmd_region;  
   IterType _block_size; 
   IterType _block_iter;
   IterType _blocks; 
@@ -86,7 +86,7 @@ private:
   std::atomic<int> next_block; /*!< TAO implementation specific atomic variable to provide thread safe tracker of the number of processed blocks */
   const size_t slackness = 8;
 public: 
-  ParForTask(int sched, IterType start, IterType end, FuncType const& spmd, int width): 
+  ParForTask(int sched, IterType start, IterType end, FuncType spmd, int width): 
                 AssemblyTask(width), _sched_type(sched), _start(start), _end(end), _spmd_region(spmd) { 
     _size = _end - _start; 
     if(_size <= 0) {
