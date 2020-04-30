@@ -94,7 +94,7 @@ ParForTask<Proc, IterType>* xitao_vec_immediate(int parallelism, IterType& iter_
   \param block_size number of data elements per internal task/tao
 */ 
 template <typename Proc, typename IterType>
-std::vector<ParForTask<Proc, IterType>* > xitao_vec_immediate_multiparallel(int width, IterType& iter_start, IterType const& end, Proc const& func, int sched_type, int block_size) {     
+std::vector<ParForTask<Proc, IterType>* > xitao_vec_immediate_multiparallel(int width, IterType& iter_start, IterType const& end, Proc func, int sched_type, int block_size) {     
   int nblocks = (end - iter_start + block_size - 1) / block_size;   
   std::vector<ParForTask<Proc, IterType>* > par_for;
   for(int i = 0; i < nblocks; ++i){
@@ -118,7 +118,7 @@ std::vector<ParForTask<Proc, IterType>* > xitao_vec_immediate_multiparallel(int 
   \param block_size number of data elements per internal task/tao
 */ 
 template <typename Proc, typename IterType>
-std::vector<ParForTask<Proc, IterType>* > xitao_vec_multiparallel(int width, IterType& iter_start, IterType const& end, Proc const& func, int sched_type, int block_size) {     
+std::vector<ParForTask<Proc, IterType>* > xitao_vec_multiparallel(int width, IterType& iter_start, IterType const& end, Proc func, int sched_type, int block_size) {     
   int nblocks = (end - iter_start + block_size - 1) / block_size;   
   std::vector<ParForTask<Proc, IterType>* > par_for;
   for(int i = 0; i < nblocks; ++i){
