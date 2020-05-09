@@ -17,10 +17,13 @@ sparselu: sparselu.o
 sparselu_serial: sparselu_serial.o
 	$(CXX) $^ -o $@ ${LIBS}
 
+draw_dag: 
+	dot -Tps sparselu.dot -o sparselu.eps; evince sparselu.eps
+
 run: sparselu
 	./sparselu
 
 clean:
-	rm -rf sparselu sparselu_serial $(PROGRAM_OBJS) html latex
+	rm -rf sparselu *.eps *.dot sparselu_serial $(PROGRAM_OBJS) html latex
 
 

@@ -5,6 +5,11 @@
 #include <time.h>
 #include "sparselu_taos.h"                                                        
 #include "xitao.h"                                                                  
+#include <assert.h>
+#include <set>
+#include <fstream>      
+#include <string>
+#include <sstream>
 
 #define NB 64
 #define BLOCK_SIZE 64
@@ -12,12 +17,42 @@
 #define TRUE (1)
 #define TAO_WIDTH 1
 
+
+// Enable to output dot file. Recommended to use with NB < 16 
+//#define OUTPUT_DOT
+
 typedef double ELEM;
 ELEM *A[NB][NB];
 AssemblyTask *scoreboard [NB][NB];
 
 //#include "sparselu.h"
 using namespace xitao;
+using namespace std;
+
+inline void init_dot_file(ofstream& file, const char* name) {
+#ifdef OUTPUT_DOT
+  file.open(name);
+  file << "digraph G {" << endl;
+#endif
+}
+
+inline void close_dot_file(ofstream& file) {
+#ifdef OUTPUT_DOT  
+  file << "}" << endl;
+  file.close();
+#endif
+}
+
+inline void write_edge(ofstream& file, string&& src, int indxsrc, int indysrc, string&& dst, int indxdst, int indydst) {
+#ifdef OUTPUT_DOT  
+  stringstream st;
+  st << src <<"_" << indxsrc << "_" << indysrc; 
+  file << st.str() << " -> ";
+  st.str("");
+  st << dst <<"_" << indxdst << "_" << indydst << ";" << endl;
+  file << st.str();
+#endif
+}
 
 void generate_matrix_structure (int& bcount)
 {
@@ -42,6 +77,7 @@ void generate_matrix_structure (int& bcount)
          else A[ii][jj] = NULL;
       }
 }
+
 
 void generate_matrix_values ()
 {
@@ -163,6 +199,9 @@ int main(int argc, char* argv[])
    int ii, jj, kk;
    int bcount = 0;
 
+   ofstream file;
+   init_dot_file(file, "sparselu.dot");
+
    generate_matrix_structure(bcount);
    generate_matrix_values();
    printf("Init OK Matrix is: %d (%d %d) # of blocks: %d memory is %ld MB\n", (NB*BLOCK_SIZE), NB, BLOCK_SIZE, bcount, bcount*sizeof(ELEM)/1024/1024);
@@ -177,7 +216,8 @@ int main(int argc, char* argv[])
 
       //check if the task will get its input this from a previous task
       if(scoreboard[kk][kk]) {
-         scoreboard[kk][kk]->make_edge(lu0);
+        write_edge(file, "bmod", kk, kk, "lu0", kk, kk);
+        scoreboard[kk][kk]->make_edge(lu0);
       } else {
          gotao_push(lu0);
       } 
@@ -187,16 +227,17 @@ int main(int argc, char* argv[])
          if (A[kk][jj] != NULL) {
             //fwd(A[kk][kk], A[kk][jj]);
             auto fwd =  new FWD(A[kk][kk], A[kk][jj], BLOCK_SIZE, TAO_WIDTH);
-
             if(scoreboard[kk][kk]) {
-               scoreboard[kk][kk]->make_edge(fwd);
+              write_edge(file, "lu0", kk, kk, "fwd", kk, jj);
+              scoreboard[kk][kk]->make_edge(fwd);
             }
 
             if(scoreboard[kk][jj]) {
-               scoreboard[kk][jj]->make_edge(fwd);
+              write_edge(file, "bmod", kk, jj, "fwd", kk, jj);
+              scoreboard[kk][jj]->make_edge(fwd);
             }
-
-            scoreboard[kk][jj] = fwd;
+           
+           scoreboard[kk][jj] = fwd;
          }
 
       for (ii=kk+1; ii<NB; ii++) 
@@ -205,10 +246,12 @@ int main(int argc, char* argv[])
             auto bdiv = new BDIV(A[kk][kk], A[ii][kk], BLOCK_SIZE, TAO_WIDTH);
 
             if(scoreboard[kk][kk]) {
+              write_edge(file, "lu0", kk, kk, "bdiv", ii, kk);
               scoreboard[kk][kk]->make_edge(bdiv);
             }
 
             if(scoreboard[ii][kk]) {
+              write_edge(file, "bmod", ii, kk, "bdiv", ii, kk);
               scoreboard[ii][kk]->make_edge(bdiv);
             }
 
@@ -228,16 +271,18 @@ int main(int argc, char* argv[])
                   auto bmod = new BMOD(A[ii][kk], A[kk][jj], A[ii][jj], BLOCK_SIZE, TAO_WIDTH);
 
                   if(scoreboard[ii][kk]) {
-                     scoreboard[ii][kk]->make_edge(bmod);
+                      write_edge(file, "bdiv", ii, kk, "bmod", ii, jj);
+                      scoreboard[ii][kk]->make_edge(bmod);
                   }
 
                   if(scoreboard[kk][jj]) {
-                     scoreboard[kk][jj]->make_edge(bmod);
+                      write_edge(file, "fwd", kk, jj, "bmod", ii, jj);
+                      scoreboard[kk][jj]->make_edge(bmod);
                   }
 
-                  if(scoreboard[ii][jj]) {
-                    scoreboard[ii][jj]->make_edge(bmod);
-                  }
+                  // if(scoreboard[ii][jj]) {
+                  //   scoreboard[ii][jj]->make_edge(bmod);
+                  // }
 
                   scoreboard[ii][jj] = bmod;
                }
@@ -245,7 +290,7 @@ int main(int argc, char* argv[])
          }
       }
    }
-
+   close_dot_file(file);
    //Timing Start
    t_start=get_time();
 
