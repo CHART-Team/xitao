@@ -192,6 +192,6 @@ int main(int argc, char* argv[])
    time = t_end-t_start;
    printf("Matrix is: %d (%d %d) memory is %ld MB time to compute = %11.4f sec\n", 
          (NB*BSIZE), NB, BSIZE, (NB*BSIZE)*(NB*BSIZE)*sizeof(ELEM)/1024/1024, time);
-//   print_structure();
+   print_structure();
 }
 
