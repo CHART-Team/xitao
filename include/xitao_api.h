@@ -41,6 +41,8 @@ void gotao_start();
 //! Finalize the runtime and makes sure that all workers have finished 
 void gotao_fini();
 #define goTAO_push gotao_push
+//! Force the master to wait until the workers have processed all ready TAOs
+void gotao_drain();
 
 /*! Push work into Polytask queue. if no particular queue is specified then try to determine which is the local. 
  queue and insert it there. This has some overhead, so in general the
