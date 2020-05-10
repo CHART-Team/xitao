@@ -1,5 +1,3 @@
-#define NB 10
-#define BSIZE 512
 #define FALSE (0)
 #define TRUE (1)
 
@@ -9,7 +7,7 @@ typedef double ELEM;
 /* sparselu kernels                              */
 /* ************************************************************ */
 
-void lu0(ELEM *diag)
+void lu0(ELEM *diag, int BSIZE)
 {
    int i, j, k;
                                                                                    
@@ -21,7 +19,7 @@ void lu0(ELEM *diag)
       }
 }
 
-void fwd(ELEM *diag, ELEM *col)
+void fwd(ELEM *diag, ELEM *col, int BSIZE)
 {
    int i, j, k;
                                                                               
@@ -31,7 +29,7 @@ void fwd(ELEM *diag, ELEM *col)
             col[i*BSIZE+j] = col[i*BSIZE+j] - diag[i*BSIZE+k]*col[k*BSIZE+j];
 }
 
-void bdiv(ELEM *diag, ELEM *row)
+void bdiv(ELEM *diag, ELEM *row, int BSIZE)
 {
    int i, j, k;
                                                                               
@@ -43,7 +41,7 @@ void bdiv(ELEM *diag, ELEM *row)
       }
 }
 
-void bmod(ELEM *row, ELEM *col, ELEM *inner)
+void bmod(ELEM *row, ELEM *col, ELEM *inner, int BSIZE)
 {
    int i, j, k;
                                                                                  

@@ -12,8 +12,9 @@
 #include <string>
 #include <sstream>
 
-#define NB 10
-#define BSIZE 512
+int NB = 10;
+int BSIZE = 512;
+
 #define FALSE (0)
 #define TRUE (1)
 #define TAO_WIDTH 1
@@ -59,9 +60,9 @@ string get_tao_name(AssemblyTask* task) {
 #define OUTPUT_DOT
 
 typedef double ELEM;
-ELEM *A[NB][NB];
+vector<vector<ELEM*>> A;
 //ELEM *A_Serial[NB][NB];
-AssemblyTask *scoreboard [NB][NB];
+vector<vector<AssemblyTask*>> scoreboard;
 
 //#include "sparselu.h"
 
@@ -388,15 +389,15 @@ ELEM* sparselu_serial() {
 
   for (kk=0; kk<NB; kk++) {
 
-     lu0(A[kk][kk]);
+     lu0(A[kk][kk], BSIZE);
 
      for (jj=kk+1; jj<NB; jj++)
         if (A[kk][jj] != NULL)
-           fwd(A[kk][kk], A[kk][jj]);
+           fwd(A[kk][kk], A[kk][jj], BSIZE);
 
      for (ii=kk+1; ii<NB; ii++) 
         if (A[ii][kk] != NULL)
-           bdiv(A[kk][kk], A[ii][kk]);
+           bdiv(A[kk][kk], A[ii][kk], BSIZE);
 
      for (ii=kk+1; ii<NB; ii++) {
         if (A[ii][kk] != NULL) {
@@ -407,7 +408,7 @@ ELEM* sparselu_serial() {
                     A[ii][jj]=allocate_clean_block();
                  }
 
-                 bmod(A[ii][kk], A[kk][jj], A[ii][jj]);
+                 bmod(A[ii][kk], A[kk][jj], A[ii][jj], BSIZE);
               }
            }
         }
@@ -424,6 +425,18 @@ ELEM* sparselu_serial() {
 }
 
 int main(int argc, char** argv) {
+  if(argc < 3) {
+    printf("Usage: ./sparselu BLOCKS BLOCKSIZE\n");
+    exit(0);
+  }
+  NB = atoi(argv[1]);
+  BSIZE = atoi(argv[2]);
+  A.resize(NB);
+  scoreboard.resize(NB);
+  for(int i = 0; i < NB; ++i) {
+    A[i].resize(NB, NULL);
+    scoreboard[i].resize(NB, NULL);
+  }
   sparselu_parallel();
   auto res_parallel = read_structure();
   sparselu_serial();
@@ -432,6 +445,7 @@ int main(int argc, char** argv) {
   ELEM norm = 0.0;
   for(int i = 0; i < res_parallel.size(); i++){
     if(isnan(res_serial[i]) || isnan(res_parallel[i])) continue;
+    if(!isfinite(res_serial[i]) || !isfinite(res_parallel[i])) continue;
     diff += (res_serial[i] - res_parallel[i]) * (res_serial[i] - res_parallel[i]);
     norm += res_serial[i] * res_parallel[i];
   }
