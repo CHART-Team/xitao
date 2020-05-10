@@ -265,6 +265,8 @@ void sparselu_parallel()
    // init XiTAO runtime 
    gotao_init_hw(4, -1, -1);
    int prev_diag = -1;
+   //Timing Start
+   t_start=get_time();
    for (kk=0; kk<NB; kk++) {
 
       auto lu0 = new LU0(A[kk][kk], BSIZE, TAO_WIDTH); 
@@ -348,6 +350,10 @@ void sparselu_parallel()
          }
       }
    }
+   //Timing Stop
+   t_end=get_time();
+   time = t_end-t_start;
+   printf("Building DAG= %11.4f sec\n", time);
    close_dot_file(file);
    //Timing Start
    t_start=get_time();
