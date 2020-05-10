@@ -15,6 +15,12 @@
 int NB = 10;
 int BSIZE = 512;
 
+typedef double ELEM;
+vector<vector<ELEM*>> A;
+vector<vector<AssemblyTask*>> scoreboard;
+
+// Enable to output dot file. Recommended to use with NB < 16 
+//#define OUTPUT_DOT
 #define FALSE (0)
 #define TRUE (1)
 #define TAO_WIDTH 1
@@ -56,16 +62,6 @@ string get_tao_name(AssemblyTask* task) {
   }  
   return st.str();                  
 }
-// Enable to output dot file. Recommended to use with NB < 16 
-#define OUTPUT_DOT
-
-typedef double ELEM;
-vector<vector<ELEM*>> A;
-//ELEM *A_Serial[NB][NB];
-vector<vector<AssemblyTask*>> scoreboard;
-
-//#include "sparselu.h"
-
 
 inline void init_dot_file(ofstream& file, const char* name) {
 #ifdef OUTPUT_DOT
@@ -252,11 +248,8 @@ float get_time()
     return (float) t;
 }
 
-/* ************************************************************ */
-/* main 							*/
-/* ************************************************************ */
 
-ELEM* sparselu_parallel()
+void sparselu_parallel()
 {
    float t_start,t_end;
    float time;
@@ -374,7 +367,7 @@ ELEM* sparselu_parallel()
    // print_structure();
 }
 
-ELEM* sparselu_serial() {
+void sparselu_serial() {
   float t_start,t_end;
   float time;
   int ii, jj, kk;
@@ -423,6 +416,10 @@ ELEM* sparselu_serial() {
         (NB*BSIZE), NB, BSIZE, (NB*BSIZE)*(NB*BSIZE)*sizeof(ELEM)/1024/1024, time);
 
 }
+
+/* ************************************************************ */
+/* main               */
+/* ************************************************************ */
 
 int main(int argc, char** argv) {
   if(argc < 3) {
