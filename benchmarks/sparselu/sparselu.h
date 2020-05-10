@@ -1,5 +1,5 @@
-#define NB 32
-#define BSIZE 4
+#define NB 10
+#define BSIZE 512
 #define FALSE (0)
 #define TRUE (1)
 
