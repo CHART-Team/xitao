@@ -353,7 +353,7 @@ void sparselu_parallel()
    //Timing Stop
    t_end=get_time();
    time = t_end-t_start;
-   printf("Building DAG= %11.4f sec\n", time);
+   printf("Building DAG: %11.4f sec\n", time);
    close_dot_file(file);
    //Timing Start
    t_start=get_time();
@@ -368,7 +368,7 @@ void sparselu_parallel()
    t_end=get_time();
 
    time = t_end-t_start;
-   printf("Matrix is: %d (%d %d) memory is %ld MB time to compute in parallel= %11.4f sec\n", 
+   printf("Matrix is: %d (%d %d) memory is %ld MB time to compute in parallel: %11.4f sec\n", 
          (NB*BSIZE), NB, BSIZE, (NB*BSIZE)*(NB*BSIZE)*sizeof(ELEM)/1024/1024, time);
    // print_structure();
 }
@@ -418,7 +418,7 @@ void sparselu_serial() {
   t_end=get_time();
 
   time = t_end-t_start;
-  printf("Matrix is: %d (%d %d) memory is %ld MB time to compute in serial = %11.4f sec\n", 
+  printf("Matrix is: %d (%d %d) memory is %ld MB time to compute in serial: %11.4f sec\n", 
         (NB*BSIZE), NB, BSIZE, (NB*BSIZE)*(NB*BSIZE)*sizeof(ELEM)/1024/1024, time);
 
 }
