@@ -440,12 +440,18 @@ int main(int argc, char** argv) {
   auto res_serial = read_structure();
   ELEM diff = 0.0;
   ELEM norm = 0.0;
-  for(int i = 0; i < res_parallel.size(); i++){
-    if(isnan(res_serial[i]) || isnan(res_parallel[i])) continue;
-    if(!isfinite(res_serial[i]) || !isfinite(res_parallel[i])) continue;
-    diff += (res_serial[i] - res_parallel[i]) * (res_serial[i] - res_parallel[i]);
-    norm += res_serial[i] * res_parallel[i];
+  if(res_parallel.size() != res_serial.size()) {
+    printf("Result vectors are not equally sized\n");
   }
-  printf("%-20s : %8.5e\n","Rel. L2 Error", sqrt(diff/norm));// Print potential error
+  else {
+    for(int i = 0; i < res_parallel.size(); i++){
+      if(isnan(res_serial[i]) || isnan(res_parallel[i])) continue;
+      if(!isfinite(res_serial[i]) || !isfinite(res_parallel[i])) continue;
+      diff += (res_serial[i] - res_parallel[i]) * (res_serial[i] - res_parallel[i]);
+      norm += res_serial[i] * res_parallel[i];
+    }
+    if(isnan(sqrt(diff/norm)) || !isfinite(sqrt(diff/norm))) printf("Error is too high\n");
+    else printf("%-20s : %8.5e\n","Rel. L2 Error", sqrt(diff/norm));
+  }
 }
 
