@@ -6,7 +6,7 @@ CXX=g++
 LIBS = -lm ${EXTRAELIBS} -L../../lib -lxitao -pthread
 PROGRAM_OBJS=sparselu.o  
 
-all: sparselu sparselu_serial
+all: sparselu 
 
 %.o : %.cxx
 	$(CXX) $(CXXFLAGS) -c $< -o $@
