@@ -17,7 +17,7 @@ int BSIZE = 512;
 
 typedef double ELEM;
 vector<vector<ELEM*>> A;
-vector<vector<AssemblyTask*>> scoreboard;
+vector<vector<AssemblyTask*>> dependency_matrix;
 
 // Enable to output dot file. Recommended to use with NB < 16 
 //#define OUTPUT_DOT
@@ -27,7 +27,8 @@ vector<vector<AssemblyTask*>> scoreboard;
 using namespace xitao;
 using namespace std;
 
-string get_tao_name(AssemblyTask* task) {
+string get_tao_name(AssemblyTask* task) 
+{
   stringstream st; 
   stringstream st_address; 
   string address;
@@ -63,7 +64,8 @@ string get_tao_name(AssemblyTask* task) {
   return st.str();                  
 }
 
-inline void init_dot_file(ofstream& file, const char* name) {
+inline void init_dot_file(ofstream& file, const char* name) 
+{
 #ifdef OUTPUT_DOT
   file.open(name);
   file << "digraph G {" << endl;
@@ -77,7 +79,8 @@ inline void close_dot_file(ofstream& file) {
 #endif
 }
 
-inline void write_edge(ofstream& file, string const src, int indxsrc, int indysrc, string const dst, int indxdst, int indydst) {
+inline void write_edge(ofstream& file, string const src, int indxsrc, int indysrc, string const dst, int indxdst, int indydst) 
+{
 #ifdef OUTPUT_DOT  
   stringstream st;
   st << src <<"_" << indxsrc << "_" << indysrc;
@@ -249,7 +252,7 @@ float get_time()
 }
 
 
-void sparselu_parallel()
+void sparselu_parallel() 
 {
    float t_start,t_end;
    float time;
@@ -274,29 +277,29 @@ void sparselu_parallel()
       //lu0_objs.push_back(new LU0(A[kk][kk], BSIZE, TAO_WIDTH));
 
       //check if the task will get its input this from a previous task
-      if(scoreboard[kk][kk]) {
-        write_edge(file, get_tao_name(scoreboard[kk][kk]), kk, kk, get_tao_name(lu0), kk, kk);
-        scoreboard[kk][kk]->make_edge(lu0);
+      if(dependency_matrix[kk][kk]) {
+        write_edge(file, get_tao_name(dependency_matrix[kk][kk]), kk, kk, get_tao_name(lu0), kk, kk);
+        dependency_matrix[kk][kk]->make_edge(lu0);
       } else {
          gotao_push(lu0);
       } 
-      scoreboard[kk][kk] = lu0;
+      dependency_matrix[kk][kk] = lu0;
 
       for (jj=kk+1; jj<NB; jj++)
          if (A[kk][jj] != NULL) {
             //fwd(A[kk][kk], A[kk][jj]);
             auto fwd =  new FWD(A[kk][kk], A[kk][jj], BSIZE, TAO_WIDTH);
-            if(scoreboard[kk][kk]) {
-              write_edge(file, get_tao_name(scoreboard[kk][kk]), kk, kk, get_tao_name(fwd), kk, jj);
-              scoreboard[kk][kk]->make_edge(fwd);
+            if(dependency_matrix[kk][kk]) {
+              write_edge(file, get_tao_name(dependency_matrix[kk][kk]), kk, kk, get_tao_name(fwd), kk, jj);
+              dependency_matrix[kk][kk]->make_edge(fwd);
             }
 
-            if(scoreboard[kk][jj]) {
-              write_edge(file, get_tao_name(scoreboard[kk][jj]), kk, jj, get_tao_name(fwd), kk, jj);
-              scoreboard[kk][jj]->make_edge(fwd);
+            if(dependency_matrix[kk][jj]) {
+              write_edge(file, get_tao_name(dependency_matrix[kk][jj]), kk, jj, get_tao_name(fwd), kk, jj);
+              dependency_matrix[kk][jj]->make_edge(fwd);
             }
            
-           scoreboard[kk][jj] = fwd;
+           dependency_matrix[kk][jj] = fwd;
          }
 
       for (ii=kk+1; ii<NB; ii++) 
@@ -304,17 +307,17 @@ void sparselu_parallel()
             //bdiv (A[kk][kk], A[ii][kk]);
             auto bdiv = new BDIV(A[kk][kk], A[ii][kk], BSIZE, TAO_WIDTH);
 
-            if(scoreboard[kk][kk]) {
-              write_edge(file, get_tao_name(scoreboard[kk][kk]), kk, kk, get_tao_name(bdiv), ii, kk);
-              scoreboard[kk][kk]->make_edge(bdiv);
+            if(dependency_matrix[kk][kk]) {
+              write_edge(file, get_tao_name(dependency_matrix[kk][kk]), kk, kk, get_tao_name(bdiv), ii, kk);
+              dependency_matrix[kk][kk]->make_edge(bdiv);
             }
 
-            if(scoreboard[ii][kk]) {
-              write_edge(file, get_tao_name(scoreboard[ii][kk]), ii, kk, get_tao_name(bdiv), ii, kk);
-              scoreboard[ii][kk]->make_edge(bdiv);
+            if(dependency_matrix[ii][kk]) {
+              write_edge(file, get_tao_name(dependency_matrix[ii][kk]), ii, kk, get_tao_name(bdiv), ii, kk);
+              dependency_matrix[ii][kk]->make_edge(bdiv);
             }
 
-            scoreboard[ii][kk] = bdiv;
+            dependency_matrix[ii][kk] = bdiv;
          }
 
       for (ii=kk+1; ii<NB; ii++) {
@@ -329,22 +332,22 @@ void sparselu_parallel()
                   //bmod(A[ii][kk], A[kk][jj], A[ii][jj]);
                   auto bmod = new BMOD(A[ii][kk], A[kk][jj], A[ii][jj], BSIZE, TAO_WIDTH);
 
-                  if(scoreboard[ii][kk]) {
-                      write_edge(file, get_tao_name(scoreboard[ii][kk]), ii, kk, get_tao_name(bmod), ii, jj);
-                      scoreboard[ii][kk]->make_edge(bmod);
+                  if(dependency_matrix[ii][kk]) {
+                      write_edge(file, get_tao_name(dependency_matrix[ii][kk]), ii, kk, get_tao_name(bmod), ii, jj);
+                      dependency_matrix[ii][kk]->make_edge(bmod);
                   }
 
-                  if(scoreboard[kk][jj]) {
-                      write_edge(file, get_tao_name(scoreboard[kk][jj]), kk, jj, get_tao_name(bmod), ii, jj);
-                      scoreboard[kk][jj]->make_edge(bmod);
+                  if(dependency_matrix[kk][jj]) {
+                      write_edge(file, get_tao_name(dependency_matrix[kk][jj]), kk, jj, get_tao_name(bmod), ii, jj);
+                      dependency_matrix[kk][jj]->make_edge(bmod);
                   }
 
-                  if(scoreboard[ii][jj]) {
-                    write_edge(file, get_tao_name(scoreboard[ii][jj]), ii, jj, get_tao_name(bmod), ii, jj);
-                    scoreboard[ii][jj]->make_edge(bmod);
+                  if(dependency_matrix[ii][jj]) {
+                    write_edge(file, get_tao_name(dependency_matrix[ii][jj]), ii, jj, get_tao_name(bmod), ii, jj);
+                    dependency_matrix[ii][jj]->make_edge(bmod);
                   }
 
-                  scoreboard[ii][jj] = bmod;
+                  dependency_matrix[ii][jj] = bmod;
                }
             }
          }
@@ -373,7 +376,8 @@ void sparselu_parallel()
    // print_structure();
 }
 
-void sparselu_serial() {
+void sparselu_serial() 
+{
   float t_start,t_end;
   float time;
   int ii, jj, kk;
@@ -435,10 +439,10 @@ int main(int argc, char** argv) {
   NB = atoi(argv[1]);
   BSIZE = atoi(argv[2]);
   A.resize(NB);
-  scoreboard.resize(NB);
+  dependency_matrix.resize(NB);
   for(int i = 0; i < NB; ++i) {
     A[i].resize(NB, NULL);
-    scoreboard[i].resize(NB, NULL);
+    dependency_matrix[i].resize(NB, NULL);
   }
   sparselu_parallel();
   auto res_parallel = read_structure();
