@@ -117,7 +117,7 @@ public:
         _spmd_region(local_block_start, local_block_end, thread);
         block_id = next_block++;
       }
-    } else { // xitao_vec_static*/      
+    } else { // xitao_vec_static
       _block_size = _size / width;
       if(_block_size < 1) {
         std::cout << "Error: not enough work to do" << std::endl;
