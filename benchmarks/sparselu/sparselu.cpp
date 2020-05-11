@@ -266,7 +266,7 @@ void sparselu_parallel()
    generate_matrix_values();
    printf("Init OK Matrix is: %d (%d %d) # of blocks: %d memory is %ld MB\n", (NB*BSIZE), NB, BSIZE, bcount, bcount*sizeof(ELEM)/1024/1024);
    // init XiTAO runtime 
-   gotao_init_hw(4, -1, -1);
+   gotao_init();
    int prev_diag = -1;
    //Timing Start
    t_start=get_time();
