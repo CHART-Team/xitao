@@ -41,6 +41,8 @@ void gotao_start();
 //! Finalize the runtime and makes sure that all workers have finished 
 void gotao_fini();
 #define goTAO_push gotao_push
+//! Force the master to wait until the workers have processed all ready TAOs
+void gotao_drain();
 
 /*! Push work into Polytask queue. if no particular queue is specified then try to determine which is the local. 
  queue and insert it there. This has some overhead, so in general the
@@ -94,7 +96,7 @@ ParForTask<Proc, IterType>* xitao_vec_immediate(int parallelism, IterType& iter_
   \param block_size number of data elements per internal task/tao
 */ 
 template <typename Proc, typename IterType>
-std::vector<ParForTask<Proc, IterType>* > xitao_vec_immediate_multiparallel(int width, IterType& iter_start, IterType const& end, Proc const& func, int sched_type, int block_size) {     
+std::vector<ParForTask<Proc, IterType>* > xitao_vec_immediate_multiparallel(int width, IterType& iter_start, IterType const& end, Proc func, int sched_type, int block_size) {     
   int nblocks = (end - iter_start + block_size - 1) / block_size;   
   std::vector<ParForTask<Proc, IterType>* > par_for;
   for(int i = 0; i < nblocks; ++i){
@@ -118,14 +120,14 @@ std::vector<ParForTask<Proc, IterType>* > xitao_vec_immediate_multiparallel(int 
   \param block_size number of data elements per internal task/tao
 */ 
 template <typename Proc, typename IterType>
-std::vector<ParForTask<Proc, IterType>* > xitao_vec_multiparallel(int width, IterType& iter_start, IterType const& end, Proc const& func, int sched_type, int block_size) {     
+std::vector<ParForTask<Proc, IterType>* > xitao_vec_multiparallel(int width, IterType& iter_start, IterType const& end, Proc func, int sched_type, int block_size) {     
   int nblocks = (end - iter_start + block_size - 1) / block_size;   
   std::vector<ParForTask<Proc, IterType>* > par_for;
   for(int i = 0; i < nblocks; ++i){
     IterType block_start = i * block_size; 
     IterType block_end   =(i < nblocks - 1)? block_start + block_size : end;
     par_for.push_back(new ParForTask<Proc, IterType>(sched_type, block_start, block_end, func, width));
-    gotao_push(par_for[i], i % gotao_nthreads);
+    // gotao_push(par_for[i], i % gotao_nthreads);
   }    
   return par_for;
 }

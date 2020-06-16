@@ -47,11 +47,18 @@ int main(int argc, char** argv) {
   // stop the timer
   xitao::stop("Time in XiTAO");
   // start the timer
-  xitao::start("Time in serial");
-  // call the serial code   
-  auto val = fib(num);
+  xitao::start("Time in OpenMP");
+  // call the serial code  
+  size_t val;
+#pragma omp parallel 
+{
+#pragma omp single
+{ 
+  val = fib_omp(num);
+}
+}
   // stop the timer
-  xitao::stop("Time in serial");
+  xitao::stop("Time in OpenMP");
   // check if serial and parallel values agree
   if(val != parent->val) {
     // print out the error

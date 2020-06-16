@@ -27,6 +27,21 @@ size_t fib(uint32_t num) {
 	return fib(num - 1) + fib(num - 2);
 }
 
+// basic Fibonacci implementation
+size_t fib_omp(uint32_t num) {
+	// return 0 for 0 and negative terms (undefined)
+	if(num <= 0) return 0; 
+	// return 1 for the term 1
+	else if(num == 1) return 1;
+	// recursively find the result
+#pragma omp task if (num > grain_size)
+	auto num_1 = fib_omp(num - 1);
+#pragma omp task if (num > grain_size)
+	auto num_2 = fib_omp(num - 2);
+#pragma omp taskwait 
+	return num_1 + num_2;
+}
+
 // the Fibonacci TAO (Every TAO class must inherit from AssemblyTask)
 class FibTAO : public AssemblyTask {
 public:

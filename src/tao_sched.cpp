@@ -218,7 +218,7 @@ void gotao_start()
 }
 
 void gotao_fini()
-{
+{ // allow threads to get out of loop
   resources_runtime_conrolled = false;
   gotao_can_exit = true;
   gotao_started = false;
@@ -227,6 +227,13 @@ void gotao_fini()
   for(int i = 0; i < gotao_nthreads; i++){
     t[i]->join();
   }
+}
+
+// drain the pipeline in a spinlock
+// can probably be implemented using a conditional variable
+void gotao_drain()
+{
+  while(PolyTask::pending_tasks > 0); 
 }
 
 void gotao_barrier()

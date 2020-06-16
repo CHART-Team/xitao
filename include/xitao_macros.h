@@ -29,6 +29,15 @@
 																}														\
 															},									   						\
 															sched, block_size);
+//! wrapper for what constitutes and SPMD region executed by concurrent tasks. 
+#define __xitao_vec_non_immediate_multiparallel_region(width, iter , end, sched, block_size, code) xitao_vec_multiparallel(\
+															width, iter, end,											\
+															[&](int& loop_begin, int& loop_end, int& __xitao_thread_id){\
+																for(int iter = loop_begin; iter < loop_end; ++iter) {   \
+																	code;							   					\
+																}														\
+															},									   						\
+															sched, block_size);
 
 //! wrapper for printing the PTT results on the data parallel region
 #if CRIT_PERF_SCHED
