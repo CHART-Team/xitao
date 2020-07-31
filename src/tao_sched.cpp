@@ -229,13 +229,16 @@ void gotao_fini()
   }
 }
 
-// drain the pipeline in a spinlock
-// can probably be implemented using a conditional variable
+// drain the pipeline in a while loop with short sleeps
+// can probably be implemented using a conditional variable, but this works
+
 void gotao_drain()
 {
-  while(PolyTask::pending_tasks > 0); 
+  while(PolyTask::pending_tasks > 0) usleep(1); 
 }
 
+// a way to force sync between master and TAOs
+// usage of gotao_barrier() is not recommended
 void gotao_barrier()
 {
   tao_barrier->wait();
