@@ -29,6 +29,7 @@ using namespace std;
 
 string get_tao_name(AssemblyTask* task) 
 {
+#ifdef OUTPUT_DOT
   stringstream st; 
   stringstream st_address; 
   string address;
@@ -61,7 +62,10 @@ string get_tao_name(AssemblyTask* task)
     std::cout << "error: unknown TAO type" << std::endl;
     exit(0);
   }  
-  return st.str();                  
+  return st.str();
+#else
+  return "";
+#endif
 }
 
 inline void init_dot_file(ofstream& file, const char* name) 
