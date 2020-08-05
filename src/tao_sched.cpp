@@ -19,7 +19,7 @@ int worker_loop(int nthread);
  */
 void set_xitao_mask(cpu_set_t& user_affinity_setup) {
   if(!gotao_initialized) {
-    resources_runtime_conrolled = true;                                    // make this true, to refrain from using XITAO_MAXTHREADS anywhere
+    resources_runtime_controlled = true;                                    // make this true, to refrain from using XITAO_MAXTHREADS anywhere
     int cpu_count = CPU_COUNT(&user_affinity_setup);
     runtime_resource_mapper.resize(cpu_count);
     int j = 0;
@@ -58,8 +58,7 @@ void gotao_init_hw( int nthr, int thrb, int nhwc)
     exit(0);
   }  
   const char* layout_file = getenv("XITAO_LAYOUT_PATH");
-  if(!resources_runtime_conrolled) {
-    if(layout_file) {
+  if(!resources_runtime_controlled && layout_file) {
       std::string line;      
       std::ifstream myfile(layout_file);
       int current_thread_id = -1; // exclude the first iteration
@@ -121,40 +120,41 @@ void gotao_init_hw( int nthr, int thrb, int nhwc)
         if(!suppress_init_warnings) std::cout << "Fatal error: could not open hardware layout path " << layout_file << std::endl;    
         exit(0);
       }
+    }
+  if(!layout_file) {
+    if(resources_runtime_controlled) { 
+      if(gotao_nthreads != runtime_resource_mapper.size()) {
+        gotao_nthreads = runtime_resource_mapper.size();
+      }             
     } else {
-        if(!suppress_init_warnings) std::cout << "Warning: XITAO_LAYOUT_PATH is not set. Default values for affinity and symmetric resource partitions will be used" << std::endl;    
-        for(int i = 0; i < XITAO_MAXTHREADS; ++i) 
-          static_resource_mapper[i] = i; 
-        std::vector<int> widths;             
-        int count = gotao_nthreads;        
-        std::vector<int> temp;        // hold the big divisors, so that the final list of widths is in sorted order 
-        for(int i = 1; i < sqrt(gotao_nthreads); ++i){ 
-          if(gotao_nthreads % i == 0) {
-            widths.push_back(i);
-            temp.push_back(gotao_nthreads / i); 
-          } 
-        }
-        std::reverse(temp.begin(), temp.end());
-        widths.insert(widths.end(), temp.begin(), temp.end());
-        //std::reverse(widths.begin(), widths.end());        
-        for(int i = 0; i < widths.size(); ++i) {
-          for(int j = 0; j < gotao_nthreads; j+=widths[i]){
-            ptt_layout[j].push_back(widths[i]);
-          }
-        }
-        for(int i = 0; i < gotao_nthreads; ++i){
-          for(auto&& width : ptt_layout[i]){
-            for(int j = 0; j < width; ++j) {                
-              inclusive_partitions[i + j].push_back(std::make_pair(i, width)); 
-            }         
-          }
-        }
+      if(!suppress_init_warnings) std::cout << "Warning: XITAO_LAYOUT_PATH is not set. Default values for affinity and symmetric resource partitions will be used" << std::endl;    
+      for(int i = 0; i < XITAO_MAXTHREADS; ++i) 
+        static_resource_mapper[i] = i; 
+    } 
+    std::vector<int> widths;             
+    int count = gotao_nthreads;        
+    std::vector<int> temp;        // hold the big divisors, so that the final list of widths is in sorted order 
+    for(int i = 1; i < sqrt(gotao_nthreads); ++i){ 
+      if(gotao_nthreads % i == 0) {
+        widths.push_back(i);
+        temp.push_back(gotao_nthreads / i); 
       } 
-  } else {    
-    if(gotao_nthreads != runtime_resource_mapper.size()) {
-      if(!suppress_init_warnings) std::cout << "Warning: requested " << runtime_resource_mapper.size() << " at runtime, whereas gotao_nthreads is set to " << gotao_nthreads <<". Runtime value will be used" << std::endl;
-      gotao_nthreads = runtime_resource_mapper.size();
-    }            
+    }
+    std::reverse(temp.begin(), temp.end());
+    widths.insert(widths.end(), temp.begin(), temp.end());
+    //std::reverse(widths.begin(), widths.end());        
+    for(int i = 0; i < widths.size(); ++i) {
+      for(int j = 0; j < gotao_nthreads; j+=widths[i]){
+        ptt_layout[j].push_back(widths[i]);
+      }
+    }
+    for(int i = 0; i < gotao_nthreads; ++i){
+      for(auto&& width : ptt_layout[i]){
+        for(int j = 0; j < width; ++j) {                
+          inclusive_partitions[i + j].push_back(std::make_pair(i, width)); 
+        }         
+      }
+    } 
   }
   if(nhwc>=0){
     gotao_ncontexts = nhwc;
@@ -219,7 +219,7 @@ void gotao_start()
 
 void gotao_fini()
 {
-  resources_runtime_conrolled = false;
+  resources_runtime_controlled = false;
   gotao_can_exit = true;
   gotao_started = false;
   //gotao_initialized = false;
@@ -256,7 +256,7 @@ int gotao_push(PolyTask *pt, int queue)
       queue = sched_getcpu();
     }
   }
-  if(resources_runtime_conrolled) {
+  if(resources_runtime_controlled) {
     queue = check_and_get_available_queue(queue);
   } else { // check if the insertion happens in invalid queue (according to PTT layout)
     while(inclusive_partitions[queue].size() == 0){
@@ -286,7 +286,7 @@ int gotao_push_init(PolyTask *pt, int queue)
       queue = gotao_thread_base;
     }
   }
-  if(resources_runtime_conrolled) queue = check_and_get_available_queue(queue);
+  if(resources_runtime_controlled) queue = check_and_get_available_queue(queue);
   worker_ready_q[queue].push_front(pt);
   return 1; 
 }
@@ -311,7 +311,7 @@ void __xitao_unlock()
 int worker_loop(int nthread)
 {
   int phys_core;
-  if(resources_runtime_conrolled) {
+  if(resources_runtime_controlled) {
     if(nthread >= runtime_resource_mapper.size()) {      
       std::cout << "Error: thread cannot be created due to resource limitation" << std::endl;      
       exit(0);

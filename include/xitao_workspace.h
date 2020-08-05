@@ -61,7 +61,7 @@ namespace xitao {
   extern bool gotao_can_exit;
   extern bool gotao_initialized;
   extern bool gotao_started;
-  extern bool resources_runtime_conrolled;
+  extern bool resources_runtime_controlled;
   extern bool suppress_init_warnings;
   extern std::vector<int> runtime_resource_mapper;                                   // a logical to physical runtime resource mapper
   extern std::thread *t[XITAO_MAXTHREADS];
