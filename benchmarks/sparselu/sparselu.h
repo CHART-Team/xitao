@@ -1,3 +1,6 @@
+#ifndef SPARSELU
+#define SPARSELU
+
 #define FALSE (0)
 #define TRUE (1)
 
@@ -53,4 +56,4 @@ void bmod(ELEM *row, ELEM *col, ELEM *inner, int BSIZE)
       }
    }
 }
-
+#endif
