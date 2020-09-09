@@ -22,4 +22,6 @@ benchmarks/fibonacci/fibonacci.o
 benchmarks/bfs/data/bfs/*.txt
 benchmarks/helloworld/helloworld
 benchmarks/helloworld/helloworld.o
+benchmarks/dataparallel_dag/dataparallel_dag
+benchmarks/sparselu/sparselu
 ptt_layout*
