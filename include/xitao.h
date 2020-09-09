@@ -4,4 +4,5 @@
 #include "xitao_api.h"
 #include "xitao_macros.h"
 #include "xitao_ptt.h"
+#include "xitao_timer.h"
 #endif
