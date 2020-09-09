@@ -1,3 +1,9 @@
+# The Heat source code originates from the Barcelona OpenMP Tasks Suite.
+# We retain the copyright notice from the original code (see below)
+# The terms of the license probably mean that the XiTAO Heat example is 
+# distributed under GPL unlike the rest of the XiTAO repository, which is 
+# distributed under the 3-clause BSD license.
+
 ##############################################################################################
 #  This program is part of the Barcelona OpenMP Tasks Suite                                  #
 #  Copyright (C) 2009 Barcelona Supercomputing Center - Centro Nacional de Supercomputacion  #

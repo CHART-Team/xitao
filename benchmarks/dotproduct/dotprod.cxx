@@ -30,10 +30,11 @@ main(int argc, char *argv[])
   
   //cpu_set_t cpu_;
   //CPU_ZERO(&cpu_);
-  //for(int i = 0; i < 8; i+=2) {
+  //for(int i = 0; i < 8; i+=1) {
   //  CPU_SET(i, &cpu_);
   //} 
   //set_xitao_mask(cpu_);
+  
   // no topologies in this version
   A = new double[len];
   B = new double[len];
@@ -46,7 +47,7 @@ main(int argc, char *argv[])
   }
 
   // init XiTAO runtime 
-  gotao_init_hw(4, -1, -1);
+  gotao_init();
   
   // create numvm TAOs 
   int numvm = len / block;
