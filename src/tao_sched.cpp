@@ -228,12 +228,11 @@ void gotao_fini() {
   }
 }
 
-// drain the pipeline in a while loop with short sleeps
-// can probably be implemented using a conditional variable, but this works
-
+// drain the pipeline
 void gotao_drain()
 {
-  while(PolyTask::pending_tasks > 0) usleep(1); 
+  std::unique_lock<std::mutex> lk(pending_tasks_mutex);
+  pending_tasks_cv.wait(lk, []{return PolyTask::pending_tasks <= 0;});
 }
 
 // a way to force sync between master and TAOs
@@ -442,7 +441,7 @@ int worker_loop(int nthread)
 #endif
         st = assembly->commit_and_wakeup(nthread);
         assembly->cleanup();
-        //delete assembly;
+        delete assembly;
       }
       continue;
     }
@@ -523,6 +522,7 @@ int worker_loop(int nthread)
     }
     LOCK_RELEASE(worker_lock[nthread]);
     // Finally check if the program has terminated
+    if(PolyTask::pending_tasks == 0) pending_tasks_cv.notify_one();
     if(gotao_can_exit && (PolyTask::pending_tasks == 0)){
       break;
     }

@@ -66,6 +66,8 @@ namespace xitao {
   extern std::vector<int> runtime_resource_mapper;                                   // a logical to physical runtime resource mapper
   extern std::thread *t[XITAO_MAXTHREADS];
   extern std::mutex smpd_region_lock;  
+  extern  std::mutex pending_tasks_mutex;
+  extern std::condition_variable pending_tasks_cv;
   extern GENERIC_LOCK(worker_lock[XITAO_MAXTHREADS]);
   extern GENERIC_LOCK(worker_assembly_lock[XITAO_MAXTHREADS]);
 #ifdef DEBUG
