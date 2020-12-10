@@ -22,7 +22,7 @@ chains: $(CHAINS_OBJS)
 	$(CXX) $^ -o $@ ${LIBS}
 
 run: all 
-	./synbench 64 4 5000 1000 4
+	./synbench 64 4 5000 1000 1000 4
 
 clean:
 	rm -rf synbench $(SYNTH_OBJS)  graph.txt 

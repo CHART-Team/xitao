@@ -111,31 +111,6 @@ void PolyTask::history_mold(int _nthread, PolyTask *it){
     it->width  = new_width;
   }
 } 
-  //Recursive function assigning criticality
-int PolyTask::set_criticality(){
-  if((criticality)==0){
-    int max=0;
-    for(std::list<PolyTask *>::iterator edges = out.begin();edges != out.end();++edges){
-      int new_max =((*edges)->set_criticality());
-      max = ((new_max>max) ? (new_max) : (max));
-    }
-    criticality=++max;
-  } 
-  return criticality;
-}
-
-int PolyTask::set_marker(int i){
-  for(std::list<PolyTask *>::iterator edges = out.begin(); edges != out.end(); ++edges){
-    if((*edges) -> criticality == critical_path - i){
-      (*edges) -> marker = 1;
-      i++;
-      (*edges) -> set_marker(i);
-      break;
-    }
-  }
-  return marker;
-}
-
 
 //Determine if task is critical task
 int PolyTask::if_prio(int _nthread, PolyTask * it){
@@ -281,60 +256,60 @@ int PolyTask::weight_sched(int nthread, PolyTask * it){
 
 PolyTask * PolyTask::commit_and_wakeup(int _nthread){
   PolyTask *ret = nullptr;
-  for(std::list<PolyTask *>::iterator it = out.begin(); it != out.end(); ++it){
-    int refs = (*it)->refcount.fetch_sub(1);
+  for(auto&& it : out){
+    int refs = it->refcount.fetch_sub(1);
     if(refs == 1){
 #ifdef DEBUG
       LOCK_ACQUIRE(output_lck);
-      std::cout << "[DEBUG] Task " << (*it)->taskid << " became ready" << std::endl;
+      std::cout << "[DEBUG] Task " << it->taskid << " became ready" << std::endl;
       LOCK_RELEASE(output_lck);
 #endif 
         
 #if defined(CRIT_PERF_SCHED) || defined(WEIGHT_SCHED)
 
 #if defined(CRIT_PERF_SCHED)
-      int pr = if_prio(_nthread, (*it));
+      int pr = if_prio(_nthread, it);
       if (pr == 1){
-        globalsearch_PTT(_nthread, (*it));
+        globalsearch_PTT(_nthread, it);
 #ifdef DEBUG
         LOCK_ACQUIRE(output_lck);
-        std::cout <<"[DEBUG] Priority=1, task "<< (*it)->taskid <<" will run on thread "<< (*it)->leader << ", width become " << (*it)->width << std::endl;
+        std::cout <<"[DEBUG] Priority=1, task "<< it->taskid <<" will run on thread "<< it->leader << ", width become " << it->width << std::endl;
         LOCK_RELEASE(output_lck);
 #endif
-        for(int i = (*it)->leader; i < (*it)->leader + (*it)->width; i++){
+        for(int i = it->leader; i < it->leader + it->width; i++){
           LOCK_ACQUIRE(worker_assembly_lock[i]);
-          worker_assembly_q[i].push_back((*it));
+          worker_assembly_q[i].push_back(it);
         }
-        for(int i = (*it)->leader; i < (*it)->leader + (*it)->width; i++){
+        for(int i = it->leader; i < it->leader + it->width; i++){
           LOCK_RELEASE(worker_assembly_lock[i]);
         }        
       }
       else{        
 #ifdef DEBUG
         LOCK_ACQUIRE(output_lck);
-        std::cout <<"[DEBUG] Priority=0, task "<< (*it)->taskid <<" is pushed to WSQ of thread "<< _nthread << std::endl;
+        std::cout <<"[DEBUG] Priority=0, task "<< it->taskid <<" is pushed to WSQ of thread "<< _nthread << std::endl;
         LOCK_RELEASE(output_lck);
 #endif
         LOCK_ACQUIRE(worker_lock[_nthread]);
-        worker_ready_q[_nthread].push_back(*it);
+        worker_ready_q[_nthread].push_back(it);
         LOCK_RELEASE(worker_lock[_nthread]);
       }
 #elif defined(WEIGHT_SCHED)
-      int ndx2 = weight_sched(_nthread, (*it));
+      int ndx2 = weight_sched(_nthread, it);
       LOCK_ACQUIRE(worker_lock[ndx2]);
       worker_ready_q[ndx2].push_back(*it);
       LOCK_RELEASE(worker_lock[ndx2]);
 #endif
                 
 #else
-      if(!ret && (((*it)->affinity_queue == -1) || (((*it)->affinity_queue/(*it)->width) == (_nthread/(*it)->width)))){
+      if(!ret && ((it->affinity_queue == -1) || ((it->affinity_queue/it->width) == (_nthread/it->width)))){
         // history_mold(_nthread,(*it)); 
-        ret = *it; // forward locally only if affinity matches
+        ret = it; // forward locally only if affinity matches
       }
       else{
         // otherwise insert into affinity queue, or in local queue
-        int ndx = (*it)->affinity_queue;
-        if((ndx == -1) || (((*it)->affinity_queue/(*it)->width) == (_nthread/(*it)->width)))
+        int ndx = it->affinity_queue;
+        if((ndx == -1) || ((it->affinity_queue/it->width) == (_nthread/it->width)))
           ndx = _nthread;
 
         //history_mold(_nthread,(*it)); 
@@ -344,7 +319,7 @@ PolyTask * PolyTask::commit_and_wakeup(int _nthread){
         // somewhat random it simpifies the implementation. In the case that
         // TAO_STA is not defined, we could optimize it, but is it worth?
         LOCK_ACQUIRE(worker_lock[ndx]);
-        worker_ready_q[ndx].push_back(*it);
+        worker_ready_q[ndx].push_back(it);
         LOCK_RELEASE(worker_lock[ndx]);
       } 
 #endif

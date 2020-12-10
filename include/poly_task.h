@@ -47,7 +47,7 @@ public:
 #endif
 
   std::atomic<int> refcount;
-  std::list <PolyTask *> out;
+  std::vector<PolyTask *> out;
   std::atomic<int> threads_out_tao;
   int width; /*!< number of resources that this assembly uses */  
 
@@ -69,8 +69,8 @@ public:
   //History-based molding
   virtual void history_mold(int _nthread, PolyTask *it);
   //Recursive function assigning criticality
-  int set_criticality();
-  int set_marker(int i);
+  // int set_criticality();
+  // int set_marker(int i);
   //Determine if task is critical task
   int if_prio(int _nthread, PolyTask * it);
   int globalsearch_PTT(int nthread, PolyTask * it);
