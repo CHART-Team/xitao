@@ -316,13 +316,13 @@ PolyTask * PolyTask::commit_and_wakeup(int _nthread){
         LOCK_RELEASE(output_lck);
 #endif
         LOCK_ACQUIRE(worker_lock[_nthread]);
-        worker_ready_q[_nthread].push_front(*it);
+        worker_ready_q[_nthread].push_back(*it);
         LOCK_RELEASE(worker_lock[_nthread]);
       }
 #elif defined(WEIGHT_SCHED)
       int ndx2 = weight_sched(_nthread, (*it));
       LOCK_ACQUIRE(worker_lock[ndx2]);
-      worker_ready_q[ndx2].push_front(*it);
+      worker_ready_q[ndx2].push_back(*it);
       LOCK_RELEASE(worker_lock[ndx2]);
 #endif
                 
@@ -344,7 +344,7 @@ PolyTask * PolyTask::commit_and_wakeup(int _nthread){
         // somewhat random it simpifies the implementation. In the case that
         // TAO_STA is not defined, we could optimize it, but is it worth?
         LOCK_ACQUIRE(worker_lock[ndx]);
-        worker_ready_q[ndx].push_front(*it);
+        worker_ready_q[ndx].push_back(*it);
         LOCK_RELEASE(worker_lock[ndx]);
       } 
 #endif

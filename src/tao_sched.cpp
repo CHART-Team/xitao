@@ -283,7 +283,7 @@ int xitao_push(PolyTask *pt, int queue)
   pt->_ptt = xitao_ptt::try_insert_table(pt, pt->workload_hint);    /*be sure that a single orphaned task has a PTT*/
 #endif  
   LOCK_ACQUIRE(worker_lock[queue]);
-  worker_ready_q[queue].push_front(pt);
+  worker_ready_q[queue].push_back(pt);
   LOCK_RELEASE(worker_lock[queue]);
   return 1;
 }
@@ -303,7 +303,7 @@ int gotao_push_init(PolyTask *pt, int queue)
     }
   }
   if(resources_runtime_controlled) queue = check_and_get_available_queue(queue);
-  worker_ready_q[queue].push_front(pt);
+  worker_ready_q[queue].push_back(pt);
   return 1; 
 }
 
@@ -457,8 +457,8 @@ int worker_loop(int nthread)
   // 2. check own queue
     LOCK_ACQUIRE(worker_lock[nthread]);
     if(!worker_ready_q[nthread].empty()){
-      st = worker_ready_q[nthread].front(); 
-      worker_ready_q[nthread].pop_front();
+      st = worker_ready_q[nthread].back(); 
+      worker_ready_q[nthread].pop_back();
       LOCK_RELEASE(worker_lock[nthread]);
 #if defined(CRIT_PERF_SCHED)
       st->history_mold(nthread, st);
