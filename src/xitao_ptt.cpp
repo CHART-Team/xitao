@@ -61,7 +61,7 @@ void xitao_ptt::print_table(ptt_shared_type ptt, const char* table_name) {
 
   // print table details
   std::cout << std::endl << table_name <<  " PTT Stats: " << std::endl;
-  for(int leader = 0; leader < ptt_layout.size() && leader < gotao_nthreads; ++leader) {
+  for(int leader = 0; leader < ptt_layout.size() && leader < xitao_nthreads; ++leader) {
     auto row = ptt_layout[leader];
     std::sort(row.begin(), row.end());
     std::ostream time_output (std::cout.rdbuf());

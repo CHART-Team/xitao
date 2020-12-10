@@ -29,7 +29,7 @@ void set_xitao_mask(cpu_set_t& user_affinity_setup) {
         runtime_resource_mapper[j++] = i;
       }
     }
-    if(cpu_count < gotao_nthreads) std::cout << "Warning: only " << cpu_count << " physical cores available, whereas " << gotao_nthreads << " are requested!" << std::endl;      
+    if(cpu_count < xitao_nthreads) std::cout << "Warning: only " << cpu_count << " physical cores available, whereas " << xitao_nthreads << " are requested!" << std::endl;      
   } else {
     std::cout << "Warning: unable to set XiTAO affinity. Runtime is already initialized. This call will be ignored" << std::endl;      
   }    
@@ -41,7 +41,7 @@ void set_xitao_mask(cpu_set_t& user_affinity_setup) {
   \param thrb is the logical thread id offset from the physical core mapping
   \param nhwc is the number of hardware contexts
 */ 
-void gotao_init_hw(int nthr, int thrb, int nhwc)
+void xitao_init_hw(int nthr, int thrb, int nhwc)
 { 
   if(gotao_initialized) {
     for(int i = 0; i < XITAO_MAXTHREADS; ++i) {
@@ -50,13 +50,13 @@ void gotao_init_hw(int nthr, int thrb, int nhwc)
     }
   }
 
-  if(nthr>=0) gotao_nthreads = nthr;
+  if(nthr>=0) xitao_nthreads = nthr;
   else {    
-    if(getenv("GOTAO_NTHREADS")) gotao_nthreads = atoi(getenv("GOTAO_NTHREADS"));  
-    else gotao_nthreads = XITAO_MAXTHREADS;    
+    if(getenv("GOTAO_NTHREADS")) xitao_nthreads = atoi(getenv("GOTAO_NTHREADS"));  
+    else xitao_nthreads = XITAO_MAXTHREADS;    
   }  
-  if(gotao_nthreads > XITAO_MAXTHREADS) {
-    if(!suppress_init_warnings) std::cout << "Fatal error: gotao_nthreads is greater than XITAO_MAXTHREADS of " << XITAO_MAXTHREADS << ". Make sure XITAO_MAXTHREADS environment variable is set properly" << std::endl;    
+  if(xitao_nthreads > XITAO_MAXTHREADS) {
+    if(!suppress_init_warnings) std::cout << "Fatal error: xitao_nthreads is greater than XITAO_MAXTHREADS of " << XITAO_MAXTHREADS << ". Make sure XITAO_MAXTHREADS environment variable is set properly" << std::endl;    
     exit(0);
   }  
   const char* layout_file = getenv("XITAO_LAYOUT_PATH");
@@ -79,7 +79,7 @@ void gotao_init_hw(int nthr, int thrb, int nhwc)
             int val = stoi(token);
             if(!init_affinity) static_resource_mapper[thread_count++] = val;  
             else { 
-              if(current_thread_id + 1 >= gotao_nthreads) {
+              if(current_thread_id + 1 >= xitao_nthreads) {
                   if(!suppress_init_warnings) std::cout << "Fatal error: more configurations than there are input threads in:" << layout_file << std::endl;    
                   exit(0);
               }              
@@ -112,7 +112,7 @@ void gotao_init_hw(int nthr, int thrb, int nhwc)
             }            
           }
           if(!init_affinity) { 
-            gotao_nthreads = thread_count; 
+            xitao_nthreads = thread_count; 
             init_affinity = true;
           }
           current_thread_id++;          
@@ -125,8 +125,8 @@ void gotao_init_hw(int nthr, int thrb, int nhwc)
     }
   if(!layout_file) {
     if(resources_runtime_controlled) { 
-      if(gotao_nthreads != runtime_resource_mapper.size()) {
-        gotao_nthreads = runtime_resource_mapper.size();
+      if(xitao_nthreads != runtime_resource_mapper.size()) {
+        xitao_nthreads = runtime_resource_mapper.size();
       }             
     } else {
       if(!suppress_init_warnings) std::cout << "Warning: XITAO_LAYOUT_PATH is not set. Default values for affinity and symmetric resource partitions will be used" << std::endl;    
@@ -134,23 +134,23 @@ void gotao_init_hw(int nthr, int thrb, int nhwc)
         static_resource_mapper[i] = i; 
     } 
     std::vector<int> widths;             
-    int count = gotao_nthreads;        
+    int count = xitao_nthreads;        
     std::vector<int> temp;        // hold the big divisors, so that the final list of widths is in sorted order 
-    for(int i = 1; i < sqrt(gotao_nthreads); ++i){ 
-      if(gotao_nthreads % i == 0) {
+    for(int i = 1; i < sqrt(xitao_nthreads); ++i){ 
+      if(xitao_nthreads % i == 0) {
         widths.push_back(i);
-        temp.push_back(gotao_nthreads / i); 
+        temp.push_back(xitao_nthreads / i); 
       } 
     }
     std::reverse(temp.begin(), temp.end());
     widths.insert(widths.end(), temp.begin(), temp.end());
     //std::reverse(widths.begin(), widths.end());        
     for(int i = 0; i < widths.size(); ++i) {
-      for(int j = 0; j < gotao_nthreads; j+=widths[i]){
+      for(int j = 0; j < xitao_nthreads; j+=widths[i]){
         ptt_layout[j].push_back(widths[i]);
       }
     }
-    for(int i = 0; i < gotao_nthreads; ++i){
+    for(int i = 0; i < xitao_nthreads; ++i){
       for(auto&& width : ptt_layout[i]){
         for(int j = 0; j < width; ++j) {                
           inclusive_partitions[i + j].push_back(std::make_pair(i, width)); 
@@ -181,12 +181,12 @@ void gotao_init_hw(int nthr, int thrb, int nhwc)
       gotao_thread_base = GOTAO_THREAD_BASE;
     }
   }
-  starting_barrier = new BARRIER(gotao_nthreads + 1);
+  starting_barrier = new BARRIER(xitao_nthreads + 1);
   tao_barrier = new cxx_barrier(2);
-  for(int i = 0; i < gotao_nthreads; i++){
+  for(int i = 0; i < xitao_nthreads; i++){
     t[i]  = new std::thread(worker_loop, i);   
   }  
-  //if(!suppress_init_warnings) std::cout << "XiTAO initialized with " << gotao_nthreads << " threads and configured with " << XITAO_MAXTHREADS << " max threads " << std::endl;
+  //if(!suppress_init_warnings) std::cout << "XiTAO initialized with " << xitao_nthreads << " threads and configured with " << XITAO_MAXTHREADS << " max threads " << std::endl;
 #ifdef DEBUG
   for(int i = 0; i < static_resource_mapper.size(); ++i) { 
     std::cout << "[DEBUG] thread " << i << " is configured to be mapped to core id : " << static_resource_mapper[i] << std::endl;     
@@ -212,32 +212,32 @@ void xitao_set_num_threads(int nthreads) {
 }
 
 // Initialize gotao from environment vars or defaults
-void gotao_init()
+void xitao_init()
 {
-  gotao_init_hw(config::nthreads, config::thread_base, config::hw_contexts);
+  xitao_init_hw(config::nthreads, config::thread_base, config::hw_contexts);
   config::printConfigs();
 }
 
-void gotao_start()
+void xitao_start()
 {
  if(gotao_started) return;
   starting_barrier->wait();
   gotao_started = true;
 }
 
-void gotao_fini() {
+void xitao_fini() {
   resources_runtime_controlled = false;
   gotao_can_exit = true;
   gotao_started = false;
   //gotao_initialized = false;
   tao_total_steals = 0;  
-  for(int i = 0; i < gotao_nthreads; i++){
+  for(int i = 0; i < xitao_nthreads; i++){
     t[i]->join();
   }
 }
 
 // drain the pipeline
-void gotao_drain()
+void xitao_drain()
 {
   std::unique_lock<std::mutex> lk(pending_tasks_mutex);
   pending_tasks_cv.wait(lk, []{return PolyTask::pending_tasks <= 0;});
@@ -245,7 +245,7 @@ void gotao_drain()
 
 // a way to force sync between master and TAOs
 // usage of gotao_barrier() is not recommended
-void gotao_barrier()
+void xitao_barrier()
 {
   tao_barrier->wait();
 }
@@ -262,7 +262,7 @@ int check_and_get_available_queue(int queue) {
 // if no particular queue is specified then try to determine which is the local
 // queue and insert it there. This has some overhead, so in general the
 // programmer should specify some queue
-int gotao_push(PolyTask *pt, int queue)
+int xitao_push(PolyTask *pt, int queue)
 {
   if((queue == -1) && (pt->affinity_queue != -1)){
     queue = pt->affinity_queue;
@@ -276,7 +276,7 @@ int gotao_push(PolyTask *pt, int queue)
     queue = check_and_get_available_queue(queue);
   } else { // check if the insertion happens in invalid queue (according to PTT layout)
     while(inclusive_partitions[queue].size() == 0){
-      queue = (queue + 1) % gotao_nthreads;
+      queue = (queue + 1) % xitao_nthreads;
     }
   }
 #ifdef CRIT_PERF_SCHED  
@@ -478,7 +478,7 @@ int worker_loop(int nthread)
       int attempts = 1;
       do{
         do{
-          random_core = (rand_r(&seed) % gotao_nthreads);
+          random_core = (rand_r(&seed) % xitao_nthreads);
         } while(random_core == nthread);
 
         LOCK_ACQUIRE(worker_lock[random_core]);

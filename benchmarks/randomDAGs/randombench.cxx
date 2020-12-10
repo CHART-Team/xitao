@@ -294,7 +294,7 @@ if(getenv("R_SEED"))
 #ifdef DEBUG
   std::cout << "[DEBUG] XITAO initial parameters are: " << nthreads <<"," << thread_base << ","<< nctx << std::endl;
 #endif
-  gotao_init();
+  xitao_init();
 
       // fill the input arrays and empty the output array
   fill_arrays(matrix_input_a , matrix_output_c, m_ysize, m_xsize);
@@ -327,7 +327,7 @@ if(getenv("R_SEED"))
                                     matrix_output_c);
               //if our node has no input edges
       if (nodes[x].edges.size() == 0) {
-        gotao_push(matrix_ao[i]);
+        xitao_push(matrix_ao[i]);
       } 
       else {
           //for each input edge of our node
@@ -357,7 +357,7 @@ if(getenv("R_SEED"))
         sa_width);
                 //if our node has no input edges
       if (nodes[x].edges.size() == 0) {
-        gotao_push(sort_ao[j]);
+        xitao_push(sort_ao[j]);
       } 
       else {
           //for each input edge of our node
@@ -389,7 +389,7 @@ if(getenv("R_SEED"))
         ha_width);
               //if our node has no input edges
       if (nodes[x].edges.size() == 0) {
-        gotao_push(heat_ao[k]);
+        xitao_push(heat_ao[k]);
       } 
       else {
                 //for each input edge of our node
@@ -424,9 +424,9 @@ if(getenv("R_SEED"))
   auto start1_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(start);
   auto epoch1 = start1_ms.time_since_epoch();
 
-  goTAO_start();
+  xitao_start();
 
-  goTAO_fini();
+  xitao_fini();
 
   end = std::chrono::system_clock::now();
 

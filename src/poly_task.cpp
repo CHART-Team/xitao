@@ -53,7 +53,7 @@ int PolyTask::sta_to_queue(float x){
     affinity_queue = -1;
   }
     else if (x < 0.0) return 1;  // error, should it be reported?
-    else affinity_queue = (int) (x*gotao_nthreads);
+    else affinity_queue = (int) (x*xitao_nthreads);
     return 0; 
   }
 int PolyTask::set_sta(float x){    
@@ -156,7 +156,7 @@ void PolyTask::set_timetable(int thread, float t, int index) {
 
 void PolyTask::print_ptt(float table[][XITAO_MAXTHREADS], const char* table_name) { 
   std::cout << std::endl << table_name <<  " PTT Stats: " << std::endl;
-  for(int leader = 0; leader < ptt_layout.size() && leader < gotao_nthreads; ++leader) {
+  for(int leader = 0; leader < ptt_layout.size() && leader < xitao_nthreads; ++leader) {
     auto row = ptt_layout[leader];
     std::sort(row.begin(), row.end());
     std::ostream time_output (std::cout.rdbuf());

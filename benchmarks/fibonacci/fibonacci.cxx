@@ -34,16 +34,17 @@ int main(int argc, char** argv) {
     // return error
     return -1;  
   }  
+  xitao_set_num_threads(4);
   // initialize the XiTAO runtime system 
-  gotao_init();           
+  xitao_init();           
   // recursively build the DAG                            
   auto parent = buildDAG(num);  
   // start the timer
   xitao::start("Time in XiTAO");
   // fire the XiTAO runtime system                    
-  gotao_start();          
+  xitao_start();          
   // end the XiTAO runtime system                       
-  gotao_fini();
+  xitao_fini();
   // stop the timer
   xitao::stop("Time in XiTAO");
   // start the timer

@@ -177,9 +177,9 @@ for (int i = 0; i < h_ysize; ++i)
 
 
 
-    std::cout << "gotao_init parameters are: " << nthreads <<"," << thread_base << ","<< nctx << std::endl;
+    std::cout << "xitao_init parameters are: " << nthreads <<"," << thread_base << ","<< nctx << std::endl;
 
-   gotao_init();
+   xitao_init();
 
 
 
@@ -227,7 +227,7 @@ for (int i = 0; i < h_ysize; ++i)
                                     matrix_input_a,
                                     matrix_output_c);
       if (x == 0) {
-        gotao_push(matrix_ao[i], i % nthreads);
+        xitao_push(matrix_ao[i], i % nthreads);
       } else {
         matrix_ao[i-matrix_width]->make_edge(matrix_ao[i]);
       }
@@ -242,7 +242,7 @@ for (int i = 0; i < h_ysize; ++i)
                                         sort_size*BLOCKSIZE,
                                         sa_width);
       if (x == 0) {
-        gotao_push(sort_ao[j], j % nthreads);
+        xitao_push(sort_ao[j], j % nthreads);
       } else {
         sort_ao[j-sort_width]->make_edge(sort_ao[j]);
       }
@@ -258,7 +258,7 @@ for (int i = 0; i < h_ysize; ++i)
                              heat_resolution * heat_resolution,
                              ha_width);
       if (x == 0) {
-        gotao_push(heat_ao[k], k % nthreads);
+        xitao_push(heat_ao[k], k % nthreads);
       } else {
         heat_ao[k-heat_width]->make_edge(heat_ao[k]);
       }

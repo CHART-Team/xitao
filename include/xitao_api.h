@@ -9,7 +9,6 @@ of the TAODAG, finalization, etc.
  *  */
 #ifndef _XITAO_API
 #define _XITAO_API
-#define goTAO_init gotao_init
 #include "xitao.h"
 #include "tao.h"
 #include <functional>
@@ -31,18 +30,14 @@ void set_xitao_mask(cpu_set_t& user_affinity_setup);
   \param thrb The logical thread id offset from the physical core mapping
   \param nhwc The number of hardware contexts
 */  
-void gotao_init_hw(int nthr, int thrb, int nhwc);
+void xitao_init_hw(int nthr, int thrb, int nhwc);
 //! Initialize the XiTAO Runtime using the environment variables XITAO_MAXTHREADS, GOTAO_THREAD_BASE and GOTAO_HW_CONTEXTS respectively
-void gotao_init();
-#define goTAO_start gotao_start
-//! Triggers the start of the TAODAG execution
-void gotao_start();
-#define goTAO_fini gotao_fini
+void xitao_init();
+void xitao_start();
 //! Finalize the runtime and makes sure that all workers have finished 
-void gotao_fini();
-#define goTAO_push gotao_push
+void xitao_fini();
 //! Force the master to wait until the workers have processed all ready TAOs
-void gotao_drain();
+void xitao_drain();
 
 //! Sets the number of worker threads before the runtime is initialized
 void xitao_set_num_threads(int nthreads);
@@ -53,10 +48,10 @@ void xitao_set_num_threads(int nthreads);
   \param pt The TAO to push 
   \param queue The queue to be pushed to (< XITAO_MAXTHREADS)
 */
-int gotao_push(PolyTask *pt, int queue=-1);
+int xitao_push(PolyTask *pt, int queue=-1);
 
 //! Block master thread until DAG execution is finished, without having to finalize
-void gotao_barrier();
+void xitao_barrier();
 
 //! Returns a handle to a ParForTask
 /*!
@@ -83,8 +78,8 @@ ParForTask<Proc, IterType>* xitao_vec(int parallelism, IterType& iter_start, Ite
 template <typename Proc, typename IterType>
 ParForTask<Proc, IterType>* xitao_vec_immediate(int parallelism, IterType& iter_start, IterType const& end, Proc func, int sched_type) {
   ParForTask<Proc, IterType>* par_for = new ParForTask<Proc, IterType>(sched_type, iter_start, end, func, parallelism);
-  gotao_push(par_for, 0);
-  gotao_start();
+  xitao_push(par_for, 0);
+  xitao_start();
   return par_for;
 }
 
@@ -110,9 +105,9 @@ std::vector<ParForTask<Proc, IterType>* > xitao_vec_immediate_multiparallel(int 
     IterType block_start = i * block_size; 
     IterType block_end   =(i < nblocks - 1)? block_start + block_size : end;
     par_for.push_back(new ParForTask<Proc, IterType>(sched_type, block_start, block_end, func, width));
-    gotao_push(par_for[i], i % gotao_nthreads);
+    xitao_push(par_for[i], i % xitao_nthreads);
   }    
-  gotao_start();
+  xitao_start();
   return par_for;
 }  
 
@@ -134,7 +129,7 @@ std::vector<ParForTask<Proc, IterType>* > xitao_vec_multiparallel(int width, Ite
     IterType block_start = i * block_size; 
     IterType block_end   =(i < nblocks - 1)? block_start + block_size : end;
     par_for.push_back(new ParForTask<Proc, IterType>(sched_type, block_start, block_end, func, width));
-    // gotao_push(par_for[i], i % gotao_nthreads);
+    // xitao_push(par_for[i], i % xitao_nthreads);
   }    
   return par_for;
 }

@@ -76,7 +76,7 @@ FibTAO* buildDAG(uint32_t term) {
 		// create the terminal tao
 		fib_taos[term] = new FibTAO(term);
 		// push the tao
-		gotao_push(fib_taos[term]);
+		xitao_push(fib_taos[term]);
 		// return the tao
 		return fib_taos[term];
 	} 
@@ -98,7 +98,7 @@ FibTAO* buildDAG(uint32_t term) {
 		fib_taos[term]->prev2->make_edge(fib_taos[term]);
 	} else { // you have reached a terminal TAO 
 		// push the TAO to fire the DAG execution
-		gotao_push(fib_taos[term]);
+		xitao_push(fib_taos[term]);
 	}
 	// return the current tao (the head of the DAG)
 	return fib_taos[term];

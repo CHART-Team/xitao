@@ -78,9 +78,9 @@ int main(int argc, char *argv[]) {
   std::cout << "Total time serial: " << elapsed_seconds.count()  << std::endl;
 #if TEST_XITAO_BASIC_DATAPARALLEL
   // Init XiTAO with workers 
-  gotao_init_hw(workers, -1 , -1);
+  xitao_init_hw(workers, -1 , -1);
   // Start the worker threads
-  gotao_start();  
+  xitao_start();  
   start_time = std::chrono::system_clock::now();
   __xitao_vec_region(tao_width, i, N, sched, 
     for (int j = 0; j < N; j++) 
@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
                     B[k][j]; 
      }
   );
-  gotao_fini();
+  xitao_fini();
   end_time = std::chrono::system_clock::now();  
   elapsed_seconds = end_time - start_time;
   std::cout << "Total time XiTAO: " << elapsed_seconds.count()  << std::endl;
@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
       std::memset(C[r], rand(), sizeof(int) * N);
     }
     // Init XiTAO with workers 
-    gotao_init_hw(workers, -1 , -1);
+    xitao_init_hw(workers, -1 , -1);
     start_time = std::chrono::system_clock::now();
     __xitao_vec_multiparallel_region(tao_width, i, N, sched, block_length, 
       for (int j = 0; j < N; j++) 
@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
                       B[k][j]; 
        }
     );
-    gotao_fini();
+    xitao_fini();
     end_time = std::chrono::system_clock::now();
     elapsed_seconds = end_time - start_time;
     std::cout << "Total time XiTAO multiparallel region in iter " << iter << " : " << elapsed_seconds.count()  << std::endl;

@@ -161,7 +161,7 @@ int main( int argc, char *argv[] )
 			           "\n\tInternal Y Decomposition = " << iydecomp << std::endl;
     
     // When using stas, the runtime needs to be initialized before we start creating objects
-    gotao_init();
+    xitao_init();
 
     // first a single iteration of a stencil
     jacobi2D *stc[param.maxiter][exdecomp][eydecomp];
@@ -207,7 +207,7 @@ int main( int argc, char *argv[] )
                              ceildiv(np, iydecomp*eydecomp), //(np + iydecomp*eydecomp -1) / (iydecomp*eydecomp), 
                              awidth);
           init1[x][y]->set_sta((float) (x * eydecomp + y) / (float) (exdecomp*eydecomp));
-          gotao_push(init1[x][y]); // insert into affinity queue
+          xitao_push(init1[x][y]); // insert into affinity queue
        }
 
     param.uhelp = (double*) malloc( sizeof(double)*np*np );
@@ -269,7 +269,7 @@ int main( int argc, char *argv[] )
 #else // no topo
           stc[iter][x][y]->set_sta(0.0);
 #endif  // TOPOPLACE
-          gotao_push(stc[iter][x][y]);
+          xitao_push(stc[iter][x][y]);
 #endif  // NUMA_ALLOC
 
 
@@ -382,11 +382,11 @@ int main( int argc, char *argv[] )
    phase_profile_start();
 #endif
    start = std::chrono::system_clock::now();
-   gotao_start();
+   xitao_start();
 
    // here the computation takes sta
 
-   gotao_fini();
+   xitao_fini();
    // wait for all threads to synchronize
 #ifdef DO_LOI
     phase_profile_stop(0); 

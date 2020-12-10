@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
     B[r] = new int[N];
     C[r] = new int[N];
   }
-  gotao_init_hw(workers, -1 , -1);
+  xitao_init_hw(workers, -1 , -1);
   ResetMatTAO* resetTAO = new ResetMatTAO(A, B, C, N, 0);
   ResetMatTAO* headTAO = resetTAO;
   for (int iter = 0; iter < iter_count; ++iter) {
@@ -96,8 +96,8 @@ int main(int argc, char *argv[]) {
       dataparallelNode->make_edge(resetTAO);
     }
   }
-  gotao_push(headTAO);
-  gotao_start();
-  gotao_fini();
+  xitao_push(headTAO);
+  xitao_start();
+  xitao_fini();
   std::cout << "Total successful steals: " << tao_total_steals << std::endl;      
 }

@@ -70,13 +70,13 @@ main(int argc, char *argv[])
 #pragma omp single nowait
 {
   // init XiTAO runtime 
-  gotao_init();
+  xitao_init();
   // push the TAO
-  gotao_push(vm);
+  xitao_push(vm);
   //Start the TAODAG exeuction
-  gotao_start();
+  xitao_start();
   //Finalize and claim resources back
-  gotao_fini();
+  xitao_fini();
 }
 }
 

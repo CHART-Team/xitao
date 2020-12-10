@@ -47,7 +47,7 @@ main(int argc, char *argv[])
   }
 
   // init XiTAO runtime 
-  gotao_init();
+  xitao_init();
   
   // create numvm TAOs 
   int numvm = len / block;
@@ -70,12 +70,12 @@ main(int argc, char *argv[])
     //Create an edge
     vm[j]->make_edge(va);
     //Push current root to assigned queue
-    gotao_push(vm[j], j % gotao_nthreads);
+    xitao_push(vm[j], j % xitao_nthreads);
   } 
   //Start the TAODAG exeuction
-  gotao_start();
+  xitao_start();
   //Finalize and claim resources back
-  gotao_fini();
+  xitao_fini();
   std::cout << "Result is " << D << std::endl;
   std::cout << "Done!\n";
   std::cout << "Total successful steals: " << tao_total_steals << std::endl;

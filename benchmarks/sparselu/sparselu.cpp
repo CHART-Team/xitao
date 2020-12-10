@@ -71,9 +71,9 @@ void sparselu_parallel()
    //printf("Init OK Matrix is: %d (%d %d) # of blocks: %d memory is %ld MB\n", (NB*BSIZE), NB, BSIZE, bcount, BSIZE*BSIZE*bcount*sizeof(ELEM)/1024/1024);
    // init XiTAO runtime 
 
-   gotao_init();
+   xitao_init();
 #ifndef NO_STA
-   NTHREADS = gotao_nthreads;
+   NTHREADS = xitao_nthreads;
    STA_IND = 0;
 #endif
    //std::cout << "init " << std::endl;
@@ -105,10 +105,10 @@ void sparselu_parallel()
          init0->workload_hint = get_sta_int_val(kk, kk); 
 #endif
          init0->make_edge(lu0);
-         gotao_push(init0);
+         xitao_push(init0);
          init_matrix[kk][kk] = true;
 #else        
-         gotao_push(lu0);
+         xitao_push(lu0);
 #endif
       } 
       dependency_matrix[kk][kk] = lu0;
@@ -133,7 +133,7 @@ void sparselu_parallel()
                 init0->workload_hint = get_sta_int_val(kk, jj); 
 #endif
                 init0->make_edge(fwd);
-                gotao_push(init0);
+                xitao_push(init0);
                 init_matrix[kk][jj] = true;
               }
 #endif
@@ -177,7 +177,7 @@ void sparselu_parallel()
               init0->workload_hint = get_sta_int_val(ii, kk); 
 #endif
               init0->make_edge(bdiv);
-              gotao_push(init0);
+              xitao_push(init0);
               init_matrix[ii][kk] = true;
             }
 #endif
@@ -211,7 +211,7 @@ void sparselu_parallel()
                     init0->workload_hint = get_sta_int_val(ii, kk); 
 #endif
                     init0->make_edge(bmod);
-                    gotao_push(init0);
+                    xitao_push(init0);
                     init_matrix[ii][kk] = true;
 
                   }
@@ -223,7 +223,7 @@ void sparselu_parallel()
 #endif
 
                     init0->make_edge(bmod);
-                    gotao_push(init0);
+                    xitao_push(init0);
                     init_matrix[kk][jj] = true;
                   }
                   if(!init_matrix[ii][jj]) {
@@ -235,7 +235,7 @@ void sparselu_parallel()
 #endif
 
                     init0->make_edge(bmod);
-                    gotao_push(init0);
+                    xitao_push(init0);
                     init_matrix[ii][jj] = true;
                   }
 #endif
@@ -261,7 +261,7 @@ void sparselu_parallel()
          }
       }
    }
-   //gotao_init();
+   //xitao_init();
    //Timing Stop
    
    t_end=get_time();
@@ -271,11 +271,11 @@ void sparselu_parallel()
    //Timing Start
    t_start=get_time();
 
-   //gotao_push(lu0_objs[0]);
+   //xitao_push(lu0_objs[0]);
    //Start the TAODAG exeuction
-   gotao_start();
+   xitao_start();
    //Finalize and claim resources back
-   gotao_fini();
+   xitao_fini();
 
    //Timing Stop
    t_end=get_time();

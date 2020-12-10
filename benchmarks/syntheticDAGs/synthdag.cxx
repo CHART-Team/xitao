@@ -19,8 +19,7 @@
 #include <algorithm>
 using namespace xitao;
 
-int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   if(argc != 7) {
     std::cout << "./synbench <Block Side Length> <Resource Width> <TAO Mul Count> <TAO Copy Count> <TAO Stencil Count> <Degree of Parallelism>" << std::endl; 
@@ -51,7 +50,7 @@ main(int argc, char *argv[])
   graphfile.open ("graph.txt");
   graphfile << "digraph DAG{\n";
   // init XiTAO runtime 
-  gotao_init();
+  xitao_init();
   
   int current_type = 0;
   int previous_tao_id = 0;
@@ -151,15 +150,15 @@ main(int argc, char *argv[])
   graphfile << "}";
   graphfile.close();
 
-  gotao_push(startTAO, 0);
+  xitao_push(startTAO, 0);
   std::chrono::time_point<std::chrono::system_clock> start, end;
   start = std::chrono::system_clock::now();
   auto start1_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(start);
   auto epoch1 = start1_ms.time_since_epoch();
 
-  goTAO_start();
+  xitao_start();
 
-  goTAO_fini();
+  xitao_fini();
 
   end = std::chrono::system_clock::now();
 

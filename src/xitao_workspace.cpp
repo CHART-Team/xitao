@@ -8,7 +8,7 @@ namespace xitao {
   struct completions task_completions[XITAO_MAXTHREADS];
   struct completions task_pool[XITAO_MAXTHREADS];
   int critical_path;
-  int gotao_nthreads;
+  int xitao_nthreads;
   int gotao_ncontexts;
   int gotao_thread_base;
   bool gotao_can_exit = false;

@@ -55,7 +55,7 @@ namespace xitao {
   extern struct completions task_completions[XITAO_MAXTHREADS];
   extern struct completions task_pool[XITAO_MAXTHREADS];
   extern int critical_path;
-  extern int gotao_nthreads;
+  extern int xitao_nthreads;
   extern int gotao_ncontexts;
   extern int gotao_thread_base;
   extern bool gotao_can_exit;
