@@ -12,10 +12,6 @@ using namespace xitao;
 //The pending PolyTasks count 
 std::atomic<int> PolyTask::pending_tasks;
 
-#ifdef WEIGHT_SCHED
-//The current threshold value for weight-based of the system
-std::atomic<double> PolyTask::bias;
-#endif
 // need to declare the static class memeber
 #if defined(DEBUG)
 std::atomic<int> PolyTask::created_tasks;
@@ -33,9 +29,9 @@ PolyTask::PolyTask(int t, int _nthread=0) : type(t){
   if(task_pool[_nthread].tasks == 0) {
     pending_tasks += TASK_POOL;
     task_pool[_nthread].tasks = TASK_POOL-1;
-      #ifdef DEBUG
+#ifdef DEBUG
     std::cout << "[DEBUG] Requested: " << TASK_POOL << " tasks. Pending is now: " << pending_tasks << "\n";
-      #endif
+#endif
   }
   else task_pool[_nthread].tasks--;
   LOCK_RELEASE(worker_lock[_nthread]);
@@ -199,64 +195,10 @@ int PolyTask::globalsearch_PTT(int nthread, PolyTask * it){
   return new_leader;
 }
 #endif
-  
-#ifdef WEIGHT_SCHED
-int PolyTask::weight_sched(int nthread, PolyTask * it){
-  int ndx=nthread;
-  double current_bias=bias;
-  double div = 1;
-  double little = 0; //Inital little value
-  double big = 0; //Inital little value
-
-  //Find index based on width
-  double index = 0;
-  index = log2(it->width);
-  
-  //Look at predefined little and big threads
-  //with current width as index
-  little = it->get_timetable(LITTLE_INDEX,index);
-  big = it->get_timetable(BIG_INDEX,index); 
-
-  //If it has no recorded value on big, choose big
-  if(!big){
-    ndx=BIG_INDEX;
-  //If it has no recorded value on little, choose little
-  }else if(!little){
-    ndx=LITTLE_INDEX;
-  //Else, check if benifical to run on big or little
-  }else{
-    //If larger than current global value
-    //Schedule on big cluster 
-    //otherwise LITTLE
-    div = little/big;
-    if(div > current_bias){
-      ndx=BIG_INDEX;
-    }else{
-      ndx=LITTLE_INDEX;
-    }
-    //Update the bias with a ratio of 1:6 to the old bias
-    current_bias=((6*current_bias)+div)/7;
-    bias.store(current_bias);
-  }
-  
-  //Choose a random big or little for scheduling
-  if(ndx == BIG_INDEX){
-    ndx=((rand()%BIG_NTHREADS)+ndx);
-  }else{
-    ndx=((rand()%LITTLE_NTHREADS)+ndx);
-  }
-#if defined(CRIT_PERF_SCHED) 
-  //Mold the task to a new width
-  history_mold(ndx,it);
-#endif
-  return ndx;
-} 
-#endif
-
 
 PolyTask * PolyTask::commit_and_wakeup(int _nthread){
   PolyTask *ret = nullptr;
-  for(auto&& it : out){
+  for(auto&& it : out) {
     int refs = it->refcount.fetch_sub(1);
     if(refs == 1){
 #ifdef DEBUG
@@ -264,8 +206,6 @@ PolyTask * PolyTask::commit_and_wakeup(int _nthread){
       std::cout << "[DEBUG] Task " << it->taskid << " became ready" << std::endl;
       LOCK_RELEASE(output_lck);
 #endif 
-        
-#if defined(CRIT_PERF_SCHED) || defined(WEIGHT_SCHED)
 
 #if defined(CRIT_PERF_SCHED)
       int pr = if_prio(_nthread, it);
@@ -294,12 +234,6 @@ PolyTask * PolyTask::commit_and_wakeup(int _nthread){
         worker_ready_q[_nthread].push_back(it);
         LOCK_RELEASE(worker_lock[_nthread]);
       }
-#elif defined(WEIGHT_SCHED)
-      int ndx2 = weight_sched(_nthread, it);
-      LOCK_ACQUIRE(worker_lock[ndx2]);
-      worker_ready_q[ndx2].push_back(*it);
-      LOCK_RELEASE(worker_lock[ndx2]);
-#endif
                 
 #else
       if(!ret && ((it->affinity_queue == -1) || ((it->affinity_queue/it->width) == (_nthread/it->width)))){

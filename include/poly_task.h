@@ -35,17 +35,11 @@ public:
   // The leader task id in the resource partition
   int leader;
   int criticality;
-  #if defined(DEBUG)
+#if defined(DEBUG)
   int taskid;
   static std::atomic<int> created_tasks;
 #endif
   static std::atomic<int> pending_tasks;
-
-#ifdef WEIGHT_SCHED
-  //Static atomic of current weight threshold for weight-based scheduling
-  static std::atomic<double> bias;
-#endif
-
   std::atomic<int> refcount;
   std::vector<PolyTask *> out;
   std::atomic<int> threads_out_tao;
@@ -99,10 +93,6 @@ public:
     \param t a TAO with which a happens-before order needs to be ensured (TAO t should execute after *this) 
   */
   void make_edge(PolyTask *t);
-  
-#ifdef WEIGHT_SCHED
-  int weight_sched(int nthread, PolyTask * it);
-#endif
   //! complete the current TAO and wake up all dependent TAOs
   /*!
     \param _nthread id of the current thread
