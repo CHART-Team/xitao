@@ -1,12 +1,12 @@
 #include "xitao_workspace.h"
 namespace xitao {
-  std::list<PolyTask *> worker_ready_q[XITAO_MAXTHREADS] __attribute__ ((aligned (64)));
-  LFQueue<PolyTask *> worker_assembly_q[XITAO_MAXTHREADS] __attribute__ ((aligned (64)));
+  std::list<PolyTask *> worker_ready_q[XITAO_MAXTHREADS];
+  LFQueue<PolyTask *> worker_assembly_q[XITAO_MAXTHREADS];
   long int tao_total_steals = 0;  
   BARRIER* starting_barrier;
   cxx_barrier* tao_barrier;  
-  struct completions task_completions[XITAO_MAXTHREADS] __attribute__ ((aligned (64)));
-  struct completions task_pool[XITAO_MAXTHREADS] __attribute__ ((aligned (64)));
+  struct completions task_completions[XITAO_MAXTHREADS];
+  struct completions task_pool[XITAO_MAXTHREADS];
   int critical_path;
   int xitao_nthreads;
   int gotao_ncontexts;
