@@ -63,10 +63,6 @@ public:
   double *C; /*!< TAO implementation specific double array that holds the result vector */
 };
 
-#if defined(CRIT_PERF_SCHED)
-float VecMulSta::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS]; 
-#endif
-
 /*! this TAO will take two vectors and multiply them. 
 This TAO implements internal dynamic scheduling.*/
 class VecMulDyn : public AssemblyTask 
@@ -123,22 +119,12 @@ public:
   atomic<int> next; /*!< TAO implementation specific atomic variable to provide thread safe tracker of the number of processed blocks */
 };
 
-#if defined(CRIT_PERF_SCHED)
-float VecMulDyn::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS]; 
-#endif
 
 /*! this TAO will take a set of doubles and add them all together
 */
 class VecAdd : public AssemblyTask 
 {
-public: 
-#if defined(CRIT_PERF_SCHED)
-  //! A public static class variable.
-  /*!
-    It holds the performance trace table for the corresponding TAO.
-  */      
-  static float time_table[][XITAO_MAXTHREADS];
-#endif  
+public:  
   
   //! VecAdd TAO constructor. 
   /*!
@@ -174,6 +160,3 @@ public:
   double *out; /*!< TAO implementation specific double point to the summation*/
   int len;     /*!< TAO implementation specific integer that holds the number of elements */
 };
-#if defined(CRIT_PERF_SCHED)
-float VecAdd::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS]; 
-#endif
