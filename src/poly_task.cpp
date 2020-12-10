@@ -1,4 +1,5 @@
 #include "poly_task.h"
+#include "debug_info.h"
 #include <stdlib.h>
 #include <iostream>
 #include <iomanip>
@@ -28,10 +29,8 @@ PolyTask::PolyTask(int t, int _nthread=0) : type(t){
   LOCK_ACQUIRE(worker_lock[_nthread]);
   if(task_pool[_nthread].tasks == 0) {
     pending_tasks += TASK_POOL;
-    task_pool[_nthread].tasks = TASK_POOL-1;
-#ifdef DEBUG
-    std::cout << "[DEBUG] Requested: " << TASK_POOL << " tasks. Pending is now: " << pending_tasks << "\n";
-#endif
+    task_pool[_nthread].tasks = TASK_POOL - 1;
+    DEBUG_MSG("[DEBUG] Requested: " << TASK_POOL << " tasks. Pending is now: " << pending_tasks);
   }
   else task_pool[_nthread].tasks--;
   LOCK_RELEASE(worker_lock[_nthread]);
@@ -201,21 +200,12 @@ PolyTask * PolyTask::commit_and_wakeup(int _nthread){
   for(auto&& it : out) {
     int refs = it->refcount.fetch_sub(1);
     if(refs == 1){
-#ifdef DEBUG
-      LOCK_ACQUIRE(output_lck);
-      std::cout << "[DEBUG] Task " << it->taskid << " became ready" << std::endl;
-      LOCK_RELEASE(output_lck);
-#endif 
-
+      DEBUG_MSG("[DEBUG] Task " << it->taskid << " became ready");
 #if defined(CRIT_PERF_SCHED)
       int pr = if_prio(_nthread, it);
       if (pr == 1){
         globalsearch_PTT(_nthread, it);
-#ifdef DEBUG
-        LOCK_ACQUIRE(output_lck);
-        std::cout <<"[DEBUG] Priority=1, task "<< it->taskid <<" will run on thread "<< it->leader << ", width become " << it->width << std::endl;
-        LOCK_RELEASE(output_lck);
-#endif
+        DEBUG_MSG("[DEBUG] Priority=1, task "<< it->taskid <<" will run on thread "<< it->leader << ", width become " << it->width);
         for(int i = it->leader; i < it->leader + it->width; i++){
           LOCK_ACQUIRE(worker_assembly_lock[i]);
           worker_assembly_q[i].push_back(it);
@@ -224,12 +214,8 @@ PolyTask * PolyTask::commit_and_wakeup(int _nthread){
           LOCK_RELEASE(worker_assembly_lock[i]);
         }        
       }
-      else{        
-#ifdef DEBUG
-        LOCK_ACQUIRE(output_lck);
-        std::cout <<"[DEBUG] Priority=0, task "<< it->taskid <<" is pushed to WSQ of thread "<< _nthread << std::endl;
-        LOCK_RELEASE(output_lck);
-#endif
+      else {  
+        DEBUG_MSG("[DEBUG] Priority=0, task "<< it->taskid <<" is pushed to WSQ of thread "<< _nthread); 
         LOCK_ACQUIRE(worker_lock[_nthread]);
         worker_ready_q[_nthread].push_back(it);
         LOCK_RELEASE(worker_lock[_nthread]);

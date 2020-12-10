@@ -2,7 +2,7 @@
 
 #include "tao.h"
 #include "config.h"
-// #include "debug_info.h"
+#include "debug_info.h"
 #include <iostream>
 #include <chrono>
 #include <cmath>
@@ -336,11 +336,7 @@ int worker_loop(int nthread)
   } else {
     phys_core = static_resource_mapper[gotao_thread_base+(nthread%(XITAO_MAXTHREADS-gotao_thread_base))];   
   }  
-#ifdef DEBUG
-  LOCK_ACQUIRE(output_lck);
-  std::cout << "[DEBUG] nthread: " << nthread << " mapped to physical core: "<< phys_core << std::endl;
-  LOCK_RELEASE(output_lck);
-#endif  
+  DEBUG_MSG("[DEBUG] nthread: " << nthread << " mapped to physical core: "<< phys_core); 
   unsigned int seed = time(NULL);
   cpu_set_t cpu_mask;
   CPU_ZERO(&cpu_mask);
@@ -368,12 +364,7 @@ int worker_loop(int nthread)
       if(st->type == TASK_SIMPLE){
         SimpleTask *simple = (SimpleTask *) st;
         simple->f(simple->args, nthread);
-
-  #ifdef DEBUG
-        LOCK_ACQUIRE(output_lck);
-        std::cout << "[DEBUG] Distributing simple task " << simple->taskid << " with width " << simple->width << " to workers " << nthread << std::endl;
-        LOCK_RELEASE(output_lck);
-  #endif
+        DEBUG_MSG("[DEBUG] Distributing simple task " << simple->taskid << " with width " << simple->width << " to workers " << nthread);
         st = simple->commit_and_wakeup(nthread);
         simple->cleanup();
         //delete simple;
@@ -383,11 +374,7 @@ int worker_loop(int nthread)
 #ifndef CRIT_PERF_SCHED 
         assembly->leader = nthread / assembly->width * assembly->width; // homogenous calculation of leader core
 #endif        
-#ifdef DEBUG
-        LOCK_ACQUIRE(output_lck);
-        std::cout << "[DEBUG] Distributing assembly task " << assembly->taskid << " with width " << assembly->width << " to workers [" << assembly->leader << "," << assembly->leader + assembly->width << ")" << std::endl;
-        LOCK_RELEASE(output_lck);
-#endif
+        DEBUG_MSG("[DEBUG] Distributing assembly task " << assembly->taskid << " with width " << assembly->width << " to workers [" << assembly->leader << "," << assembly->leader + assembly->width << ")");
         for(int i = assembly->leader; i < assembly->leader + assembly->width; i++){
           LOCK_ACQUIRE(worker_assembly_lock[i]);
           worker_assembly_q[i].push_back(st);
@@ -415,14 +402,8 @@ int worker_loop(int nthread)
         t1 = std::chrono::system_clock::now();
       }
 #endif
-
-#ifdef DEBUG
-      LOCK_ACQUIRE(output_lck);
-      std::cout << "[DEBUG] Thread "<< nthread << " starts executing task " << assembly->taskid << "......\n";
-      LOCK_RELEASE(output_lck);
-#endif
+      DEBUG_MSG("[DEBUG] Thread "<< nthread << " starts executing task " << assembly->taskid << "......");
       assembly->execute(nthread);
-
 #if defined(CRIT_PERF_SCHED)
       if(assembly->leader == nthread){
         t2 = std::chrono::system_clock::now();
@@ -442,11 +423,7 @@ int worker_loop(int nthread)
     _final = (++assembly->threads_out_tao == assembly->width);
      st = nullptr;
      if(_final){ // the last exiting thread updates
-#ifdef DEBUG
-        LOCK_ACQUIRE(output_lck);
-        std::cout << "[DEBUG] Thread " << nthread << " completed assembly task " << assembly->taskid << std::endl;
-        LOCK_RELEASE(output_lck);
-#endif
+        DEBUG_MSG("[DEBUG] Thread " << nthread << " completed assembly task " << assembly->taskid);
         st = assembly->commit_and_wakeup(nthread);
         assembly->cleanup();
         delete assembly;
@@ -463,11 +440,7 @@ int worker_loop(int nthread)
 #if defined(CRIT_PERF_SCHED)
       st->history_mold(nthread, st);
 #endif      
-#ifdef DEBUG
-      LOCK_ACQUIRE(output_lck);
-      std::cout <<"[DEBUG] Priority=0, task "<< st->taskid <<" will run on thread "<< st->leader << ", width become " << st->width << std::endl;
-      LOCK_RELEASE(output_lck);
-#endif
+      DEBUG_MSG("[DEBUG] Priority=0, task "<< st->taskid <<" will run on thread "<< st->leader << ", width become " << st->width);
       continue;
     }     
     LOCK_RELEASE(worker_lock[nthread]);        
@@ -486,11 +459,7 @@ int worker_loop(int nthread)
           st = worker_ready_q[random_core].back(); 
           worker_ready_q[random_core].pop_back();
           tao_total_steals++;  
-    #ifdef DEBUG
-          LOCK_ACQUIRE(output_lck);
-          std::cout << "[DEBUG] Thread " << nthread << " steal a task from " << random_core << " successfully. \n";
-          LOCK_RELEASE(output_lck);          
-    #endif     
+          DEBUG_MSG("[DEBUG] Thread " << nthread << " steal a task from " << random_core << " successfully.");
 #if defined(CRIT_PERF_SCHED)          
           st->history_mold(nthread, st);     
 #endif          
@@ -507,25 +476,16 @@ int worker_loop(int nthread)
     // First check the number of actual tasks that have completed
     if(task_completions[nthread].tasks > 0){
       PolyTask::pending_tasks -= task_completions[nthread].tasks;
-#ifdef DEBUG
-      LOCK_ACQUIRE(output_lck);
-      std::cout << "[DEBUG] Thread " << nthread << " completed " << task_completions[nthread].tasks << " tasks. " 
-      "Pending tasks = " << PolyTask::pending_tasks << "\n";
-      LOCK_RELEASE(output_lck);
-#endif
-
+      DEBUG_MSG("[DEBUG] Thread " << nthread << " completed " << task_completions[nthread].tasks << " tasks. " <<
+      "Pending tasks = " << PolyTask::pending_tasks);
       task_completions[nthread].tasks = 0;
     }
     LOCK_ACQUIRE(worker_lock[nthread]);
    // Next remove any virtual tasks from the per-thread task pool
-    if(task_pool[nthread].tasks > 0){
+    if(task_pool[nthread].tasks > 0) {
       PolyTask::pending_tasks -= task_pool[nthread].tasks;
-#ifdef DEBUG
-      LOCK_ACQUIRE(output_lck);
-      std::cout << "[DEBUG] Thread " << nthread << " removed " << task_pool[nthread].tasks << " virtual tasks. " 
-      "Pending tasks = " << PolyTask::pending_tasks << "\n";
-      LOCK_RELEASE(output_lck);
-#endif
+      DEBUG_MSG("[DEBUG] Thread " << nthread << " removed " << task_pool[nthread].tasks << " virtual tasks. " <<
+      "Pending tasks = " << PolyTask::pending_tasks);
       task_pool[nthread].tasks = 0;
     }
     LOCK_RELEASE(worker_lock[nthread]);
