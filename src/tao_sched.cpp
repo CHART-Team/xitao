@@ -1,6 +1,7 @@
 /* assembly_sched.cxx -- integrated work stealing with assembly scheduling */
 
 #include "tao.h"
+#include "config.h"
 // #include "debug_info.h"
 #include <iostream>
 #include <chrono>
@@ -40,14 +41,15 @@ void set_xitao_mask(cpu_set_t& user_affinity_setup) {
   \param thrb is the logical thread id offset from the physical core mapping
   \param nhwc is the number of hardware contexts
 */ 
-void gotao_init_hw( int nthr, int thrb, int nhwc)
-{  
+void gotao_init_hw(int nthr, int thrb, int nhwc)
+{ 
   if(gotao_initialized) {
     for(int i = 0; i < XITAO_MAXTHREADS; ++i) {
       inclusive_partitions[i].clear();
       ptt_layout[i].clear();
     }
   }
+
   if(nthr>=0) gotao_nthreads = nthr;
   else {    
     if(getenv("GOTAO_NTHREADS")) gotao_nthreads = atoi(getenv("GOTAO_NTHREADS"));  
@@ -184,7 +186,7 @@ void gotao_init_hw( int nthr, int thrb, int nhwc)
   for(int i = 0; i < gotao_nthreads; i++){
     t[i]  = new std::thread(worker_loop, i);   
   }  
-  if(!suppress_init_warnings) std::cout << "XiTAO initialized with " << gotao_nthreads << " threads and configured with " << XITAO_MAXTHREADS << " max threads " << std::endl;
+  //if(!suppress_init_warnings) std::cout << "XiTAO initialized with " << gotao_nthreads << " threads and configured with " << XITAO_MAXTHREADS << " max threads " << std::endl;
 #ifdef DEBUG
   for(int i = 0; i < static_resource_mapper.size(); ++i) { 
     std::cout << "[DEBUG] thread " << i << " is configured to be mapped to core id : " << static_resource_mapper[i] << std::endl;     
@@ -204,10 +206,16 @@ void gotao_init_hw( int nthr, int thrb, int nhwc)
   gotao_initialized = true;  
 }
 
+
+void xitao_set_num_threads(int nthreads) {
+  config::nthreads = nthreads;
+}
+
 // Initialize gotao from environment vars or defaults
 void gotao_init()
 {
-  gotao_init_hw(-1, -1, -1);
+  gotao_init_hw(config::nthreads, config::thread_base, config::hw_contexts);
+  config::printConfigs();
 }
 
 void gotao_start()

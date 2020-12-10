@@ -34,7 +34,7 @@ XITAO_LIB = ./lib
 
 LIBS = -pthread -lm -L$(XITAO_LIB) -lxitao ${EXTRAELIBS}
 
-TAO_OBJS = src/tao_sched.o src/xitao_ptt_key.o src/xitao_ptt.o src/poly_task.o src/xitao_workspace.o src/barriers.o 
+TAO_OBJS = src/tao_sched.o src/config.o src/xitao_ptt_key.o src/xitao_ptt.o src/poly_task.o src/xitao_workspace.o src/barriers.o src/config.o
 
 all: lib
 	cd $(EXAMPLES)/dotproduct && $(MAKE) clean && $(MAKE) 
@@ -42,7 +42,8 @@ all: lib
 	cd $(EXAMPLES)/syntheticDAGs && $(MAKE) clean && $(MAKE) 
 	cd $(EXAMPLES)/heat && $(MAKE) clean && $(MAKE) 
 	cd $(EXAMPLES)/dataparallel && $(MAKE) clean && $(MAKE) 
-
+	cd $(EXAMPLES)/fibonacci && $(MAKE) clean && $(MAKE) 
+	cd $(EXAMPLES)/sparselu && $(MAKE) clean && $(MAKE) 
 %.o : %.cxx
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 

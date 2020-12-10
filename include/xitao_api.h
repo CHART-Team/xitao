@@ -44,6 +44,9 @@ void gotao_fini();
 //! Force the master to wait until the workers have processed all ready TAOs
 void gotao_drain();
 
+//! Sets the number of worker threads before the runtime is initialized
+void xitao_set_num_threads(int nthreads);
+
 /*! Push work into Polytask queue. if no particular queue is specified then try to determine which is the local. 
  queue and insert it there. This has some overhead, so in general the
  programmer should specify some queue
