@@ -35,10 +35,8 @@ namespace xitao {
       }
 
       static inline bool try_pop_ready_task(int nthread, PolyTask* &task) {
-        bool available = false;
         LOCK_ACQUIRE(worker_lock[nthread]);
-        if(!worker_ready_q[nthread].empty()){
-          available = true;
+        if(!worker_ready_q[nthread].empty()) {
           task = worker_ready_q[nthread].back(); 
           worker_ready_q[nthread].pop_back();
           LOCK_RELEASE(worker_lock[nthread]);
@@ -46,9 +44,11 @@ namespace xitao {
           task->history_mold(nthread, task);
 #endif      
           DEBUG_MSG("[DEBUG] Priority=0, task "<< task->taskid <<" will run on thread "<< task->leader << ", width become " << task->width);
-        }     
-        LOCK_RELEASE(worker_lock[nthread]); 
-        return available; 
+          return true;
+        } else {
+          LOCK_RELEASE(worker_lock[nthread]);
+          return false;
+        } 
       } 
   };
 }
