@@ -121,10 +121,13 @@ float PolyTask::get_timetable(int thread, int index) {
 
 // set value at specific location (leader, width) in ptt
 void PolyTask::set_timetable(int thread, float ticks, int index) {
-  float oldticks = get_timetable(thread, index);
-  if(oldticks != 0) ticks = (4 * oldticks + ticks) / 5;     
-  // set the ptt measurement at location
   (*_ptt)[index * XITAO_MAXTHREADS + thread] = ticks;  
+}
+
+void PolyTask::insert_modeled_performance(int thread, float ticks, int index) {
+  float oldticks = get_timetable(thread, index);
+  if(oldticks != 0) ticks = (4 * oldticks + ticks) / 5; 
+  set_timetable(thread, ticks, index);    
 }
 
 int PolyTask::globalsearch_PTT(int nthread, PolyTask * it){

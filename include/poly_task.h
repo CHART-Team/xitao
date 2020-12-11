@@ -63,6 +63,8 @@ public:
   virtual void set_timetable(int thread, float ticks, int index);
   //History-based molding
   virtual void history_mold(int _nthread, PolyTask *it);
+  // Insert modeled performance values 
+  virtual void insert_modeled_performance(int thread, float ticks, int index);
   //Recursive function assigning criticality
   // int set_criticality();
   // int set_marker(int i);

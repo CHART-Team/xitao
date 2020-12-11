@@ -358,8 +358,8 @@ int worker_loop(int nthread)
     AssemblyTask *assembly = nullptr;
     SimpleTask *simple = nullptr;
 
-  // 0. If a task is already provided via forwarding then exeucute it (simple task)
-  //    or insert it into the assembly queues (assembly task)
+    // 0. If a task is already provided via forwarding then exeucute it (simple task)
+    //    or insert it into the assembly queues (assembly task)
     if(st){
       if(st->type == TASK_SIMPLE){
         SimpleTask *simple = (SimpleTask *) st;
@@ -386,7 +386,7 @@ int worker_loop(int nthread)
     }
   // assemblies are inlined between two barriers
     if(st) {
-      int _final; // remaining
+      bool _final; // remaining
       assembly = (AssemblyTask *) st;
 
 #if defined(CRIT_PERF_SCHED)
@@ -403,7 +403,7 @@ int worker_loop(int nthread)
         std::chrono::duration<double> elapsed_seconds = t2-t1;
         double ticks = elapsed_seconds.count();
         int width_index = assembly->width - 1;
-        assembly->set_timetable(nthread, ticks, width_index);
+        assembly->insert_modeled_performance(nthread, ticks, width_index);
       }
 #endif
     _final = (++assembly->threads_out_tao == assembly->width);
