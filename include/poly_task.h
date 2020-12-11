@@ -10,6 +10,7 @@
 #include "lfq-fifo.h"
 #include "xitao_workspace.h"
 #include "xitao_ptt.h"
+// #include "queue_manager.h"
 //#include "xitao.h"
 
 /*! the basic PolyTask type */
@@ -68,7 +69,6 @@ public:
   //Determine if task is critical task
   int if_prio(int _nthread, PolyTask * it);
   int globalsearch_PTT(int nthread, PolyTask * it);
-  static void print_ptt(float table[][XITAO_MAXTHREADS], const char* table_name);
   //Find suitable thread for prio task
   //int find_thread(int nthread, PolyTask * it);
 #endif

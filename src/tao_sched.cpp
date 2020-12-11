@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <vector>
 #include <fstream>
+#include <assert.h>
+#include "queue_manager.h"
 #include "xitao_workspace.h"
 using namespace xitao;
 
@@ -282,9 +284,7 @@ int xitao_push(PolyTask *pt, int queue)
 #ifdef CRIT_PERF_SCHED  
   pt->_ptt = xitao_ptt::try_insert_table(pt, pt->workload_hint);    /*be sure that a single orphaned task has a PTT*/
 #endif  
-  LOCK_ACQUIRE(worker_lock[queue]);
-  worker_ready_q[queue].push_back(pt);
-  LOCK_RELEASE(worker_lock[queue]);
+  queue_manager::insert_in_ready_queue(pt, queue);
   return 1;
 }
 
@@ -303,7 +303,7 @@ int gotao_push_init(PolyTask *pt, int queue)
     }
   }
   if(resources_runtime_controlled) queue = check_and_get_available_queue(queue);
-  worker_ready_q[queue].push_back(pt);
+  queue_manager::insert_in_ready_queue(pt, queue);
   return 1; 
 }
 
@@ -374,21 +374,14 @@ int worker_loop(int nthread)
 #ifndef CRIT_PERF_SCHED 
         assembly->leader = nthread / assembly->width * assembly->width; // homogenous calculation of leader core
 #endif        
-        DEBUG_MSG("[DEBUG] Distributing assembly task " << assembly->taskid << " with width " << assembly->width << " to workers [" << assembly->leader << "," << assembly->leader + assembly->width << ")");
-        for(int i = assembly->leader; i < assembly->leader + assembly->width; i++){
-          LOCK_ACQUIRE(worker_assembly_lock[i]);
-          worker_assembly_q[i].push_back(st);
-        }
-        for(int i = assembly->leader; i < assembly->leader + assembly->width; i++){
-          LOCK_RELEASE(worker_assembly_lock[i]);
-        }
+        queue_manager::insert_task_in_assembly_queues(st);
         st = nullptr;
       }
       continue;
     }
 
   // 1. check for assemblies
-    if(!worker_assembly_q[nthread].pop_front(&st)){
+    if(!queue_manager::try_pop_assembly_task(nthread, st)){
       st = nullptr;
     }
   // assemblies are inlined between two barriers
@@ -431,41 +424,20 @@ int worker_loop(int nthread)
       continue;
     }
 
-  // 2. check own queue
-    LOCK_ACQUIRE(worker_lock[nthread]);
-    if(!worker_ready_q[nthread].empty()){
-      st = worker_ready_q[nthread].back(); 
-      worker_ready_q[nthread].pop_back();
-      LOCK_RELEASE(worker_lock[nthread]);
-#if defined(CRIT_PERF_SCHED)
-      st->history_mold(nthread, st);
-#endif      
-      DEBUG_MSG("[DEBUG] Priority=0, task "<< st->taskid <<" will run on thread "<< st->leader << ", width become " << st->width);
-      continue;
-    }     
-    LOCK_RELEASE(worker_lock[nthread]);        
-  // 3. try to steal 
-  // TAO_WIDTH determines which threads participates in stealing
-  // STEAL_ATTEMPTS determines number of steals before retrying the loop
+    // 2. check own queue: if a ready local task is found continue,
+    //  to avoid trying to steal
+    if(queue_manager::try_pop_ready_task(nthread, st)) continue;
+
+    // 3. try to steal 
+    // STEAL_ATTEMPTS determines number of steals before retrying the loop
     if(STEAL_ATTEMPTS && !(rand_r(&seed) % STEAL_ATTEMPTS)){
       int attempts = 1;
       do{
         do{
           random_core = (rand_r(&seed) % xitao_nthreads);
         } while(random_core == nthread);
-
-        LOCK_ACQUIRE(worker_lock[random_core]);
-        if(!worker_ready_q[random_core].empty()){
-          st = worker_ready_q[random_core].back(); 
-          worker_ready_q[random_core].pop_back();
-          tao_total_steals++;  
-          DEBUG_MSG("[DEBUG] Thread " << nthread << " steal a task from " << random_core << " successfully.");
-#if defined(CRIT_PERF_SCHED)          
-          st->history_mold(nthread, st);     
-#endif          
-        }
-        LOCK_RELEASE(worker_lock[random_core]);  
-      }while(!st && (attempts-- > 0));
+          if(queue_manager::try_pop_ready_task(random_core, st)) tao_total_steals++;
+      } while(!st && (attempts-- > 0));
       if(st){
         continue;
       }

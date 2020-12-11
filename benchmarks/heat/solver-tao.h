@@ -21,9 +21,6 @@
 class jacobi2D : public TAO_PAR_FOR_2D_BASE
 {
     public:
-#if defined(CRIT_PERF_SCHED)
-  static float time_table[][XITAO_MAXTHREADS];
-#endif
       jacobi2D(void *a, void*c, int rows, int cols, int offx, int offy, int chunkx, int chunky, 
                          gotao_schedule_2D sched, int ichunkx, int ichunky, int width, float sta=GOTAO_NO_AFFINITY,
                          int nthread=0) 
@@ -86,30 +83,11 @@ class jacobi2D : public TAO_PAR_FOR_2D_BASE
 		return 0;
                 }
 
-#if defined(CRIT_PERF_SCHED)
-  void set_timetable(int threadid, float ticks, int index){
-    time_table[index][threadid] = ticks;
-  }
-
-  float get_timetable(int threadid, int index){ 
-    float time=0;
-    time = time_table[index][threadid];
-    return time;
-  }
-#endif
-
-
-
 };
 
 class copy2D : public TAO_PAR_FOR_2D_BASE
 {
     public:
-#if defined(CRIT_PERF_SCHED)
-  static float time_table[][XITAO_MAXTHREADS];
-#endif
-
-
   copy2D(void *a, void*c, int rows, int cols, int offx, int offy, int chunkx, int chunky, 
                          gotao_schedule_2D sched, int ichunkx, int ichunky, int width, float sta=GOTAO_NO_AFFINITY,
                          int nthread=0) 
@@ -162,19 +140,6 @@ class copy2D : public TAO_PAR_FOR_2D_BASE
 #endif
     return 0;
                    }
-
-#if defined(CRIT_PERF_SCHED)
-  void set_timetable(int threadid, float ticks, int index){
-    time_table[index][threadid] = ticks;
-  }
-
-  float get_timetable(int threadid, int index){ 
-    float time=0;
-    time = time_table[index][threadid];
-    return time;
-  }
-#endif
-
 
 
 };

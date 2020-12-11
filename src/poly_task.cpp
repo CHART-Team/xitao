@@ -8,6 +8,7 @@
 #include <iostream>
 #endif
 #include "xitao_workspace.h"
+#include "queue_manager.h"
 using namespace xitao;
 
 //The pending PolyTasks count 
@@ -124,48 +125,6 @@ void PolyTask::set_timetable(int thread, float t, int index) {
   (*_ptt)[index * XITAO_MAXTHREADS + thread] = t;  
 }
 
-void PolyTask::print_ptt(float table[][XITAO_MAXTHREADS], const char* table_name) { 
-  std::cout << std::endl << table_name <<  " PTT Stats: " << std::endl;
-  for(int leader = 0; leader < ptt_layout.size() && leader < xitao_nthreads; ++leader) {
-    auto row = ptt_layout[leader];
-    std::sort(row.begin(), row.end());
-    std::ostream time_output (std::cout.rdbuf());
-    std::ostream scalability_output (std::cout.rdbuf());
-    std::ostream width_output (std::cout.rdbuf());
-    std::ostream empty_output (std::cout.rdbuf());
-    time_output  << std::scientific << std::setprecision(3);
-    scalability_output << std::setprecision(3);    
-    empty_output << std::left << std::setw(5);
-    std::cout << "Thread = " << leader << std::endl;    
-    std::cout << "==================================" << std::endl;
-    std::cout << " | " << std::setw(5) << "Width" << " | " << std::setw(9) << std::left << "Time" << " | " << "Scalability" << std::endl;
-    std::cout << "==================================" << std::endl;
-    for (int i = 0; i < row.size(); ++i) {
-      int curr_width = row[i];
-      if(curr_width <= 0) continue;
-      auto comp_perf = table[curr_width - 1][leader];
-      std::cout << " | ";
-      width_output << std::left << std::setw(5) << curr_width;
-      std::cout << " | ";      
-      time_output << comp_perf; 
-      std::cout << " | ";
-      if(i == 0) {        
-        empty_output << " - ";
-      } else if(comp_perf != 0.0f) {
-        auto scaling = table[row[0] - 1][leader]/comp_perf;
-        auto efficiency = scaling / curr_width;
-        if(efficiency  < 0.6 || efficiency > 1.3) {
-          scalability_output << "(" <<table[row[0] - 1][leader]/comp_perf << ")";  
-        } else {
-          scalability_output << table[row[0] - 1][leader]/comp_perf;
-        }
-      }
-      std::cout << std::endl;  
-    }
-    std::cout << std::endl;
-  }
-}  
-
 int PolyTask::globalsearch_PTT(int nthread, PolyTask * it){
   float shortest_exec = 1000.0f;
   float comp_perf = 0.0f; 
@@ -206,19 +165,11 @@ PolyTask * PolyTask::commit_and_wakeup(int _nthread){
       if (pr == 1){
         globalsearch_PTT(_nthread, it);
         DEBUG_MSG("[DEBUG] Priority=1, task "<< it->taskid <<" will run on thread "<< it->leader << ", width become " << it->width);
-        for(int i = it->leader; i < it->leader + it->width; i++){
-          LOCK_ACQUIRE(worker_assembly_lock[i]);
-          worker_assembly_q[i].push_back(it);
-        }
-        for(int i = it->leader; i < it->leader + it->width; i++){
-          LOCK_RELEASE(worker_assembly_lock[i]);
-        }        
+        queue_manager::insert_task_in_assembly_queues(it);
       }
       else {  
         DEBUG_MSG("[DEBUG] Priority=0, task "<< it->taskid <<" is pushed to WSQ of thread "<< _nthread); 
-        LOCK_ACQUIRE(worker_lock[_nthread]);
-        worker_ready_q[_nthread].push_back(it);
-        LOCK_RELEASE(worker_lock[_nthread]);
+        queue_manager::insert_in_ready_queue(it, _nthread);
       }
                 
 #else
@@ -234,13 +185,7 @@ PolyTask * PolyTask::commit_and_wakeup(int _nthread){
 
         //history_mold(_nthread,(*it)); 
         
-        // seems like we acquire and release the lock for each assembly. 
-        // This is suboptimal, but given that TAO_STA makes the allocation
-        // somewhat random it simpifies the implementation. In the case that
-        // TAO_STA is not defined, we could optimize it, but is it worth?
-        LOCK_ACQUIRE(worker_lock[ndx]);
-        worker_ready_q[ndx].push_back(it);
-        LOCK_RELEASE(worker_lock[ndx]);
+        queue_manager::insert_in_ready_queue(it, ndx);
       } 
 #endif
     }

@@ -44,8 +44,8 @@ namespace xitao {
   /*! a typedef of map that keeps track of the active PTT tables*/
   typedef std::unordered_map<ptt_key_type, ptt_shared_type, xitao_ptt_hash> tmap;    
 
-  extern std::vector<PolyTask *> worker_ready_q[XITAO_MAXTHREADS];
-  extern LFQueue<PolyTask *> worker_assembly_q[XITAO_MAXTHREADS];  
+  // extern std::vector<PolyTask *> worker_ready_q[XITAO_MAXTHREADS];
+  // extern LFQueue<PolyTask *> worker_assembly_q[XITAO_MAXTHREADS];  
   extern long int tao_total_steals;  
   extern BARRIER *starting_barrier;
   extern cxx_barrier *tao_barrier;

@@ -34,11 +34,6 @@ struct loi_kernel_info heat_kernels = {
 
 #endif
 
-#if defined(CRIT_PERF_SCHED)
-float copy2D::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS];
-float jacobi2D::time_table[XITAO_MAXTHREADS][XITAO_MAXTHREADS];
-#endif
-
 void usage( char *s )
 {
     fprintf(stderr, 
@@ -463,9 +458,9 @@ int main( int argc, char *argv[] )
          param.visres+2, 
          param.visres+2 );
 
-#if defined(CRIT_PERF_SCHED)  
-  copy2D::print_ptt(copy2D::time_table, "copy2D");
-  jacobi2D::print_ptt(jacobi2D::time_table, "jacobi2D");
+#if defined(CRIT_PERF_SCHED) 
+  xitao_ptt::print_table<copy2D>("copy2D");
+  xitao_ptt::print_table<jacobi2D>("jacobi2D");
 #endif
 
     finalize( &param );
