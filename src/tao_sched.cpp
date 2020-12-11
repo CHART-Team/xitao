@@ -398,20 +398,13 @@ int worker_loop(int nthread)
       DEBUG_MSG("[DEBUG] Thread "<< nthread << " starts executing task " << assembly->taskid << "......");
       assembly->execute(nthread);
 #if defined(CRIT_PERF_SCHED)
-      if(assembly->leader == nthread){
+      if(assembly->leader == nthread) {
         t2 = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = t2-t1;
         double ticks = elapsed_seconds.count();
         int width_index = assembly->width - 1;
-        //Weight the newly recorded ticks to the old ticks 1:4 and save
-        float oldticks = assembly->get_timetable( nthread,width_index);
-        if(oldticks == 0){
-          assembly->set_timetable(nthread,ticks,width_index);
-        }
-        else {
-          assembly->set_timetable(nthread,((4*oldticks+ticks)/5),width_index);         
-        }
-    }
+        assembly->set_timetable(nthread, ticks, width_index);
+      }
 #endif
     _final = (++assembly->threads_out_tao == assembly->width);
      st = nullptr;

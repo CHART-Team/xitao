@@ -1,7 +1,5 @@
 #include "xitao_workspace.h"
 namespace xitao {
-  // std::vector<PolyTask *> worker_ready_q[XITAO_MAXTHREADS];
-  // LFQueue<PolyTask *> worker_assembly_q[XITAO_MAXTHREADS];
   long int tao_total_steals = 0;  
   BARRIER* starting_barrier;
   cxx_barrier* tao_barrier;  
