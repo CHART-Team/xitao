@@ -22,7 +22,12 @@ public:
     static bool enable_workstealing; 
     static bool use_performance_modeling;
     static int nthreads;
-    static void printConfigs();
+    static void print_configs();
+    static void enable_stealing(int idle_tries_before_steal_count);
+    static void disable_stealing();
+    static void enable_performance_modeling();
+    static void disable_performancem_modeling();
+    static void enable_performance_modeling(bool min_par_cost, int table_refresh_rate, int old_tck_weight);
   };
 }
 

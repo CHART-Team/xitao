@@ -55,10 +55,8 @@ namespace xitao {
           task = worker_ready_q[nthread].back(); 
           worker_ready_q[nthread].pop_back();
           LOCK_RELEASE(worker_lock[nthread]);
-#if defined(CRIT_PERF_SCHED)
-           perf_model::history_mold_locally(nthread, task);
-          // task->history_mold(nthread, task);
-#endif      
+          if(config::use_performance_modeling)
+            perf_model::history_mold_locally(nthread, task);
           DEBUG_MSG("[DEBUG] Priority=0, task "<< task->taskid <<" will run on thread "<< task->leader << ", width become " << task->width);
           return true;
         } else {

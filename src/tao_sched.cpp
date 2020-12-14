@@ -122,7 +122,7 @@ void xitao_set_num_threads(int nthreads) {
 void xitao_init()
 {
   xitao_init_hw(config::nthreads, config::thread_base, config::hw_contexts);
-  config::printConfigs();
+  config::print_configs();
 }
 
 void xitao_start()
@@ -186,9 +186,9 @@ int xitao_push(PolyTask *pt, int queue)
       queue = (queue + 1) % xitao_nthreads;
     }
   }
-#ifdef CRIT_PERF_SCHED  
-  pt->_ptt = xitao_ptt::try_insert_table(pt, pt->workload_hint);    /*be sure that a single orphaned task has a PTT*/
-#endif  
+  if(config::use_performance_modeling)
+    pt->_ptt = xitao_ptt::try_insert_table(pt, pt->workload_hint);    /*be sure that a single orphaned task has a PTT*/
+  
   default_queue_manager::insert_in_ready_queue(pt, queue);
   return 1;
 }
@@ -287,24 +287,23 @@ int worker_loop(int nthread)
     if(st) {
       bool _final; // remaining
       assembly = (AssemblyTask *) st;
-
-#if defined(CRIT_PERF_SCHED)
       std::chrono::time_point<std::chrono::system_clock> t1,t2; 
-      if(assembly->leader == nthread){
-        t1 = std::chrono::system_clock::now();
+      if(config::use_performance_modeling) {
+        if(assembly->leader == nthread){
+          t1 = std::chrono::system_clock::now();
+        }
       }
-#endif
       DEBUG_MSG("[DEBUG] Thread "<< nthread << " starts executing task " << assembly->taskid << "......");
       assembly->execute(nthread);
-#if defined(CRIT_PERF_SCHED)
-      if(assembly->leader == nthread) {
+
+      if(config::use_performance_modeling && assembly->leader == nthread) {
         t2 = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = t2-t1;
         double ticks = elapsed_seconds.count();
         perf_model::update_performance_model(assembly, nthread, ticks, assembly->width);
         //assembly->insert_modeled_performance(nthread, ticks, width_index);
       }
-#endif
+
     _final = (++assembly->threads_out_tao == assembly->width);
      st = nullptr;
      if(_final){ // the last exiting thread updates
@@ -322,7 +321,7 @@ int worker_loop(int nthread)
 
     // 3. try to steal 
     // STEAL_ATTEMPTS determines number of steals before retrying the loop
-    if(STEAL_ATTEMPTS && !(rand_r(&seed) % STEAL_ATTEMPTS)) {
+    if(config::enable_workstealing && config::steal_attempts && !(rand_r(&seed) % config::steal_attempts)) {
       int attempts = 1;
       do{
         do{

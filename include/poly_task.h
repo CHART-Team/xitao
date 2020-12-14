@@ -22,7 +22,6 @@ public:
   float affinity_relative_index; 
   // this is the particular queue. When cloning an affinity, we just copy this value
   int   affinity_queue;          
-#if defined(CRIT_PERF_SCHED)
   //Static atomic of current most critical task for criticality-based scheduling
   static std::atomic<int> prev_top_task;     
   //int criticality;
@@ -32,7 +31,6 @@ public:
   // An integer descriptor to distinguish the workload of several TAOs of the same type
   // it is mainly used by the scheduler when picking up the correct PTT
   size_t workload_hint;
-#endif
   int type;
   // The leader task id in the resource partition
   int leader;
@@ -48,7 +46,6 @@ public:
   int width; /*!< number of resources that this assembly uses */  
 
   //Virtual declaration of performance table get/set within tasks
-#if defined(CRIT_PERF_SCHED)
   //! Virtual function that is called by the performance based scheduler to get an entry in PTT
   /*!
     \param threadid logical thread id that executes the TAO
@@ -72,7 +69,6 @@ public:
   // void globalsearch_PTT(int nthread, PolyTask * it);
   //Find suitable thread for prio task
   //int find_thread(int nthread, PolyTask * it);
-#endif
   PolyTask(int t, int _nthread);
   
   //! Convert from an STA to an actual queue number

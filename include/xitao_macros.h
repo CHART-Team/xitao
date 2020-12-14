@@ -52,11 +52,7 @@
 															sched, block_size);
 
 //! wrapper for printing the PTT results on the data parallel region
-#if CRIT_PERF_SCHED
 #define __xitao_print_ptt(ref) 								std::remove_reference<decltype(ref)>::type::print_ptt( \
 															std::remove_reference<decltype(ref)>::type::time_table,\
 															"Vec Region PTT");
-#else 
-#define __xitao_print_ptt(ref) 						
-#endif		
 #endif

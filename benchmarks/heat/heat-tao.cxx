@@ -458,10 +458,11 @@ int main( int argc, char *argv[] )
          param.visres+2, 
          param.visres+2 );
 
-#if defined(CRIT_PERF_SCHED) 
-  xitao_ptt::print_table<copy2D>("copy2D");
-  xitao_ptt::print_table<jacobi2D>("jacobi2D");
-#endif
+    if(xitao::config::use_performance_modeling){ 
+      xitao_ptt::print_table<copy2D>("copy2D");
+      xitao_ptt::print_table<jacobi2D>("jacobi2D");
+    }
+
 
     finalize( &param );
 

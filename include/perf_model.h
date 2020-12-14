@@ -87,13 +87,6 @@ namespace xitao {
       if(oldticks != 0) ticks = (old_tick_weight * oldticks + ticks) / (old_tick_weight + 1); 
       it->set_timetable(thread, ticks, width); 
     }
-
-    static void set_performance_model_parameters(bool min_par_cost = false, int table_refresh_rate = 10, int old_tck_weight = 5) {
-      minimize_parallel_cost = min_par_cost;
-      refresh_frequency = table_refresh_rate; 
-      old_tick_weight   = old_tck_weight;
-    }
-
   };
  
 }
