@@ -66,6 +66,12 @@ public:
     } 
     print_table(_ptt, table_name);
   }
+
+  static void read_layout_table(const char* layout_file);
+  static void prepare_default_layout();
+  static void print_ptt_debug_info();
+  static void clear_layout_partitions();
+
 };
 
 

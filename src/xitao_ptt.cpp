@@ -1,7 +1,6 @@
 #include "xitao_ptt.h"
-
-
-
+#include <fstream>
+#include <cmath>
 tmap xitao_ptt::runtime_ptt_tables;
 
 ptt_shared_type xitao_ptt::try_insert_table(PolyTask* pt, size_t const& workload_hint) {
@@ -26,7 +25,6 @@ ptt_shared_type xitao_ptt::try_insert_table(PolyTask* pt, size_t const& workload
   // return the newly created or existing ptt table
   return _ptt;
 }
-
 
 void xitao_ptt::clear_tables() {
   // iterate over all ptts in the hashmap to release the ownership of all PTT pointers
@@ -53,6 +51,131 @@ void xitao_ptt::reset_table(PolyTask* pt, size_t const& workload_hint){
     // reset all PTT values
     std::fill(_ptt->begin(), _ptt->end(), 0);
   } 
+}
+
+void xitao_ptt::read_layout_table(const char* layout_file) {
+  std::string line;      
+  std::ifstream myfile(layout_file);
+  int current_thread_id = -1; // exclude the first iteration
+  if (myfile.is_open()) {
+    bool init_affinity = false;
+    while (std::getline(myfile,line)) {          
+      size_t pos = 0;
+      std::string token;
+      if(current_thread_id >= XITAO_MAXTHREADS) {
+        if(!suppress_init_warnings) 
+          std::cout << "Fatal error: there are more partitions than XITAO_MAXTHREADS of: "\
+           << XITAO_MAXTHREADS  << " in file: " << layout_file << std::endl;    
+        exit(0);    
+      }          
+      int thread_count = 0;
+      while ((pos = line.find(",")) != std::string::npos) {
+        token = line.substr(0, pos);      
+        int val = stoi(token);
+        if(!init_affinity) static_resource_mapper[thread_count++] = val;  
+        else { 
+          if(current_thread_id + 1 >= xitao_nthreads) {
+              if(!suppress_init_warnings) std::cout << "Fatal error: more configurations than \
+                there are input threads in:" << layout_file << std::endl;    
+              exit(0);
+          }              
+          ptt_layout[current_thread_id].push_back(val);
+          if(val > 0) {
+          for(int i = 0; i < val; ++i) {     
+            if(current_thread_id + i >= XITAO_MAXTHREADS) {
+              if(!suppress_init_warnings) std::cout << "Fatal error: illegal partition choices \
+                for thread: " << current_thread_id <<" spanning id: " << current_thread_id + i \
+                  << " while having XITAO_MAXTHREADS: " << XITAO_MAXTHREADS  << " in file: " << \
+                layout_file << std::endl;    
+              exit(0);           
+            }
+              inclusive_partitions[current_thread_id + i].push_back(std::make_pair(current_thread_id, val)); 
+            }
+          }              
+        }            
+        line.erase(0, pos + 1);
+      }          
+      if(line.size() > 0) {
+        token = line.substr(0, line.size());      
+        int val = stoi(token);
+        if(!init_affinity) static_resource_mapper[thread_count++] = val;
+        else { 
+          ptt_layout[current_thread_id].push_back(val);
+          for(int i = 0; i < val; ++i) {                
+            if(current_thread_id + i >= XITAO_MAXTHREADS) {
+              if(!suppress_init_warnings) std::cout << "Fatal error: illegal partition choices for \
+                thread: " << current_thread_id <<" spanning id: " << current_thread_id + i << " while\
+                 having XITAO_MAXTHREADS: " << XITAO_MAXTHREADS  << " in file: " << layout_file << std::endl;    
+              exit(0);           
+            }
+            inclusive_partitions[current_thread_id + i].push_back(std::make_pair(current_thread_id, val)); 
+          }              
+        }            
+      }
+      if(!init_affinity) { 
+        xitao_nthreads = thread_count; 
+        init_affinity = true;
+      }
+      current_thread_id++;          
+    }
+    myfile.close();
+  } else {
+    if(!suppress_init_warnings) std::cout << "Fatal error: could not open hardware layout path " \
+      << layout_file << std::endl;    
+    exit(0);
+  }
+}
+
+void xitao_ptt::prepare_default_layout() {
+  std::vector<int> widths;             
+  int count = xitao_nthreads;        
+  std::vector<int> temp;        // hold the big divisors, so that the final list of widths is in sorted order 
+  for(int i = 1; i < sqrt(xitao_nthreads); ++i){ 
+    if(xitao_nthreads % i == 0) {
+      widths.push_back(i);
+      temp.push_back(xitao_nthreads / i); 
+    } 
+  }
+  std::reverse(temp.begin(), temp.end());
+  widths.insert(widths.end(), temp.begin(), temp.end());
+  //std::reverse(widths.begin(), widths.end());        
+  for(int i = 0; i < widths.size(); ++i) {
+    for(int j = 0; j < xitao_nthreads; j+=widths[i]){
+      ptt_layout[j].push_back(widths[i]);
+    }
+  }
+  for(int i = 0; i < xitao_nthreads; ++i){
+    for(auto&& width : ptt_layout[i]){
+      for(int j = 0; j < width; ++j) {                
+        inclusive_partitions[i + j].push_back(std::make_pair(i, width)); 
+      }         
+    }
+  } 
+}
+
+void xitao_ptt::print_ptt_debug_info() {
+#ifdef DEBUG
+  for(int i = 0; i < static_resource_mapper.size(); ++i) { 
+    std::cout << "[DEBUG] thread " << i << " is configured to be mapped to core id : " << static_resource_mapper[i] << std::endl;     
+    std::cout << "[DEBUG] leader thread " << i << " has partition widths of : "; 
+    for (int j = 0; j < ptt_layout[i].size(); ++j){
+      std::cout << ptt_layout[i][j] << " ";      
+    }
+    std::cout << std::endl;
+    std::cout << "[DEBUG] thread " << i << " is contained in these [leader,width] pairs : ";
+    for (int j = 0; j < inclusive_partitions[i].size(); ++j){
+      std::cout << "["<<inclusive_partitions[i][j].first << "," << inclusive_partitions[i][j].second << "]"; 
+    }
+    std::cout << std::endl;
+  }
+#endif
+}
+
+void xitao_ptt::clear_layout_partitions() {
+  for(int i = 0; i < XITAO_MAXTHREADS; ++i) {
+    inclusive_partitions[i].clear();
+    ptt_layout[i].clear();
+  }
 }
 
 void xitao_ptt::print_table(ptt_shared_type ptt, const char* table_name) { 
