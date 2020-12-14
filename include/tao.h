@@ -8,13 +8,13 @@
 #include <thread>
 #include <iostream>
 #include "config.h"
-//#include "xitao_api.h"
 #include "xitao_workspace.h"
 #include "poly_task.h"
 #include "barriers.h"
 #include <atomic>
 #include <chrono>
 #include <functional>
+
 using namespace xitao;
 // extern int gotao_thread_base;
 // extern int gotao_sys_topo[5];

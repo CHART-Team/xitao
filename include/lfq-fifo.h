@@ -38,20 +38,43 @@ public:
         }
     }
     
-    bool pop_front( T* result ) {
+    T& front() {
+        LFQNode* nxt = first->next;
+        if( nxt != nullptr ) { 
+            return nxt->value;
+        } else {
+            T* val = new T();
+            *val = nullptr;
+            return *val;
+        }
+    }
+
+    bool empty() {
+        return ( first->next == nullptr );
+    }
+    void pop() {
+      if( first->next != nullptr ) {  // if queue is nonempty 
+            LFQNode* oldFirst = first;
+            first = first->next;
+            first->value = nullptr;     // of the Node
+            delete oldFirst;            // both allocations
+        }
+    }
+
+    bool pop_front( T& result ) {
         if( first->next != nullptr ) {  // if queue is nonempty 
             LFQNode* oldFirst = first;
             first = first->next;
             T value = first->value;     // take it out
             first->value = nullptr;     // of the Node
-            *result = value;            // now copy it back
+            result = value;            // now copy it back
             delete oldFirst;            // both allocations
             return true;                // and report success
         }
         return false;                   // queue was empty
     }
 
-    bool push_back( T t )  {
+    bool push( T t )  {
         LFQNode* tmp = new LFQNode( t );    // do work off to the side
         last->next = tmp;               // A: publish the new item
         last = tmp;                     // B: not "last->next"

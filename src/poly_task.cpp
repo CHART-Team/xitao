@@ -170,11 +170,11 @@ PolyTask * PolyTask::commit_and_wakeup(int _nthread){
       if (pr == 1){
         globalsearch_PTT(_nthread, it);
         DEBUG_MSG("[DEBUG] Priority=1, task "<< it->taskid <<" will run on thread "<< it->leader << ", width become " << it->width);
-        queue_manager::insert_task_in_assembly_queues(it);
+        default_queue_manager::insert_task_in_assembly_queues(it);
       }
       else {  
         DEBUG_MSG("[DEBUG] Priority=0, task "<< it->taskid <<" is pushed to WSQ of thread "<< _nthread); 
-        queue_manager::insert_in_ready_queue(it, _nthread);
+        default_queue_manager::insert_in_ready_queue(it, _nthread);
       }
                 
 #else
@@ -190,7 +190,7 @@ PolyTask * PolyTask::commit_and_wakeup(int _nthread){
 
         //history_mold(_nthread,(*it)); 
         
-        queue_manager::insert_in_ready_queue(it, ndx);
+        default_queue_manager::insert_in_ready_queue(it, ndx);
       } 
 #endif
     }

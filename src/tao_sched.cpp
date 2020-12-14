@@ -10,8 +10,8 @@
 #include <vector>
 #include <fstream>
 #include <assert.h>
-#include "queue_manager.h"
 #include "xitao_workspace.h"
+#include "queue_manager.h"
 using namespace xitao;
 
 int worker_loop(int nthread);
@@ -284,7 +284,7 @@ int xitao_push(PolyTask *pt, int queue)
 #ifdef CRIT_PERF_SCHED  
   pt->_ptt = xitao_ptt::try_insert_table(pt, pt->workload_hint);    /*be sure that a single orphaned task has a PTT*/
 #endif  
-  queue_manager::insert_in_ready_queue(pt, queue);
+  default_queue_manager::insert_in_ready_queue(pt, queue);
   return 1;
 }
 
@@ -303,14 +303,8 @@ int gotao_push_init(PolyTask *pt, int queue)
     }
   }
   if(resources_runtime_controlled) queue = check_and_get_available_queue(queue);
-  queue_manager::insert_in_ready_queue(pt, queue);
+  default_queue_manager::insert_in_ready_queue(pt, queue);
   return 1; 
-}
-
-long int r_rand(long int *s)
-{
-  *s = ((1140671485*(*s) + 12820163) % (1<<24));
-  return *s;
 }
 
 void __xitao_lock()
@@ -352,15 +346,14 @@ int worker_loop(int nthread)
     std::cout << "Thread " << nthread << " is deactivated since it is not included in any PTT partition" << std::endl;      
     return 0;
   }
-  while(true)
-  {    
+  while(true) {    
     int random_core = 0;
     AssemblyTask *assembly = nullptr;
     SimpleTask *simple = nullptr;
 
     // 0. If a task is already provided via forwarding then exeucute it (simple task)
     //    or insert it into the assembly queues (assembly task)
-    if(st){
+    if(st) {
       if(st->type == TASK_SIMPLE){
         SimpleTask *simple = (SimpleTask *) st;
         simple->f(simple->args, nthread);
@@ -371,17 +364,18 @@ int worker_loop(int nthread)
       }
       else if(st->type == TASK_ASSEMBLY){
         AssemblyTask *assembly = (AssemblyTask *) st;
-#ifndef CRIT_PERF_SCHED 
-        assembly->leader = nthread / assembly->width * assembly->width; // homogenous calculation of leader core
-#endif        
-        queue_manager::insert_task_in_assembly_queues(st);
+        // defensive check against uninitialized leader
+        //if(assembly->leader < 0) {
+          assembly->leader = nthread / assembly->width * assembly->width; 
+        //}       
+        default_queue_manager::insert_task_in_assembly_queues(st);
         st = nullptr;
       }
       continue;
     }
 
   // 1. check for assemblies
-    if(!queue_manager::try_pop_assembly_task(nthread, st)){
+    if(!default_queue_manager::try_pop_assembly_task(nthread, st)){
       st = nullptr;
     }
   // assemblies are inlined between two barriers
@@ -419,17 +413,17 @@ int worker_loop(int nthread)
 
     // 2. check own queue: if a ready local task is found continue,
     //  to avoid trying to steal
-    if(queue_manager::try_pop_ready_task(nthread, st)) continue;
+    if(default_queue_manager::try_pop_ready_task(nthread, st)) continue;
 
     // 3. try to steal 
     // STEAL_ATTEMPTS determines number of steals before retrying the loop
-    if(STEAL_ATTEMPTS && !(rand_r(&seed) % STEAL_ATTEMPTS)){
+    if(STEAL_ATTEMPTS && !(rand_r(&seed) % STEAL_ATTEMPTS)) {
       int attempts = 1;
       do{
         do{
           random_core = (rand_r(&seed) % xitao_nthreads);
         } while(random_core == nthread);
-          if(queue_manager::try_pop_ready_task(random_core, st)) tao_total_steals++;
+          if(default_queue_manager::try_pop_ready_task(random_core, st)) tao_total_steals++;
       } while(!st && (attempts-- > 0));
       if(st){
         continue;
