@@ -7,6 +7,7 @@
 #include "xitao_workspace.h"
 #include "tao.h"
 #include "debug_info.h"
+#include "perf_model.h"
 #include <queue>
 namespace xitao {
   template <typename ready_queue_type, typename assembly_queue_type >
@@ -55,7 +56,8 @@ namespace xitao {
           worker_ready_q[nthread].pop_back();
           LOCK_RELEASE(worker_lock[nthread]);
 #if defined(CRIT_PERF_SCHED)
-          task->history_mold(nthread, task);
+           perf_model::history_mold_locally(nthread, task);
+          // task->history_mold(nthread, task);
 #endif      
           DEBUG_MSG("[DEBUG] Priority=0, task "<< task->taskid <<" will run on thread "<< task->leader << ", width become " << task->width);
           return true;

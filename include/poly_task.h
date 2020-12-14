@@ -63,15 +63,13 @@ public:
     */  
   virtual void set_timetable(int thread, float ticks, int index);
   //History-based molding
-  virtual void history_mold(int _nthread, PolyTask *it);
-  // Insert modeled performance values 
-  virtual void insert_modeled_performance(int thread, float ticks, int index);
+  // virtual void history_mold(int _nthread, PolyTask *it);
   //Recursive function assigning criticality
   // int set_criticality();
   // int set_marker(int i);
   //Determine if task is critical task
   int if_prio(int _nthread, PolyTask * it);
-  void globalsearch_PTT(int nthread, PolyTask * it);
+  // void globalsearch_PTT(int nthread, PolyTask * it);
   //Find suitable thread for prio task
   //int find_thread(int nthread, PolyTask * it);
 #endif

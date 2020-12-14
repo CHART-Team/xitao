@@ -10,6 +10,7 @@
 #include "config.h"
 #include "xitao_workspace.h"
 #include "poly_task.h"
+#include "perf_model.h"
 #include "barriers.h"
 #include <atomic>
 #include <chrono>

@@ -11,6 +11,7 @@
 #include <assert.h>
 #include "xitao_workspace.h"
 #include "queue_manager.h"
+// #include "perf_model.h"
 using namespace xitao;
 
 int worker_loop(int nthread);
@@ -300,8 +301,8 @@ int worker_loop(int nthread)
         t2 = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = t2-t1;
         double ticks = elapsed_seconds.count();
-        int width_index = assembly->width - 1;
-        assembly->insert_modeled_performance(nthread, ticks, width_index);
+        perf_model::update_performance_model(assembly, nthread, ticks, assembly->width);
+        //assembly->insert_modeled_performance(nthread, ticks, width_index);
       }
 #endif
     _final = (++assembly->threads_out_tao == assembly->width);

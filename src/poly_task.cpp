@@ -9,6 +9,7 @@
 #endif
 #include "xitao_workspace.h"
 #include "queue_manager.h"
+// #include "perf_model.h"
 using namespace xitao;
 
 //The pending PolyTasks count 
@@ -73,40 +74,40 @@ void PolyTask::make_edge(PolyTask *t){
 }
 
 #if defined(CRIT_PERF_SCHED)
-void PolyTask::history_mold(int _nthread, PolyTask *it){
-  int new_width = 1; 
-  int new_leader = -1;
-  float shortest_exec = 1000.0f;
-  float comp_perf = 0.0f; 
-  auto&& partitions = inclusive_partitions[_nthread];
-  if(rand()%10 != 0) { 
-    for(auto&& elem : partitions) {
-      int leader = elem.first;
-      int width  = elem.second;
-      auto&& ptt_val = it->get_timetable(leader, width - 1);
-      if(ptt_val == 0.0f) {
-        new_width = width;
-        new_leader = leader;       
-        break;
-      }
-      comp_perf = width * ptt_val;
-      //comp_perf = ptt_val;
-      if (comp_perf < shortest_exec) {
-        shortest_exec = comp_perf;
-        new_width = width;
-        new_leader = leader;      
-      }
-    }
-  } else { 
-    auto&& rand_partition = partitions[rand() % partitions.size()];
-    new_leader = rand_partition.first;
-    new_width  = rand_partition.second;
-  }
-  if(new_leader != -1) {
-    it->leader = new_leader;
-    it->width  = new_width;
-  }
-} 
+// void PolyTask::history_mold(int _nthread, PolyTask *it){
+//   int new_width = 1; 
+//   int new_leader = -1;
+//   float shortest_exec = 1000.0f;
+//   float comp_perf = 0.0f; 
+//   auto&& partitions = inclusive_partitions[_nthread];
+//   if(rand()%10 != 0) { 
+//     for(auto&& elem : partitions) {
+//       int leader = elem.first;
+//       int width  = elem.second;
+//       auto&& ptt_val = it->get_timetable(leader, width - 1);
+//       if(ptt_val == 0.0f) {
+//         new_width = width;
+//         new_leader = leader;       
+//         break;
+//       }
+//       comp_perf = width * ptt_val;
+//       //comp_perf = ptt_val;
+//       if (comp_perf < shortest_exec) {
+//         shortest_exec = comp_perf;
+//         new_width = width;
+//         new_leader = leader;      
+//       }
+//     }
+//   } else { 
+//     auto&& rand_partition = partitions[rand() % partitions.size()];
+//     new_leader = rand_partition.first;
+//     new_width  = rand_partition.second;
+//   }
+//   if(new_leader != -1) {
+//     it->leader = new_leader;
+//     it->width  = new_width;
+//   }
+// } 
 
 //Determine if task is critical task
 int PolyTask::if_prio(int _nthread, PolyTask * it){
@@ -124,38 +125,32 @@ void PolyTask::set_timetable(int thread, float ticks, int index) {
   (*_ptt)[index * XITAO_MAXTHREADS + thread] = ticks;  
 }
 
-void PolyTask::insert_modeled_performance(int thread, float ticks, int index) {
-  float oldticks = get_timetable(thread, index);
-  if(oldticks != 0) ticks = (4 * oldticks + ticks) / 5; 
-  set_timetable(thread, ticks, index);    
-}
-
-void PolyTask::globalsearch_PTT(int nthread, PolyTask * it){
-  float shortest_exec = 1000.0f;
-  float comp_perf = 0.0f; 
-  int new_width = 1; 
-  int new_leader = -1;
-  for(int leader = 0; leader < ptt_layout.size(); ++leader) {
-    for(auto&& width : ptt_layout[leader]) {
-      if(width <= 0) continue;
-      auto&& ptt_val = it->get_timetable(leader, width - 1);
-      if(ptt_val == 0.0f) {
-        new_width = width;
-        new_leader = leader; 
-        leader = ptt_layout.size(); 
-        break;
-      }
-      comp_perf = width * ptt_val;
-      if (comp_perf < shortest_exec) {
-        shortest_exec = comp_perf;
-        new_width = width;
-        new_leader = leader;      
-      }
-    }
-  }  
-  it->width = new_width; 
-  it->leader = new_leader;
-}
+// void PolyTask::globalsearch_PTT(int nthread, PolyTask * it){
+//   float shortest_exec = 1000.0f;
+//   float comp_perf = 0.0f; 
+//   int new_width = 1; 
+//   int new_leader = -1;
+//   for(int leader = 0; leader < ptt_layout.size(); ++leader) {
+//     for(auto&& width : ptt_layout[leader]) {
+//       if(width <= 0) continue;
+//       auto&& ptt_val = it->get_timetable(leader, width - 1);
+//       if(ptt_val == 0.0f) {
+//         new_width = width;
+//         new_leader = leader; 
+//         leader = ptt_layout.size(); 
+//         break;
+//       }
+//       comp_perf = width * ptt_val;
+//       if (comp_perf < shortest_exec) {
+//         shortest_exec = comp_perf;
+//         new_width = width;
+//         new_leader = leader;      
+//       }
+//     }
+//   }  
+//   it->width = new_width; 
+//   it->leader = new_leader;
+// }
 #endif
 
 PolyTask * PolyTask::commit_and_wakeup(int _nthread){
@@ -167,7 +162,8 @@ PolyTask * PolyTask::commit_and_wakeup(int _nthread){
 #if defined(CRIT_PERF_SCHED)
       int pr = if_prio(_nthread, it);
       if (pr == 1){
-        globalsearch_PTT(_nthread, it);
+        perf_model::global_search_ptt(it);
+        //globalsearch_PTT(_nthread, it);
         DEBUG_MSG("[DEBUG] Priority=1, task "<< it->taskid <<" will run on thread "<< it->leader << ", width become " << it->width);
         default_queue_manager::insert_task_in_assembly_queues(it);
       }
