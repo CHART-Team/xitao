@@ -68,7 +68,7 @@ public:
   }
 
   static void read_layout_table(const char* layout_file);
-  static void prepare_default_layout();
+  static void prepare_default_layout(int nthreads);
   static void print_ptt_debug_info();
   static void clear_layout_partitions();
 

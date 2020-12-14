@@ -126,25 +126,25 @@ void xitao_ptt::read_layout_table(const char* layout_file) {
   }
 }
 
-void xitao_ptt::prepare_default_layout() {
+void xitao_ptt::prepare_default_layout(int nthreads) {
   std::vector<int> widths;             
-  int count = xitao_nthreads;        
+  int count = nthreads;        
   std::vector<int> temp;        // hold the big divisors, so that the final list of widths is in sorted order 
-  for(int i = 1; i < sqrt(xitao_nthreads); ++i){ 
-    if(xitao_nthreads % i == 0) {
+  for(int i = 1; i < sqrt(nthreads); ++i){ 
+    if(nthreads % i == 0) {
       widths.push_back(i);
-      temp.push_back(xitao_nthreads / i); 
+      temp.push_back(nthreads / i); 
     } 
   }
   std::reverse(temp.begin(), temp.end());
   widths.insert(widths.end(), temp.begin(), temp.end());
   //std::reverse(widths.begin(), widths.end());        
   for(int i = 0; i < widths.size(); ++i) {
-    for(int j = 0; j < xitao_nthreads; j+=widths[i]){
+    for(int j = 0; j < nthreads; j+=widths[i]){
       ptt_layout[j].push_back(widths[i]);
     }
   }
-  for(int i = 0; i < xitao_nthreads; ++i){
+  for(int i = 0; i < nthreads; ++i){
     for(auto&& width : ptt_layout[i]){
       for(int j = 0; j < width; ++j) {                
         inclusive_partitions[i + j].push_back(std::make_pair(i, width)); 

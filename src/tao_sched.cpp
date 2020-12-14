@@ -61,12 +61,12 @@ void xitao_init_hw(int nthr, int thrb, int nhwc)
       environment variable is set properly" << std::endl;    
     exit(0);
   }  
-  const char* layout_file = getenv("XITAO_LAYOUT_PATH");
+
   if(resources_runtime_controlled) { 
     if(xitao_nthreads != runtime_resource_mapper.size()) 
       xitao_nthreads = runtime_resource_mapper.size();
   }
-
+  const char* layout_file = getenv("XITAO_LAYOUT_PATH");
   if(layout_file) {
     if(!resources_runtime_controlled) 
       xitao_ptt::read_layout_table(layout_file);
@@ -77,7 +77,7 @@ void xitao_init_hw(int nthr, int thrb, int nhwc)
       for(int i = 0; i < XITAO_MAXTHREADS; ++i) 
         static_resource_mapper[i] = i; 
     } 
-    xitao_ptt::prepare_default_layout();
+    xitao_ptt::prepare_default_layout(xitao_nthreads);
   }
   if(nhwc>=0){
     gotao_ncontexts = nhwc;
