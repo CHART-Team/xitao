@@ -71,7 +71,7 @@ public:
   // int set_marker(int i);
   //Determine if task is critical task
   int if_prio(int _nthread, PolyTask * it);
-  int globalsearch_PTT(int nthread, PolyTask * it);
+  void globalsearch_PTT(int nthread, PolyTask * it);
   //Find suitable thread for prio task
   //int find_thread(int nthread, PolyTask * it);
 #endif

@@ -130,7 +130,7 @@ void PolyTask::insert_modeled_performance(int thread, float ticks, int index) {
   set_timetable(thread, ticks, index);    
 }
 
-int PolyTask::globalsearch_PTT(int nthread, PolyTask * it){
+void PolyTask::globalsearch_PTT(int nthread, PolyTask * it){
   float shortest_exec = 1000.0f;
   float comp_perf = 0.0f; 
   int new_width = 1; 
@@ -155,7 +155,6 @@ int PolyTask::globalsearch_PTT(int nthread, PolyTask * it){
   }  
   it->width = new_width; 
   it->leader = new_leader;
-  return new_leader;
 }
 #endif
 
