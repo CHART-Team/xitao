@@ -14,9 +14,7 @@ ptt_shared_type xitao_ptt::try_insert_table(PolyTask* pt, size_t const& workload
   if(runtime_ptt_tables.find(tao_info) == runtime_ptt_tables.end()) {
     
     // allocate the ptt table and place it in shared pointer
-    // (XITAO_MAXTHREADS + 1) because widths start from 1 
-    // to avoid substracting 1 every time values are indexed
-    _ptt = std::make_shared<ptt_value_type>((XITAO_MAXTHREADS + 1) * XITAO_MAXTHREADS, 0);
+    _ptt = std::make_shared<ptt_value_type>(ptt_table_size, 0);
 
     // insert the ptt table to the mapper
     runtime_ptt_tables.insert(std::make_pair(tao_info, _ptt));
@@ -203,7 +201,7 @@ void xitao_ptt::print_table(ptt_shared_type ptt, const char* table_name) {
     for (int i = 0; i < row.size(); ++i) {
       int curr_width = row[i];
       if(curr_width <= 0) continue;
-      auto comp_perf = table[(curr_width) * XITAO_MAXTHREADS + leader];
+      auto comp_perf = table[(curr_width) * ptt_row_size + leader];
       std::cout << " | ";
       width_output << std::left << std::setw(5) << curr_width;
       std::cout << " | ";      
@@ -212,12 +210,12 @@ void xitao_ptt::print_table(ptt_shared_type ptt, const char* table_name) {
       if(i == 0) {        
         empty_output << " - ";
       } else if(comp_perf != 0.0f) {
-        auto scaling = table[(row[0]) * XITAO_MAXTHREADS + leader]/comp_perf;
+        auto scaling = table[(row[0]) * ptt_row_size + leader]/comp_perf;
         auto efficiency = scaling / curr_width;
         if(efficiency  < 0.6 || efficiency > 1.3) {
-          scalability_output << "(" <<table[(row[0]) * XITAO_MAXTHREADS + leader]/comp_perf << ")";  
+          scalability_output << "(" <<table[(row[0]) * ptt_row_size + leader]/comp_perf << ")";  
         } else {
-          scalability_output << table[(row[0]) * XITAO_MAXTHREADS + leader]/comp_perf;
+          scalability_output << table[(row[0]) * ptt_row_size + leader]/comp_perf;
         }
       }
       std::cout << std::endl;  
