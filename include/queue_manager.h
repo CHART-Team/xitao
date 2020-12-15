@@ -67,7 +67,7 @@ namespace xitao {
   };
   // To try another data structure (e.g. list, deque or LFQueue), change the declaration below
   // TODO: compile-time checking of existence of functions (e.g. push_back, pop_back...)
-  using default_queue_manager = queue_manager<std::vector<PolyTask*>, std::queue<PolyTask*>>;
+  using default_queue_manager = queue_manager<std::vector<PolyTask*>, LFQueue<PolyTask*>>;
   //using default_queue_manager = queue_manager<PolyTask* , std::list<PolyTask*>, LFQueue<PolyTask*>>;
 
   template <typename ready_queue_type, typename assembly_queue_type > 
