@@ -21,7 +21,7 @@ using namespace xitao;
 
 int main(int argc, char *argv[])
 {
-  if(argc != 7) {
+  if(argc < 7) {
     std::cout << "./synbench <Block Side Length> <Resource Width> <TAO Mul Count> <TAO Copy Count> <TAO Stencil Count> <Degree of Parallelism>" << std::endl; 
     return 0;
   }
@@ -49,8 +49,9 @@ int main(int argc, char *argv[])
   std::ofstream graphfile;
   graphfile.open ("graph.txt");
   graphfile << "digraph DAG{\n";
+  // xitao::config::init_config(argc, argv);
   // init XiTAO runtime 
-  xitao_init();
+  xitao_init(argc, argv);
   
   int current_type = 0;
   int previous_tao_id = 0;

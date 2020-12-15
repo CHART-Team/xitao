@@ -1,7 +1,6 @@
 # C compiler
 CC = g++
 CC_FLAGS = -O3 -fopenmp  
-include ../../makefile.sched
 CC_FLAGS+=$(CXXFLAGS) -I../../include 
 bfs: bfs.o
 	$(CC) $(CC_FLAGS) bfs.o -o bfs

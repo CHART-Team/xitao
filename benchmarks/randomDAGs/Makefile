@@ -1,4 +1,3 @@
-include ../../makefile.sched
 CXXFLAGS += -I../../include 
 CXXFLAGS += -O0
 CXXFLAGS += --std=c++11  ${EXTRAEINC}

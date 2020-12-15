@@ -4,7 +4,6 @@ CXX = g++
 DEBUG=0 
 
 #include makefile.inc
-include makefile.sched
 EXAMPLES += benchmarks
 CFLAGS += -std=gnu11 ${EXTRAEINC}
 CXXFLAGS += --std=c++11 -fPIC ${EXTRAEINC}

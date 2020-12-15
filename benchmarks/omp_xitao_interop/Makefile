@@ -1,4 +1,3 @@
-include ../../makefile.sched
 CXXFLAGS += -I../../include -I.
 CXXFLAGS += -O3 -Wall -Wno-unknown-pragmas -fopenmp
 CXXFLAGS += --std=c++11  ${EXTRAEINC}

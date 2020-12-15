@@ -36,11 +36,6 @@ vim config.h
 #define DEBUG
 ```
 
-## Switching across Scheduling Strategies ##
-```bash
-vi makefile.sched
-```
-
 ## Changing PTT Hardware Topology ##
 Create a file with number of lines = number of threads + 1
 

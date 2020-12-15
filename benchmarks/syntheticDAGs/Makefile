@@ -1,4 +1,3 @@
-include ../../makefile.sched
 
 CXXFLAGS += -I../../include 
 CXXFLAGS += -O2
@@ -22,7 +21,7 @@ chains: $(CHAINS_OBJS)
 	$(CXX) $^ -o $@ ${LIBS}
 
 run: all 
-	./synbench 64 4 5000 1000 1000 4
+	./synbench 64 4 5000 1000 1000 4 --xitao_args="-w 1 -p 1 -i 1000 -c 0"
 
 clean:
 	rm -rf synbench $(SYNTH_OBJS)  graph.txt 

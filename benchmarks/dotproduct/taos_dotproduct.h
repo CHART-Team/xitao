@@ -16,7 +16,6 @@ extern "C" {
 
 // parallel slackness        
 #define PSLACK 8  
-//#define CRIT_PERF_SCHED
 using namespace std;
 
 /*! this TAO will take two vectors and multiply them. 

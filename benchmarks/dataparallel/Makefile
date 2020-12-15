@@ -1,4 +1,3 @@
-include ../../makefile.sched
 CXXFLAGS += -I../../include -I.
 CXXFLAGS += -O2
 

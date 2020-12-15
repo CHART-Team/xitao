@@ -33,6 +33,10 @@ void set_xitao_mask(cpu_set_t& user_affinity_setup);
 void xitao_init_hw(int nthr, int thrb, int nhwc);
 //! Initialize the XiTAO Runtime using the environment variables XITAO_MAXTHREADS, GOTAO_THREAD_BASE and GOTAO_HW_CONTEXTS respectively
 void xitao_init();
+
+//! Initialize the XiTAO Runtime from comand line
+void xitao_init(int argc, char** argv);
+
 void xitao_start();
 //! Finalize the runtime and makes sure that all workers have finished 
 void xitao_fini();

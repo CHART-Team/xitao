@@ -119,8 +119,13 @@ void xitao_set_num_threads(int nthreads) {
 }
 
 // Initialize gotao from environment vars or defaults
-void xitao_init()
-{
+void xitao_init() {
+  xitao_init_hw(config::nthreads, config::thread_base, config::hw_contexts);
+  config::print_configs();
+}
+
+void xitao_init(int argc, char** argv) { 
+  config::init_config(argc, argv);
   xitao_init_hw(config::nthreads, config::thread_base, config::hw_contexts);
   config::print_configs();
 }

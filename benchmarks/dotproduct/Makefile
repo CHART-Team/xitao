@@ -1,4 +1,3 @@
-include ../../makefile.sched
 include makefile.dot
 CXXFLAGS += -I../../include -I.
 CXXFLAGS += -O3

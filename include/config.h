@@ -9,7 +9,12 @@
 #define XITAO_MAXTHREADS 64
 #define GOTAO_HW_CONTEXTS 1
 // #define DEBUG
-
+#include <cassert>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <getopt.h>
+#include <string>
 namespace xitao {
   class config {
 public: 
@@ -28,6 +33,15 @@ public:
     static void enable_performance_modeling();
     static void disable_performancem_modeling();
     static void enable_performance_modeling(bool min_par_cost, int table_refresh_rate, int old_tck_weight);
+    static bool verbose;                          
+    static const int stringLength = 25;           
+    static const int decimal = 7;                 
+    static const std::string xitao_args_prefix;
+
+    static void init_config(int argc, char** argv, bool read_all_args=false);   
+    static void usage(char* name); 
+    template<typename T>
+    static void formatted_print(std::string s, T v, bool fixed=true);
   };
 }
 
