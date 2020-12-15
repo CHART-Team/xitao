@@ -88,7 +88,7 @@ void PolyTask::set_timetable(int thread, float ticks, int index) {
   (*_ptt)[index * xitao_ptt::ptt_row_size + thread] = ticks;  
 }
 
-PolyTask * PolyTask::commit_and_wakeup(int _nthread){
+PolyTask * PolyTask::commit_and_wakeup(int _nthread) {
   PolyTask *ret = nullptr;
   for(auto&& it : out) {
     int refs = it->refcount.fetch_sub(1);

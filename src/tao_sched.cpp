@@ -275,9 +275,9 @@ int worker_loop(int nthread)
       else if(st->type == TASK_ASSEMBLY){
         AssemblyTask *assembly = (AssemblyTask *) st;
         // defensive check against uninitialized leader
-        //if(assembly->leader < 0) {
+        if(assembly->leader < 0) {
           assembly->leader = nthread / assembly->width * assembly->width; 
-        //}       
+        }       
         default_queue_manager::insert_task_in_assembly_queues(st);
         st = nullptr;
       }
@@ -309,9 +309,9 @@ int worker_loop(int nthread)
         //assembly->insert_modeled_performance(nthread, ticks, width_index);
       }
 
-    _final = (++assembly->threads_out_tao == assembly->width);
-     st = nullptr;
-     if(_final){ // the last exiting thread updates
+      _final = (++assembly->threads_out_tao == assembly->width);
+      st = nullptr;
+      if(_final) { // the last exiting thread updates
         DEBUG_MSG("[DEBUG] Thread " << nthread << " completed assembly task " << assembly->taskid);
         st = assembly->commit_and_wakeup(nthread);
         assembly->cleanup();

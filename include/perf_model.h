@@ -11,6 +11,7 @@ namespace xitao {
     static bool minimize_parallel_cost; 
     static int refresh_frequency;
     static int old_tick_weight;
+    static bool mold; 
     
     static inline void global_search_ptt(PolyTask* it) {
       float shortest_exec = std::numeric_limits<float>::max();
@@ -19,7 +20,7 @@ namespace xitao {
       int new_leader = -1;
       for(int leader = 0; leader < ptt_layout.size(); ++leader) {
         for(auto&& width : ptt_layout[leader]) {
-          if(width <= 0) continue;
+          if(width <= 0 || (!mold && width > 1)) continue;
           auto&& ptt_val = it->get_timetable(leader, width);
           if(ptt_val == 0.0f) {
             new_width = width;
@@ -53,6 +54,7 @@ namespace xitao {
         for(auto&& elem : partitions) {
           int leader = elem.first;
           int width  = elem.second;
+          if(!mold && width > 1) continue;
           auto&& ptt_val = it->get_timetable(leader, width);
           if(ptt_val == 0.0f) {
             new_width = width;
@@ -70,10 +72,13 @@ namespace xitao {
             new_leader = leader;      
           }
         }
-      } else { 
+      } else if(mold) { 
         auto&& rand_partition = partitions[rand() % partitions.size()];
         new_leader = rand_partition.first;
         new_width  = rand_partition.second;
+      } else {
+        new_leader = _nthread;
+        new_width  = 1;
       }
       if(new_leader != -1) {
         it->leader = new_leader;

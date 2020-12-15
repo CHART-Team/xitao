@@ -11,7 +11,7 @@ using namespace std;
 bool perf_model::minimize_parallel_cost = true;
 int  perf_model::refresh_frequency      = 10;
 int  perf_model::old_tick_weight     = 4;
-
+bool perf_model::mold = true;
 bool config::verbose  = true;
 int  config::thread_base = GOTAO_THREAD_BASE;
 int  config::affinity = GOTAO_NO_AFFINITY;
@@ -32,6 +32,7 @@ static struct option long_options[] = {
   {"minparcost",   required_argument, 0, 'c'},
   {"oldtickweight",    required_argument, 0, 'o'},
   {"refreshtablefreq",    required_argument, 0, 'f'},
+  {"mold",    required_argument, 0, 'm'},
   {"help",         no_argument,       0, 'h'},
   {0, 0, 0, 0}
 };
@@ -65,13 +66,16 @@ void config::init_config(int argc, char** argv, bool read_all_args) {
   // fill in the extracted args
   while (argc > 1) {
     int option_index;
-    int c = getopt_long(argc, argv, "hp:c:w:t:i:o:f:",
+    int c = getopt_long(argc, argv, "hp:c:w:m:t:i:o:f:",
                         long_options, &option_index);
 
     if (c == -1) break;
     switch (c) {
       case 'w':
         enable_workstealing = atoi(optarg);
+        break;
+      case 'm':
+        perf_model::mold = atoi(optarg);
         break;
       case 'p':
         use_performance_modeling = atoi(optarg);
@@ -115,6 +119,7 @@ void config::usage(char* name) {
           " --minparcost (-c) [0/1]                 : model 1 (parallel cost) - 0 (parallel time) (%d)\n"
           " --oldtickweight (-o)                    : Weight of old tick versus new tick (%d)\n"
           " --refreshtablefreq (-t)                 : How often to attempt a random moldability to heat the table (%d)\n"
+          " --mold (-m)                             : Enable/Disable dynamic moldability (%d)\n"
           " --help (-h)                             : Show this help document\n",
           name,
           config::enable_workstealing,
@@ -123,7 +128,9 @@ void config::usage(char* name) {
           config::steal_attempts,
           perf_model::minimize_parallel_cost,
           perf_model::old_tick_weight,
-          perf_model::refresh_frequency);
+          perf_model::refresh_frequency,
+          perf_model::mold
+          );
 }
 
 template<typename T>
@@ -174,6 +181,7 @@ void config::print_configs() {
       formatted_print("Min parallel cost", ((perf_model::minimize_parallel_cost)? "enabled" : "disabled"));
       formatted_print("Refresh ptt entries", perf_model::refresh_frequency);
       formatted_print("Old tick weights", perf_model::old_tick_weight);
+      formatted_print("Dynamic moldability", perf_model::mold);
     }
   }
   cout << "***************************************************" << endl;

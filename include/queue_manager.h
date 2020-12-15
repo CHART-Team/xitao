@@ -25,6 +25,7 @@ namespace xitao {
            << task->width << " to workers [" << task->leader << "," << task->leader\
             + task->width << ")");
         for(int i = task->leader; i < task->leader + task->width; i++){
+          assert(i < config::nthreads && i >= 0);
           LOCK_ACQUIRE(worker_assembly_lock[i]);
           worker_assembly_q[i].push(task);
         }
