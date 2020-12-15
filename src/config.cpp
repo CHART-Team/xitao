@@ -71,10 +71,10 @@ void config::init_config(int argc, char** argv, bool read_all_args) {
     if (c == -1) break;
     switch (c) {
       case 'w':
-        enable_workstealing = atoi(optarg);;
+        enable_workstealing = atoi(optarg);
         break;
       case 'p':
-        use_performance_modeling = atoi(optarg);;
+        use_performance_modeling = atoi(optarg);
         break;
       case 'c':
         perf_model::minimize_parallel_cost = atoi(optarg);;
