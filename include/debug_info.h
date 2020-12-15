@@ -9,7 +9,7 @@ using namespace std;
 #ifdef DEBUG
 #define DEBUG_MSG(x) do {  \
 					LOCK_ACQUIRE(output_lck);\
-					std::cerr << x << std::endl; \
+					std::cout << x << std::endl; \
 					LOCK_RELEASE(output_lck);\
 					} while (0);
 #else
