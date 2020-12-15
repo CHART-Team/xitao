@@ -176,20 +176,5 @@ void config::print_configs() {
       formatted_print("Old tick weights", perf_model::old_tick_weight);
     }
   }
-  // cout << "Number of threads:" << config::nthreads << endl;
-  // cout << "Work stealing: " << ((config::enable_workstealing)? "enabled" : "disabled") << endl;         
-  // cout << "Performance model: " << ((config::use_performance_modeling)? "enabled" : "disabled") << endl;
-  // if(config::use_performance_modeling) {
-  //   cout << "Performance model - Min parallel cost: " \
-  //   << ((perf_model::minimize_parallel_cost)? "enabled" : "disabled") << endl;
-  //   cout << "Performance model - Refresh perf table entries every: " \
-  //   << perf_model::refresh_frequency << " tries" << endl;
-  //   cout << "Performance model - Old tick weights: " \
-  //   << perf_model::old_tick_weight << "x the new ticks" << endl;
-  // }
-  // if(config::enable_workstealing) {
-  //   cout << "Idle tries before sleep: " \
-  //   << config::steal_attempts << endl;
-  // }
   cout << "***************************************************" << endl;
 }
