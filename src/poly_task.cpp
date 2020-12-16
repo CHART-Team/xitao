@@ -20,7 +20,7 @@ std::atomic<int> PolyTask::pending_tasks;
 std::atomic<int> PolyTask::created_tasks;
 #endif
 
-PolyTask::PolyTask(int t, int _nthread=0) : type(t){
+PolyTask::PolyTask(int t, int _nthread=0) : type(t) {
   refcount = 0;
 #define GOTAO_NO_AFFINITY (1.0)
   affinity_relative_index = GOTAO_NO_AFFINITY;
@@ -45,19 +45,19 @@ PolyTask::PolyTask(int t, int _nthread=0) : type(t){
 
 }
                                           // Internally, GOTAO works only with queues, not stas
-int PolyTask::sta_to_queue(float x){
-  if(x >= GOTAO_NO_AFFINITY){ 
+int PolyTask::sta_to_queue(float x) {
+  if(x >= GOTAO_NO_AFFINITY) { 
     affinity_queue = -1;
   }
     else if (x < 0.0) return 1;  // error, should it be reported?
     else affinity_queue = (int) (x*xitao_nthreads);
     return 0; 
   }
-int PolyTask::set_sta(float x){    
+int PolyTask::set_sta(float x) {    
   affinity_relative_index = x;  // whenever a sta is changed, it triggers a translation
   return sta_to_queue(x);
 } 
-float PolyTask::get_sta(){             // return sta value
+float PolyTask::get_sta() {             // return sta value
   return affinity_relative_index; 
 }    
 int PolyTask::clone_sta(PolyTask *pt) { 
@@ -65,7 +65,7 @@ int PolyTask::clone_sta(PolyTask *pt) {
   affinity_queue = pt->affinity_queue; // make sure to copy the exact queue
   return 0;
 }
-void PolyTask::make_edge(PolyTask *t){
+void PolyTask::make_edge(PolyTask *t) {
   out.push_back(t);
   t->refcount++;
   if(config::use_performance_modeling)    
@@ -73,7 +73,7 @@ void PolyTask::make_edge(PolyTask *t){
 }
 
 //Determine if task is critical task
-int PolyTask::if_prio(int _nthread, PolyTask * it){
+int PolyTask::if_prio(int _nthread, PolyTask * it) {
   return it->criticality;
 } 
 
@@ -92,34 +92,29 @@ PolyTask * PolyTask::commit_and_wakeup(int _nthread) {
   PolyTask *ret = nullptr;
   for(auto&& it : out) {
     int refs = it->refcount.fetch_sub(1);
-    if(refs == 1){
+    if(refs == 1) {
       DEBUG_MSG("[DEBUG] Task " << it->taskid << " became ready");
       if(config::use_performance_modeling) {
         int pr = if_prio(_nthread, it);
-        if (pr == 1){
+        if (pr == 1) {
           perf_model::global_search_ptt(it);
           //globalsearch_PTT(_nthread, it);
           DEBUG_MSG("[DEBUG] Priority=1, task "<< it->taskid <<" will run on thread "<< it->leader << ", width become " << it->width);
           default_queue_manager::insert_task_in_assembly_queues(it);
-        }
-        else {  
+        } else {  
           DEBUG_MSG("[DEBUG] Priority=0, task "<< it->taskid <<" is pushed to WSQ of thread "<< _nthread); 
           default_queue_manager::insert_in_ready_queue(it, _nthread);
         }
-      }
-      else {
+      } else {
         if(!ret && ((it->affinity_queue == -1) || ((it->affinity_queue/it->width) == (_nthread/it->width)))){
           // history_mold(_nthread,(*it)); 
           ret = it; // forward locally only if affinity matches
-        }
-        else{
+        } else {
           // otherwise insert into affinity queue, or in local queue
           int ndx = it->affinity_queue;
           if((ndx == -1) || ((it->affinity_queue/it->width) == (_nthread/it->width)))
             ndx = _nthread;
-
           //history_mold(_nthread,(*it)); 
-          
           default_queue_manager::insert_in_ready_queue(it, ndx);
         } 
       }
