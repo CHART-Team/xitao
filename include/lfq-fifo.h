@@ -11,6 +11,8 @@
 #ifndef LFQ
 #define LFQ
 #include <atomic>
+#include <iostream>
+using namespace std;
 
 #define CACHE_LINE_SIZE (64)
 
@@ -43,9 +45,7 @@ public:
         if( nxt != nullptr ) { 
             return nxt->value;
         } else {
-            T* val = new T();
-            *val = nullptr;
-            return *val;
+            return first->value;
         }
     }
 
