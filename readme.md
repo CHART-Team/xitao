@@ -17,6 +17,21 @@ cd benchmarks/dotproduct
 make dotprod
 ./dotprod 8192 2 16
 ```
+## Available command line options for the XiTAO runtime ##
+By initializing the command line arguments to the runtime using ```xitao_init(argc, argv)```, run your DAG application with ```./bin --xitao_args="-h"``` to get the available options, such as:
+```
+Usage: --xitao_args= [options]
+Long option (short option)               : Description (Default value)
+ --wstealing (-w) [0/1]                  : Enable/Disable work-stealing (1)
+ --perfmodel (-p) [0/1]                  : Enable/Disable performance modeling  (1)
+ --nthreads (-t)                         : The number of worker threads (8)
+ --idletries (-i)                        : The number of idle tries before a steal attempt (100)
+ --minparcost (-c) [0/1]                 : model 1 (parallel cost) - 0 (parallel time) (1)
+ --oldtickweight (-o)                    : Weight of old tick versus new tick (4)
+ --refreshtablefreq (-t)                 : How often to attempt a random moldability to heat the table (10)
+ --mold (-m)                             : Enable/Disable dynamic moldability (1)
+ --help (-h)                             : Show this help document
+```
 
 ## Explanation for the Dot Product Example ##
 read documentation.pdf
@@ -24,8 +39,8 @@ read documentation.pdf
 
 ## Running Synthetic DAGs Benchmark ##
 ```bash
-cd benchmarks/syntheticDAGS
-make synbench
+cd benchmarks/syntheticDAGs
+make clean; make run
 ./synbench <Block Side Length> <Resource Width> <TAO Mul Count> <TAO Copy Count> <TAO Stencil Count> <Degree of Parallelism>
 ```
 
