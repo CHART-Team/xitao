@@ -13,7 +13,7 @@ int
 main(int argc, char *argv[])
 {
   double *A, *B, *C, D; 
-  if(argc != 4) {
+  if(argc < 4) {
     std::cout << "./a.out <veclength> <TAOwidth> <blocklength>" << std::endl; 
     return 0;
   }
@@ -47,7 +47,7 @@ main(int argc, char *argv[])
   }
 
   // init XiTAO runtime 
-  xitao_init();
+  xitao_init(argc, argv);
   
   // create numvm TAOs 
   int numvm = len / block;
