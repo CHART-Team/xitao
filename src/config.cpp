@@ -118,7 +118,7 @@ void config::usage(char* name) {
           " --idletries (-i)                        : The number of idle tries before a steal attempt (%d)\n"
           " --minparcost (-c) [0/1]                 : model 1 (parallel cost) - 0 (parallel time) (%d)\n"
           " --oldtickweight (-o)                    : Weight of old tick versus new tick (%d)\n"
-          " --refreshtablefreq (-t)                 : How often to attempt a random moldability to heat the table (%d)\n"
+          " --refreshtablefreq (-f)                 : How often to attempt a random moldability to heat the table (%d)\n"
           " --mold (-m)                             : Enable/Disable dynamic moldability (%d)\n"
           " --help (-h)                             : Show this help document\n",
           name,
