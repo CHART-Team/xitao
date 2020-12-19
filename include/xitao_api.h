@@ -52,7 +52,7 @@ void xitao_set_num_threads(int nthreads);
   \param pt The TAO to push 
   \param queue The queue to be pushed to (< XITAO_MAXTHREADS)
 */
-int xitao_push(PolyTask *pt, int queue=-1);
+void xitao_push(PolyTask *pt, int queue=-1);
 
 //! Block master thread until DAG execution is finished, without having to finalize
 void xitao_barrier();

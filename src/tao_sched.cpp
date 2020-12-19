@@ -174,7 +174,7 @@ int check_and_get_available_queue(int queue) {
 // if no particular queue is specified then try to determine which is the local
 // queue and insert it there. This has some overhead, so in general the
 // programmer should specify some queue
-int xitao_push(PolyTask *pt, int queue)
+void xitao_push(PolyTask *pt, int queue)
 {
   if((queue == -1) && (pt->affinity_queue != -1)){
     queue = pt->affinity_queue;
@@ -195,7 +195,6 @@ int xitao_push(PolyTask *pt, int queue)
     pt->_ptt = xitao_ptt::try_insert_table(pt, pt->workload_hint);    /*be sure that a single orphaned task has a PTT*/
   
   default_queue_manager::insert_in_ready_queue(pt, queue);
-  return 1;
 }
 
 // Push work when not yet running. This version does not require locks
