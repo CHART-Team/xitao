@@ -18,7 +18,8 @@ namespace xitao {
       float comp_perf = 0.0f; 
       int new_width = 1; 
       int new_leader = -1;
-      for(int leader = 0; leader < ptt_layout.size(); ++leader) {
+      int sz = ptt_layout.size(); 
+      for(int leader = 0; leader < sz; ++leader) {
         for(auto&& width : ptt_layout[leader]) {
           if(width <= 0 || (!mold && width > 1)) continue;
           auto&& ptt_val = it->get_timetable(leader, width);

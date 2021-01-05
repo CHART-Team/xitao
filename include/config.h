@@ -8,7 +8,7 @@
 #define TAO_STA 1
 #define XITAO_MAXTHREADS 64
 #define GOTAO_HW_CONTEXTS 1
-// #define DEBUG
+//#define DEBUG
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
