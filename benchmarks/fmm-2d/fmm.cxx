@@ -43,14 +43,12 @@ int main(int argc, char ** argv) {
   Cells cells = buildTree(bodies);                              // Build tree
   stop("Build tree");                                           // Stop timer
 #if USE_XITAO
-  //! FMM evaluation
-  start("FMM DAG");                                           // Start timer
+  //! FMM DAG building
+  start("FMM DAG");                                             // Start timer
   upwardPass(cells);                                            // Upward pass for P2M, M2M
   horizontalPass(cells, cells);                                 // Horizontal pass for M2L, P2P
   downwardPass(cells);                                          // Downward pass for L2L, L2P
-  stop("FMM DAG");                                           // Start timer
-  //return 0;
-  //stop("L2L & L2P");                                            // Stop timer
+  stop("FMM DAG");                                              // Stop timer
   start("FMM Time");
   xitao_start();
   xitao_fini();
