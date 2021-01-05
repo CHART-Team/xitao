@@ -103,11 +103,6 @@ void xitao_init_hw(int nthr, int thrb, int nhwc)
       gotao_thread_base = GOTAO_THREAD_BASE;
     }
   }
-  starting_barrier = new BARRIER(xitao_nthreads + 1);
-  tao_barrier = new cxx_barrier(2);
-  for(int i = 0; i < xitao_nthreads; i++){
-    t[i]  = new std::thread(worker_loop, i);   
-  }  
   xitao_ptt::print_ptt_debug_info();
   suppress_init_warnings = true;    
   gotao_initialized = true;  
@@ -133,6 +128,11 @@ void xitao_init(int argc, char** argv) {
 void xitao_start()
 {
  if(gotao_started) return;
+  starting_barrier = new BARRIER(xitao_nthreads + 1);
+  tao_barrier = new cxx_barrier(2);
+  for(int i = 0; i < xitao_nthreads; i++){
+    t[i]  = new std::thread(worker_loop, i);   
+  }  
   starting_barrier->wait();
   gotao_started = true;
 }
