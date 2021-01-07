@@ -2,7 +2,9 @@
 #include <fstream>
 #include <cmath>
 tmap xitao_ptt::runtime_ptt_tables;
-
+const size_t xitao_ptt::ptt_row_size = XITAO_MAXTHREADS;
+const size_t xitao_ptt::ptt_col_size = XITAO_MAXTHREADS + 1;
+const size_t xitao_ptt::ptt_table_size = ptt_col_size * ptt_row_size; 
 ptt_shared_type xitao_ptt::try_insert_table(PolyTask* pt, size_t const& workload_hint) {
   // declare the tao_info to capture its type
   xitao_ptt_key tao_info (workload_hint, typeid(*pt));

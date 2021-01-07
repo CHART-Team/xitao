@@ -13,11 +13,11 @@ public:
   /*! a static map that keeps track of the active PTT tables*/
   static tmap runtime_ptt_tables;  
   /*! the row size of the ptt table */
-  static const size_t ptt_row_size = XITAO_MAXTHREADS;
-  /*! widths start from 1. add 1 to avoid subtracting 1 everytime width is indexed*/
-  static const size_t ptt_col_size = XITAO_MAXTHREADS + 1;
+  static const size_t ptt_row_size;
+  /*! widths start from 1. add 1 to col size to avoid subtracting 1 everytime width is indexed*/
+  static const size_t ptt_col_size;
   /*! the full size of each ptt table. */
-  static const size_t ptt_table_size = ptt_col_size * ptt_row_size; 
+  static const size_t ptt_table_size;// = ptt_col_size * ptt_row_size; 
 #if 0
   static const size_t elems_per_cache_line = config::cache_line_size / sizeof(ptt_value_type::value_type);
 
