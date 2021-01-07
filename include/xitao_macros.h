@@ -39,7 +39,7 @@
 																}														\
 															},									   						\
 															sched, block_size);											\
-															gotao_drain();
+															xitao_drain();
 
 //! wrapper for what constitutes and SPMD region executed by concurrent tasks. 
 #define __xitao_vec_non_immediate_multiparallel_region(width, iter , end, sched, block_size, code) xitao_vec_multiparallel(\
