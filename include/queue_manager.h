@@ -50,14 +50,14 @@ namespace xitao {
         }
       }
 
-      static inline bool try_pop_ready_task(int nthread, queue_element_type &task) {
+      static inline bool try_pop_ready_task(int nthread, queue_element_type &task, int requesting_thread) {
         LOCK_ACQUIRE(worker_lock[nthread]);
         if(!worker_ready_q[nthread].empty()) {
           task = worker_ready_q[nthread].back(); 
           worker_ready_q[nthread].pop_back();
           LOCK_RELEASE(worker_lock[nthread]);
           if(config::use_performance_modeling)
-            perf_model::history_mold_locally(nthread, task);
+            perf_model::history_mold_locally(requesting_thread, task);
           DEBUG_MSG("[DEBUG] Priority=0, task "<< task->taskid <<" will run on thread "<< task->leader << ", width become " << task->width);
           return true;
         } else {

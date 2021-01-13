@@ -321,7 +321,7 @@ int worker_loop(int nthread)
 
     // 2. check own queue: if a ready local task is found continue,
     //  to avoid trying to steal
-    if(default_queue_manager::try_pop_ready_task(nthread, st)) continue;
+    if(default_queue_manager::try_pop_ready_task(nthread, st, nthread)) continue;
 
     // 3. try to steal 
     // STEAL_ATTEMPTS determines number of steals before retrying the loop
@@ -331,7 +331,7 @@ int worker_loop(int nthread)
         do{
           random_core = (rand_r(&seed) % xitao_nthreads);
         } while(random_core == nthread);
-          if(default_queue_manager::try_pop_ready_task(random_core, st)) tao_total_steals++;
+          if(default_queue_manager::try_pop_ready_task(random_core, st, nthread)) tao_total_steals++;
       } while(!st && (attempts-- > 0));
       if(st){
         continue;
