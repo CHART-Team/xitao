@@ -28,6 +28,27 @@ namespace exafmm {
       for (int d=0; d<2; d++) Bi[i].F[d] -= F[d];               //  Accumulate force
     }                                                           // End loop over target bodies
   }
+  
+  //!< P2P kernel between cells Ci and Cj
+  void P2P(Cell * Ci, Cell * Cj, int beg, int end) {
+    Body * Bi = Ci->BODY;                                       // Target body pointer
+    Body * Bj = Cj->BODY;                                       // Source body pointer
+    for (int i=beg; i<end; i++) {                               // Loop over target bodies
+      real_t p = 0, F[2] = {0, 0};                              //  Initialize potential, force
+      for (int j=0; j<Cj->NBODY; j++) {                         //  Loop over source bodies
+        for (int d=0; d<2; d++) dX[d] = Bi[i].X[d] - Bj[j].X[d];//   Calculate distance vector
+        real_t R2 = norm(dX);                                   //   Calculate distance squared
+        if (R2 != 0) {                                          //   If not the same point
+          real_t invR = 1 / sqrt(R2);                           //    1 / R
+          real_t logR = Bj[j].q * log(invR);                    //    q * log(R)
+          p += logR;                                            //    Potential
+          for (int d=0; d<2; d++) F[d] += dX[d] * Bj[j].q / R2; //    Force
+        }                                                       //   End if for same point
+      }                                                         //  End loop over source points
+      Bi[i].p += p;                                             //  Accumulate potential
+      for (int d=0; d<2; d++) Bi[i].F[d] -= F[d];               //  Accumulate force
+    }                                                           // End loop over target bodies
+  }
 
   //!< P2M kernel for cell C
   void P2M(Cell * C) {

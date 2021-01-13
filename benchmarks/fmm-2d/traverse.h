@@ -48,14 +48,23 @@ namespace exafmm {
   class P2PListTAO : public AssemblyTask {
     Cell* cell_i; 
   public:
-    P2PListTAO(Cell* _cell_i) : AssemblyTask(1), cell_i (_cell_i) { }
+    P2PListTAO(Cell* _cell_i) : AssemblyTask(1), cell_i (_cell_i) {
+      criticality = 1;
+    }
 
     void execute(int nthread) { 
-      if(nthread == leader) { 
+	assert(width > 0);
+	int tid = nthread - leader;
+	int size = cell_i->NBODY / width; 
+	int start = tid * size;
+	int end   = (tid == width - 1)? cell_i->NBODY : start + size;
+    //  if(nthread == leader) { 
         for (size_t j=0; j<cell_i->listP2P.size(); j++) {      //  Loop over P2P list
-          P2P(cell_i,cell_i->listP2P[j]);                      //   P2P kernel
+         // assert(start < end);
+          P2P(cell_i,cell_i->listP2P[j], start, end);                      //   P2P kernel
+   //       P2P(cell_i,cell_i->listP2P[j]);                      //   P2P kernel
         }   
-      }
+      //}
     }
     
     void cleanup() {} 
@@ -64,7 +73,9 @@ namespace exafmm {
   class M2LListTAO : public AssemblyTask {
     Cell* cell_i; 
   public:
-    M2LListTAO(Cell* _cell_i) : AssemblyTask(1), cell_i (_cell_i) { }
+    M2LListTAO(Cell* _cell_i) : AssemblyTask(1), cell_i (_cell_i) { 
+      // criticality = 1;
+    }
 
     void execute(int nthread) { 
       if(nthread == leader) { 
