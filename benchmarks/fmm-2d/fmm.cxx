@@ -101,12 +101,12 @@ int main(int argc, char ** argv) {
   printf("%-20s : %8.5e s\n","Rel. L2 Error (F)", sqrt(FDif/FNrm));// Print force error
 #if USE_XITAO
   if(xitao::config::use_performance_modeling) {
-    xitao_ptt::print_table<FMM_TAO_1>("P2M", 0);
-    xitao_ptt::print_table<FMM_TAO_1>("M2M", 1);
+//    xitao_ptt::print_table<FMM_TAO_1>("P2M", 0);
+//    xitao_ptt::print_table<FMM_TAO_1>("M2M", 1);
     xitao_ptt::print_table<M2LListTAO>("M2L", 0);
     xitao_ptt::print_table<P2PListTAO>("P2P", 0);
-    xitao_ptt::print_table<FMM_TAO_1>("L2L", 2);
-    xitao_ptt::print_table<FMM_TAO_1>("L2P", 3);
+//    xitao_ptt::print_table<FMM_TAO_1>("L2L", 2);
+//    xitao_ptt::print_table<FMM_TAO_1>("L2P", 3);
   }
   std::cout << "Total number of steals: " <<  tao_total_steals << "\n";
 #endif
