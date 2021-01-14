@@ -25,6 +25,7 @@ public:
     static int sta;
     static int hw_contexts;
     static bool enable_workstealing; 
+    static bool enable_local_workstealing; 
     static bool use_performance_modeling;
     static int nthreads;
     static void print_configs();

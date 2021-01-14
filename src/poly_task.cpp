@@ -109,7 +109,8 @@ PolyTask * PolyTask::commit_and_wakeup(int _nthread) {
         if(!ret && ((it->affinity_queue == -1) || ((it->affinity_queue/it->width) == (_nthread/it->width)))){
           // history_mold(_nthread,(*it)); 
           ret = it; // forward locally only if affinity matches
-        } else {
+        } else { 
+       //   cout<< "inserting in affinity queue " << it->affinity_queue << endl;
           // otherwise insert into affinity queue, or in local queue
           int ndx = it->affinity_queue;
           if((ndx == -1) || ((it->affinity_queue/it->width) == (_nthread/it->width)))

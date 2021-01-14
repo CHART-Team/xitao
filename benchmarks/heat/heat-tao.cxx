@@ -156,7 +156,7 @@ int main( int argc, char *argv[] )
 			           "\n\tInternal Y Decomposition = " << iydecomp << std::endl;
     
     // When using stas, the runtime needs to be initialized before we start creating objects
-    xitao_init();
+    xitao_init(argc, argv);
 
     // first a single iteration of a stencil
     jacobi2D *stc[param.maxiter][exdecomp][eydecomp];

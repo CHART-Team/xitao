@@ -66,6 +66,12 @@ heat-tbb: $(HEAT_TBB_OBJS) misc.o
 heat: heat.o solver.o misc.o
 	$(CC) $^ -o $@ $(CFLAGS) ${LIBS}
 
+run-tao: heat-tao
+	AWIDTH=2 EXDECOMP=2 EYDECOMP=2 IXDECOMP=2 IYDECOMP=1 TAO_NOPLOT=1 ./heat-tao huge.dat output --xitao_args='-w0 -p0'	
+
+run-tbb: heat-tbb
+	EXDECOMP=4 EYDECOMP=2 TAO_NOPLOT=1 ./heat-tbb huge.dat output 
+
 clean:
 	rm -rf $(HEAT_TAO_OBJS) $(HEAT_TBB_OBJS) heat-tao heat-tbb *.ppm heat
 

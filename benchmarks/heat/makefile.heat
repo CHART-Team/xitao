@@ -4,9 +4,9 @@
 # the below values are the default
 # they can be overriden with environment variables of the same name
 WIDTH=2
-EXT_XDECOMP=4
+EXT_XDECOMP=2
 EXT_YDECOMP=2
-INT_XDECOMP=1
+INT_XDECOMP=2
 INT_YDECOMP=1
 CXXFLAGS+=-DAWIDTH=${WIDTH}
 CXXFLAGS+=-DEXDECOMP=${EXT_XDECOMP}

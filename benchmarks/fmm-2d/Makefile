@@ -1,7 +1,7 @@
 XITAO_HOME=../../
 #CXX = g++ 
 CPPFLAGS+= -g -O3 -std=c++11 -Wall -Wfatal-errors -fopenmp  
-
+LDFLAGS+=-lhwloc -lnuma
 all:
 	@make fmm-xitao
 	@make fmm-omp

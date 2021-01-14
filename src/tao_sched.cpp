@@ -193,7 +193,6 @@ void xitao_push(PolyTask *pt, int queue)
   }
   if(config::use_performance_modeling)
     pt->_ptt = xitao_ptt::try_insert_table(pt, pt->workload_hint);    /*be sure that a single orphaned task has a PTT*/
-  
   default_queue_manager::insert_in_ready_queue(pt, queue);
 }
 
@@ -251,6 +250,8 @@ int worker_loop(int nthread)
   PolyTask *st = nullptr;
   starting_barrier->wait();  
   auto&&  partitions = inclusive_partitions[nthread];
+  auto&& largest_inclusive_partition = inclusive_partitions[nthread].back();
+
   if(partitions.size() == 0) {
     std::cout << "Thread " << nthread << " is deactivated since it is not included in any PTT partition" << std::endl;      
     return 0;
@@ -328,10 +329,20 @@ int worker_loop(int nthread)
     if(config::enable_workstealing && config::steal_attempts && !(rand_r(&seed) % config::steal_attempts)) {
       int attempts = 1;
       do{
+	int steal_tries = 0;
+        bool is_local_steal = false;
         do{
-          random_core = (rand_r(&seed) % xitao_nthreads);
-        } while(random_core == nthread);
-          if(default_queue_manager::try_pop_ready_task(random_core, st, nthread)) tao_total_steals++;
+          if(config::enable_local_workstealing) { 
+	    steal_tries++;
+	    is_local_steal = true;
+	    random_core = largest_inclusive_partition.first + (rand_r(&seed)%largest_inclusive_partition.second);
+	  } else {
+	    random_core = (rand_r(&seed) % xitao_nthreads);
+	  } 
+      } while(random_core == nthread && steal_tries < 2);
+          if(default_queue_manager::try_pop_ready_task(random_core, st, nthread)) {
+            tao_total_steals++;
+	  }
       } while(!st && (attempts-- > 0));
       if(st){
         continue;

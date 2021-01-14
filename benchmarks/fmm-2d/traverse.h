@@ -2,10 +2,21 @@
 #define traverse_lazy_h
 #include "exafmm.h"
 #if USE_XITAO
+#include "hilbert.h"
 #include "xitao.h"
 #endif
 namespace exafmm {
 #ifdef USE_XITAO
+   
+  double hilbert_sta(real_t X[2]) { 
+    const int locs = 2;
+    constexpr float dx = 2 * M_PI / (1 << locs); 
+    int x = floor((X[0] + M_PI) / dx);
+    int y = floor((X[1] + M_PI) / dx);
+    int key = xy2d(locs, x, y);
+    double sta = double(key) / (1 << (2 * locs));
+    return sta;
+  } 
 
   class FMM_TAO_1 : public AssemblyTask {
     typedef std::function<void(Cell*)> fmm_func_type;
@@ -15,6 +26,7 @@ namespace exafmm {
     FMM_TAO_1(Cell*& _cell, fmm_func_type _fmm_func, size_t _workload_hint ) : 
                    AssemblyTask(1), cell(_cell), fmm_func(_fmm_func) {
       workload_hint = _workload_hint;
+      set_sta(hilbert_sta(_cell->X));
     }
     void execute(int nthread) { 
       if(nthread == leader) { 
@@ -49,7 +61,8 @@ namespace exafmm {
     Cell* cell_i; 
   public:
     P2PListTAO(Cell* _cell_i) : AssemblyTask(1), cell_i (_cell_i) {
-      criticality = 1;
+      //criticality = 1;
+      set_sta(hilbert_sta(cell_i->X));
     }
 
     void execute(int nthread) { 
@@ -74,7 +87,7 @@ namespace exafmm {
     Cell* cell_i; 
   public:
     M2LListTAO(Cell* _cell_i) : AssemblyTask(1), cell_i (_cell_i) { 
-      // criticality = 1;
+      set_sta(hilbert_sta(cell_i->X));
     }
 
     void execute(int nthread) { 
@@ -170,7 +183,7 @@ namespace exafmm {
     } 
     for (Cell * Ci=Cj->CHILD; Ci!=Cj->CHILD+Cj->NCHILD; Ci++) { // Loop over child cells
       if(M2L_map[Ci->INDEX] != NULL){
-        M2L_map[Ci->INDEX]->make_edge(L2L_tao);                             // L2L kernel
+	M2L_map[Ci->INDEX]->make_edge(L2L_tao);                             // L2L kernel
       }
     }
     if(parent) { 
