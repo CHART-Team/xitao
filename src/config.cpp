@@ -32,6 +32,7 @@ static struct option long_options[] = {
   {"nthreads",     required_argument, 0, 't'},
   {"idletries",    required_argument, 0, 'i'},
   {"minparcost",   required_argument, 0, 'c'},
+  {"sta",          required_argument, 0, 's'},
   {"oldtickweight",    required_argument, 0, 'o'},
   {"refreshtablefreq",    required_argument, 0, 'f'},
   {"mold",    required_argument, 0, 'm'},
@@ -68,7 +69,7 @@ void config::init_config(int argc, char** argv, bool read_all_args) {
   // fill in the extracted args
   while (argc > 1) {
     int option_index;
-    int c = getopt_long(argc, argv, "hp:c:w:l:m:t:i:o:f:",
+    int c = getopt_long(argc, argv, "hp:c:w:l:s:m:t:i:o:f:",
                         long_options, &option_index);
 
     if (c == -1) break;
@@ -76,6 +77,9 @@ void config::init_config(int argc, char** argv, bool read_all_args) {
       case 'w':
         enable_workstealing = atoi(optarg);
         break;
+      case 's':
+        sta = atoi(optarg);
+	break;
       case 'l':
         enable_local_workstealing = atoi(optarg);
 	break;
@@ -120,6 +124,7 @@ void config::usage(char* name) {
           " --wstealing (-w) [0/1]                  : Enable/Disable work-stealing (%d)\n"
           " --lwstealing (-l)[0/1]                  : Enable/Disable cluster-level work-stealing (%d)\n"
           " --perfmodel (-p) [0/1]                  : Enable/Disable performance modeling  (%d)\n"
+          " --sta (-s) [0/1]                        : Enable/Disable capturing sta  (%d)\n"
           " --nthreads (-t)                         : The number of worker threads (%d)\n"
           " --idletries (-i)                        : The number of idle tries before a steal attempt (%d)\n"
           " --minparcost (-c) [0/1]                 : model 1 (parallel cost) - 0 (parallel time) (%d)\n"
@@ -131,6 +136,7 @@ void config::usage(char* name) {
           config::enable_workstealing,
           config::enable_local_workstealing,
           config::use_performance_modeling,
+	  config::sta,
           config::nthreads,
           config::steal_attempts,
           perf_model::minimize_parallel_cost,
@@ -182,6 +188,7 @@ void config::print_configs() {
     formatted_print("Work stealing", ((config::enable_workstealing)? "enabled" : "disabled"));
     formatted_print("Cluster w-stealing", ((config::enable_local_workstealing)? "enabled" : "disabled"));
     formatted_print("Performance model", ((config::use_performance_modeling)? "enabled" : "disabled"));
+    formatted_print("Capturing STA", ((config::sta == 1)? "enabled" : "disabled"));
     if(config::enable_workstealing) {
       formatted_print("Idle tries before steal", config::steal_attempts);
     }

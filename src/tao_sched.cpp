@@ -176,7 +176,7 @@ int check_and_get_available_queue(int queue) {
 // programmer should specify some queue
 void xitao_push(PolyTask *pt, int queue)
 {
-  if((queue == -1) && (pt->affinity_queue != -1)){
+  if((queue == -1) && (pt->affinity_queue != -1) && config::sta){
     queue = pt->affinity_queue;
   }
   else{

@@ -75,12 +75,12 @@ public:
   /*!
     \param x a floating point value between [0, 1) that indicates the topology address in one dimension
   */
-  int sta_to_queue(float x);
+  void sta_to_queue(float x);
   //! give a TAO an STA address
   /*!
     \param x a floating point value between [0, 1) that indicates the topology address in one dimension
   */
-  int set_sta(float x);
+  void set_sta(float x);
   //! get the current STA address of a TAO
   float get_sta();
   //! copy the STA of a TAO to the current TAO
