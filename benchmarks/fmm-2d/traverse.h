@@ -7,9 +7,10 @@
 #endif
 namespace exafmm {
 #ifdef USE_XITAO
-   
+//#define RANDOM_STA
+
   double hilbert_sta(real_t X[2]) { 
-    const int locs = 2;
+    const int locs = 8;
     constexpr float dx = 2 * M_PI / (1 << locs); 
     int x = floor((X[0] + M_PI) / dx);
     int y = floor((X[1] + M_PI) / dx);
@@ -26,8 +27,13 @@ namespace exafmm {
     FMM_TAO_1(Cell*& _cell, fmm_func_type _fmm_func, size_t _workload_hint ) : 
                    AssemblyTask(1), cell(_cell), fmm_func(_fmm_func) {
       workload_hint = _workload_hint;
+      //set_sta(hilbert_sta(_cell->X));
+#ifdef RANDOM_STA
+      set_sta(drand48());
+#else
       set_sta(hilbert_sta(_cell->X));
-    }
+#endif
+   }
     void execute(int nthread) { 
       if(nthread == leader) { 
         fmm_func(cell);
@@ -37,32 +43,17 @@ namespace exafmm {
     void cleanup() {} 
   };
 
-  class FMM_TAO_2 : public AssemblyTask {
-    typedef std::function<void(Cell*, Cell*)> fmm_func_type;
-    Cell* cell_1; 
-    Cell* cell_2; 
-    fmm_func_type fmm_func;
-  public:
-    FMM_TAO_2(Cell*& _cell_1, Cell*& _cell_2, fmm_func_type _fmm_func, size_t _workload_hint ) : 
-                   AssemblyTask(1), cell_1(_cell_1), cell_2(_cell_2), fmm_func(_fmm_func) { 
-      workload_hint = _workload_hint;
-    }
-
-    void execute(int nthread) { 
-      if(nthread == leader) { 
-        fmm_func(cell_1, cell_2);
-      }
-    }
-    
-    void cleanup() {} 
-  };
-
   class P2PListTAO : public AssemblyTask {
     Cell* cell_i; 
   public:
     P2PListTAO(Cell* _cell_i) : AssemblyTask(1), cell_i (_cell_i) {
       //criticality = 1;
-      set_sta(hilbert_sta(cell_i->X));
+    //  set_sta(hilbert_sta(cell_i->X));
+#ifdef RANDOM_STA
+	set_sta(drand48());
+#else
+        set_sta(hilbert_sta(cell_i->X));
+#endif
     }
 
     void execute(int nthread) { 
@@ -87,7 +78,11 @@ namespace exafmm {
     Cell* cell_i; 
   public:
     M2LListTAO(Cell* _cell_i) : AssemblyTask(1), cell_i (_cell_i) { 
+#ifdef RANDOM_STA
+      set_sta(drand48());
+#else
       set_sta(hilbert_sta(cell_i->X));
+#endif    
     }
 
     void execute(int nthread) { 
@@ -115,7 +110,7 @@ namespace exafmm {
     if (Ci->NCHILD == 0) { 
       FMM_TAO_1* P2M_tao = new FMM_TAO_1(Ci, P2M, 0);
       P2M_tao->make_edge(M2M_tao);
-      xitao_push(P2M_tao, rand() % xitao_nthreads);
+      xitao_push(P2M_tao);
     } else {
        for(auto&& child : childTAOs)
          child->make_edge(M2M_tao);
@@ -165,7 +160,7 @@ namespace exafmm {
       if(cells[i].listP2P.size() > 0) {
         P2PListTAO* P2P_tao = new P2PListTAO(&cells[i]);                        //   P2P kernel
         P2P_map[cells[i].INDEX] = P2P_tao;
-        xitao_push(P2P_tao, rand() % xitao_nthreads);
+        xitao_push(P2P_tao);
       }
     } 
   }
@@ -189,7 +184,7 @@ namespace exafmm {
     if(parent) { 
       parent->make_edge(L2L_tao);
     } else {
-      xitao_push(L2L_tao, rand() % xitao_nthreads);
+      xitao_push(L2L_tao);
     }
     if (Cj->NCHILD == 0) {
       FMM_TAO_1* L2P_tao = new FMM_TAO_1(Cj, L2P, 3);
