@@ -13,6 +13,7 @@ int  perf_model::refresh_frequency      = 10;
 int  perf_model::old_tick_weight     = 4;
 bool perf_model::mold = true;
 bool config::verbose  = true;
+bool config::delete_executed_taos  = false;
 int  config::thread_base = GOTAO_THREAD_BASE;
 int  config::affinity = GOTAO_NO_AFFINITY;
 int  config::steal_attempts = STEAL_ATTEMPTS;
@@ -35,6 +36,7 @@ static struct option long_options[] = {
   {"sta",          required_argument, 0, 's'},
   {"oldtickweight",    required_argument, 0, 'o'},
   {"refreshtablefreq",    required_argument, 0, 'f'},
+  {"dealloctaos",    required_argument, 0, 'd'},
   {"mold",    required_argument, 0, 'm'},
   {"help",         no_argument,       0, 'h'},
   {0, 0, 0, 0}
@@ -69,7 +71,7 @@ void config::init_config(int argc, char** argv, bool read_all_args) {
   // fill in the extracted args
   while (argc > 1) {
     int option_index;
-    int c = getopt_long(argc, argv, "hp:c:w:l:s:m:t:i:o:f:",
+    int c = getopt_long(argc, argv, "hp:c:w:l:s:m:t:i:o:f:d:",
                         long_options, &option_index);
 
     if (c == -1) break;
@@ -79,10 +81,10 @@ void config::init_config(int argc, char** argv, bool read_all_args) {
         break;
       case 's':
         sta = atoi(optarg);
-	break;
+        break;
       case 'l':
         enable_local_workstealing = atoi(optarg);
-	break;
+        break;
       case 'm':
         perf_model::mold = atoi(optarg);
         break;
@@ -107,7 +109,10 @@ void config::init_config(int argc, char** argv, bool read_all_args) {
       case 'f':
         perf_model::refresh_frequency = atoi(optarg);
         break;
-      default:
+      case 'd':
+        delete_executed_taos = atoi(optarg);
+        break;
+       default:
         config::usage(argv[0]);
         abort();
       }
@@ -130,18 +135,20 @@ void config::usage(char* name) {
           " --minparcost (-c) [0/1]                 : model 1 (parallel cost) - 0 (parallel time) (%d)\n"
           " --oldtickweight (-o)                    : Weight of old tick versus new tick (%d)\n"
           " --refreshtablefreq (-f)                 : How often to attempt a random moldability to heat the table (%d)\n"
+          " --dealloctaos (-d)[0/1]                 : The runtime deletes executed taos (%d)\n"
           " --mold (-m)                             : Enable/Disable dynamic moldability (%d)\n"
           " --help (-h)                             : Show this help document\n",
           name,
           config::enable_workstealing,
           config::enable_local_workstealing,
           config::use_performance_modeling,
-	  config::sta,
+          config::sta,
           config::nthreads,
           config::steal_attempts,
           perf_model::minimize_parallel_cost,
           perf_model::old_tick_weight,
           perf_model::refresh_frequency,
+          config::delete_executed_taos,
           perf_model::mold
           );
 }

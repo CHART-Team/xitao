@@ -7,12 +7,6 @@ using namespace std;
 // declare the class
 class MergeSortTAO;
 
-// max size of input array
-const uint32_t MAX_ARRAY_SIZE = 100;
-
-// place holder for a 2D array of taos
-MergeSortTAO* merge_taos[MAX_ARRAY_SIZE * MAX_ARRAY_SIZE];
-
 // basic merge sort implementation
 void merge(uint32_t* A, uint32_t* left_A, uint32_t left_n, uint32_t* right_A, uint32_t right_n)
 {
@@ -78,29 +72,32 @@ public:
     uint32_t j; // column index of the tao
     
     // the tao construction. resource hint 1
-    MergeSortTAO(uint32_t *_A, uint32_t _n, uint32_t _i, uint32_t _j): A(_A) ,n(_n), i(_i), j(_j), AssemblyTask(1){ }    
+    MergeSortTAO(uint32_t *_A, uint32_t _n, uint32_t _i, uint32_t _j): A(_A) ,n(_n), i(_i), j(_j), left(NULL), right(NULL), AssemblyTask(1){ }    
     
     // the work function
     void execute(int nthread)
     {	
-	if(n > 1)
-	    merge(A, left->A, left->n, right->A, right->n);
+      if(n > 1)
+        merge(A, left->A, left->n, right->A, right->n);
     }
     
-    void cleanup(){  }
+    void cleanup() { 
+      if(left != NULL) delete left;
+      if(right != NULL) delete right;
+    }
 };
 
 // build the DAG by reversing the recursion tree 
-MergeSortTAO* buildDAG(uint32_t *A, uint32_t n, uint32_t i = 0, uint32_t j = 0) {
+MergeSortTAO* buildDAG(uint32_t *A, uint32_t n, uint32_t const& leaf, uint32_t i = 0, uint32_t j = 0) {
 
     // create a tao    
-    merge_taos[i * MAX_ARRAY_SIZE + j] = new MergeSortTAO(A, n, i, j);    
+    MergeSortTAO* current = new MergeSortTAO(A, n, i, j);    
     
     if(n <= 1) // leaf tao
     // {
 	// std::cout << "leaf tao: i=" << i << " j=" << j << " n=" << n << " A=" << A[0] << std::endl;
 	// push the tao
-	xitao_push(merge_taos[i * MAX_ARRAY_SIZE + j]);
+	xitao_push(current);
     // }
     else
     {
@@ -112,14 +109,14 @@ MergeSortTAO* buildDAG(uint32_t *A, uint32_t n, uint32_t i = 0, uint32_t j = 0) 
 	// std::cout << A[n-1] << "]" << std::endl;
 	
 	// build the left dag
-	merge_taos[i * MAX_ARRAY_SIZE + j]->left = buildDAG(A, left_n, i + 1, j);
+	current->left = buildDAG(A, left_n, leaf, i + 1, j);
 	// create edge to current tao
-	merge_taos[i * MAX_ARRAY_SIZE + j]->left->make_edge(merge_taos[i * MAX_ARRAY_SIZE + j]);
+	current->left->make_edge(current);
 	// build the right dag
-	merge_taos[i * MAX_ARRAY_SIZE + j]->right = buildDAG(A + left_n, right_n, i + 1, j + left_n);
+	current->right = buildDAG(A + left_n, right_n, leaf, i + 1, j + left_n);
 	// create edge to current tao
-	merge_taos[i * MAX_ARRAY_SIZE + j]->right->make_edge(merge_taos[i * MAX_ARRAY_SIZE + j]);    
+	current->right->make_edge(current);    
     }
     
-    return merge_taos[i * MAX_ARRAY_SIZE + j];
+    return current;
 }

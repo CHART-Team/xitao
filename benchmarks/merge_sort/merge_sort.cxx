@@ -1,22 +1,24 @@
 #include "merge_sort.h"
-
+#include <vector>
+using namespace std;
 int main(int argc, char** argv)
 {
-    uint32_t n = 10;
-    uint32_t A[] = {13, 2, 45, 3, 6, 55, 32, 10, 67, 28};
+    if(argc < 3) { 
+      cout << "usage: ./merge_sort matrix_size leaf_cell_size" <<endl;
+      exit(0);
+    }
+    uint32_t n = atoi(argv[1]) ;
+    uint32_t leaf = atoi(argv[2]);
+    vector<uint32_t> A (n);
+    for(int i = 0; i < n; ++i) A[i] = rand() % n; 
         
     // initialize the XiTAO runtime system 
-    xitao_init();
+    xitao_init(argc, argv);
 
-    std::cout << "Input array: ";
-    for(uint32_t i = 0; i < n; i++)
-	std::cout << A[i] << " ";
-    std::cout << std::endl;
-   
     std::cout << "Building the DAG ..." << std::endl;
     
     // recursively build the DAG
-    auto parent = buildDAG(A, n);
+    auto parent = buildDAG(&A[0], n , leaf);
 
     std::cout << "DAG is ready, execute ..." << std::endl;
     
@@ -32,10 +34,8 @@ int main(int argc, char** argv)
     xitao::stop("Time in XiTAO");
 
     // print out the result
-    std::cout << "Output array: " ;    
-    for(int i = 0; i < n; i++)
-	std::cout << A[i] << " ";
-    std::cout << std::endl;
+    if(is_sorted(A.begin(), A.end())) cout << "Success" << endl;
+    else cout << "Failure " << endl;
     // return success
     return 0;
 }

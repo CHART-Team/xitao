@@ -313,9 +313,9 @@ int worker_loop(int nthread)
       st = nullptr;
       if(_final) { // the last exiting thread updates
         DEBUG_MSG("[DEBUG] Thread " << nthread << " completed assembly task " << assembly->taskid);
-        st = assembly->commit_and_wakeup(nthread);
         assembly->cleanup();
-        delete assembly;
+        st = assembly->commit_and_wakeup(nthread);
+        if(config::delete_executed_taos) delete assembly;
       }
       continue;
     }

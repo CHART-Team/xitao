@@ -27,6 +27,7 @@ public:
     static bool enable_workstealing; 
     static bool enable_local_workstealing; 
     static bool use_performance_modeling;
+    static bool delete_executed_taos;
     static int nthreads;
     static void print_configs();
     static void enable_stealing(int idle_tries_before_steal_count);
