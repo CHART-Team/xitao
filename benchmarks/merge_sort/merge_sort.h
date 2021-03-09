@@ -7,6 +7,7 @@ using namespace std;
 // declare the class
 class MergeSortTAO;
 
+uint32_t leaf;
 // basic merge sort implementation
 void merge(uint32_t* A, uint32_t* left_A, uint32_t left_n, uint32_t* right_A, uint32_t right_n)
 {
@@ -68,17 +69,20 @@ public:
     // the array of the TAO
     uint32_t *A;
     
-    uint32_t i; // row index of the tao
-    uint32_t j; // column index of the tao
-    
     // the tao construction. resource hint 1
-    MergeSortTAO(uint32_t *_A, uint32_t _n, uint32_t _i, uint32_t _j): A(_A) ,n(_n), i(_i), j(_j), left(NULL), right(NULL), AssemblyTask(1){ }    
+    MergeSortTAO(uint32_t *_A, uint32_t _n): A(_A) ,n(_n), left(NULL), right(NULL), AssemblyTask(1){ }    
     
     // the work function
     void execute(int nthread)
     {	
-      if(n > 1)
+      if(left != NULL) {
         merge(A, left->A, left->n, right->A, right->n);
+      } else if(n > 1) {
+        // uint32_t left_n = n / 2;
+        // uint32_t right_n = n - left_n;
+        // merge(A, A, left_n, A + left_n, right_n);
+        std::sort(A, A + n);
+      }
     }
     
     void cleanup() { 
@@ -88,7 +92,32 @@ public:
 };
 
 // build the DAG by reversing the recursion tree 
-MergeSortTAO* buildDAG(uint32_t *A, uint32_t n, uint32_t const& leaf, uint32_t i = 0, uint32_t j = 0) {
+MergeSortTAO* buildDAG(uint32_t *A, uint32_t n) {
+
+    // create a tao    
+    MergeSortTAO* current = new MergeSortTAO(A, n);    
+    
+    if(n <= leaf) {
+	xitao_push(current);
+    } 
+    else
+    {
+	uint32_t left_n = n / 2;
+	uint32_t right_n = n - left_n;
+	// build the left dag
+	current->left = buildDAG(A, left_n);
+	// create edge to current tao
+	current->left->make_edge(current);
+	// build the right dag
+	current->right = buildDAG(A + left_n, right_n);
+	// create edge to current tao
+	current->right->make_edge(current);    
+    }
+    
+    return current;
+}
+/*
+void merge_par(uint32_t *A, uint32_t n, uint32_t const& leaf, uint32_t i = 0, uint32_t j = 0) {
 
     // create a tao    
     MergeSortTAO* current = new MergeSortTAO(A, n, i, j);    
@@ -119,4 +148,4 @@ MergeSortTAO* buildDAG(uint32_t *A, uint32_t n, uint32_t const& leaf, uint32_t i
     }
     
     return current;
-}
+}*/
