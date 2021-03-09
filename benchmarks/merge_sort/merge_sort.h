@@ -6,7 +6,7 @@ using namespace std;
 
 // declare the class
 class MergeSortTAO;
-
+void mergesort_seq(uint32_t *A, uint32_t n);
 uint32_t leaf;
 // basic merge sort implementation
 void merge(uint32_t* A, uint32_t* left_A, uint32_t left_n, uint32_t* right_A, uint32_t right_n)
@@ -78,10 +78,7 @@ public:
       if(left != NULL) {
         merge(A, left->A, left->n, right->A, right->n);
       } else if(n > 1) {
-        // uint32_t left_n = n / 2;
-        // uint32_t right_n = n - left_n;
-        // merge(A, A, left_n, A + left_n, right_n);
-        std::sort(A, A + n);
+        mergesort_seq(A, n);
       }
     }
     
@@ -117,6 +114,14 @@ MergeSortTAO* buildDAG(uint32_t *A, uint32_t n) {
     return current;
 }
 
+void mergesort_seq(uint32_t *A, uint32_t n) {
+  if(n <= 1) return;
+  uint32_t left_n = n / 2;
+  uint32_t right_n = n - left_n;
+  mergesort_seq(A, left_n);
+  mergesort_seq(A + left_n, right_n);
+  merge(A, A, left_n, A + left_n, right_n); 
+}
 
 void mergesort_par(uint32_t *A, uint32_t n) {
   if(n <= 1) return;
