@@ -116,36 +116,17 @@ MergeSortTAO* buildDAG(uint32_t *A, uint32_t n) {
     
     return current;
 }
-/*
-void merge_par(uint32_t *A, uint32_t n, uint32_t const& leaf, uint32_t i = 0, uint32_t j = 0) {
 
-    // create a tao    
-    MergeSortTAO* current = new MergeSortTAO(A, n, i, j);    
-    
-    if(n <= 1) // leaf tao
-    // {
-	// std::cout << "leaf tao: i=" << i << " j=" << j << " n=" << n << " A=" << A[0] << std::endl;
-	// push the tao
-	xitao_push(current);
-    // }
-    else
-    {
-	uint32_t left_n = n / 2;
-	uint32_t right_n = n - left_n;
-	// std::cout << "i=" << i << " j=" << j << " n=" << n << " left_n=" << left_n << " right_n=" << right_n << " A=[";
-	// for(int k = 0; k < n-1; k++)
-	//     std::cout << A[k] << ",";
-	// std::cout << A[n-1] << "]" << std::endl;
-	
-	// build the left dag
-	current->left = buildDAG(A, left_n, leaf, i + 1, j);
-	// create edge to current tao
-	current->left->make_edge(current);
-	// build the right dag
-	current->right = buildDAG(A + left_n, right_n, leaf, i + 1, j + left_n);
-	// create edge to current tao
-	current->right->make_edge(current);    
-    }
-    
-    return current;
-}*/
+
+void mergesort_par(uint32_t *A, uint32_t n) {
+  if(n <= 1) return;
+  uint32_t left_n = n / 2;
+  uint32_t right_n = n - left_n;
+#pragma omp task if (n > leaf)
+  mergesort_par(A, left_n);
+#pragma omp task if (n > leaf)
+  mergesort_par(A + left_n, right_n);
+#pragma omp taskwait
+  merge(A, A, left_n, A + left_n, right_n); 
+}
+

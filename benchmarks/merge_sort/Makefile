@@ -1,9 +1,9 @@
 #include ../../makefile.sched
 CXXFLAGS += -I../../include -I.
-CXXFLAGS += -O3
+CXXFLAGS += -O3 -fopenmp
 CXXFLAGS += --std=c++11  ${EXTRAEINC}
 CXX=g++
-LIBS = -lm ${EXTRAELIBS} -L../../lib -lxitao -pthread
+LIBS = -lm ${EXTRAELIBS} -L../../lib -lxitao -pthread -fopenmp
 PROGRAM_OBJS=merge_sort.o 
 
 all: merge_sort
