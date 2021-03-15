@@ -1,8 +1,8 @@
 #include "config.h"
 #include "perf_model.h"
 #include <thread>
-#include <iostream>
 #include <sstream>
+
 using namespace xitao;
 using namespace std;
 
@@ -151,17 +151,6 @@ void config::usage(char* name) {
           config::delete_executed_taos,
           perf_model::mold
           );
-}
-
-template<typename T>
-void config::formatted_print(std::string s, T v, bool fixed) {
-  if (!verbose) return;
-  std::cout << std::setw(stringLength) << std::left << s << " : ";
-  if(fixed)
-    std::cout << std::setprecision(decimal) << std::fixed;
-  else
-    std::cout << std::setprecision(1) << std::scientific;
-  std::cout << v << std::endl;
 }
 
 void config::enable_stealing(int idle_tries_before_steal_count = STEAL_ATTEMPTS) {

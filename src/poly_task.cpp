@@ -101,19 +101,13 @@ PolyTask * PolyTask::commit_and_wakeup(int _nthread) {
         DEBUG_MSG("[DEBUG] Priority=1, task "<< it->taskid <<" will run on thread "<< it->leader << ", width become " << it->width);
         default_queue_manager::insert_task_in_assembly_queues(it);
       } else {
-        if(!ret && ((it->affinity_queue == -1) || ((it->affinity_queue/it->width) == (_nthread/it->width)))){
-          ret = it; // forward locally only if affinity matches
-        } else { 
-          int ndx = it->affinity_queue;
-          if((ndx == -1) || ((it->affinity_queue/it->width) == (_nthread/it->width)))
-            ndx = _nthread;
-          
-	  //int ndx = this->affinity_queue;
-          //if((ndx == -1) || ((this->affinity_queue/this->width) == (_nthread/this->width)))
-          //  ndx = _nthread;
-
-    	  default_queue_manager::insert_in_ready_queue(it, ndx);
-        } 
+        // if(!ret && it->affinity_queue == -1){
+        //   ret = it;
+        // } else { 
+          // either forward locally or following affinity
+          int ndx = (it->affinity_queue == -1)? _nthread : it->affinity_queue;
+          default_queue_manager::insert_in_ready_queue(it, ndx);
+        //} 
       }
     }
   }

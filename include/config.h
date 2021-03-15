@@ -15,6 +15,8 @@
 #include <cstring>
 #include <getopt.h>
 #include <string>
+#include <iostream>
+#include <iomanip>
 namespace xitao {
   class config {
 public: 
@@ -43,7 +45,15 @@ public:
     static void init_config(int argc, char** argv, bool read_all_args=false);   
     static void usage(char* name); 
     template<typename T>
-    static void formatted_print(std::string s, T v, bool fixed=true);
+    static void formatted_print(std::string s, T v, bool fixed=true) {
+    if (!verbose) return;
+      std::cout << std::setw(stringLength) << std::left << s << " : ";
+      if(fixed)
+        std::cout << std::setprecision(decimal) << std::fixed;
+      else
+        std::cout << std::setprecision(1) << std::scientific;
+      std::cout << v << std::endl;
+    }
   };
 }
 

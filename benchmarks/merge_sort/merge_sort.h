@@ -8,6 +8,8 @@ using namespace std;
 class MergeSortTAO;
 void mergesort_seq(uint32_t *A, uint32_t n);
 uint32_t leaf;
+uint32_t N;
+uint32_t use_sta = 0;
 // basic merge sort implementation
 void merge(uint32_t* A, uint32_t* left_A, uint32_t left_n, uint32_t* right_A, uint32_t right_n)
 {
@@ -74,7 +76,8 @@ public:
     
     // the work function
     void execute(int nthread)
-    {	
+    {
+      if(nthread != leader) return;
       if(left != NULL) {
         merge(A, left->A, left->n, right->A, right->n);
       } else if(n > 1) {
@@ -89,11 +92,12 @@ public:
 };
 
 // build the DAG by reversing the recursion tree 
-MergeSortTAO* buildDAG(uint32_t *A, uint32_t n) {
+MergeSortTAO* buildDAG(uint32_t *A, uint32_t n, uint32_t offset) {
 
     // create a tao    
     MergeSortTAO* current = new MergeSortTAO(A, n);    
-    
+    if(use_sta != 0)
+      current->set_sta((float)offset / N);
     if(n <= leaf) {
 	xitao_push(current);
     } 
@@ -102,11 +106,11 @@ MergeSortTAO* buildDAG(uint32_t *A, uint32_t n) {
 	uint32_t left_n = n / 2;
 	uint32_t right_n = n - left_n;
 	// build the left dag
-	current->left = buildDAG(A, left_n);
+	current->left = buildDAG(A, left_n, offset);
 	// create edge to current tao
 	current->left->make_edge(current);
 	// build the right dag
-	current->right = buildDAG(A + left_n, right_n);
+	current->right = buildDAG(A + left_n, right_n, offset + left_n);
 	// create edge to current tao
 	current->right->make_edge(current);    
     }
@@ -127,9 +131,9 @@ void mergesort_par(uint32_t *A, uint32_t n) {
   if(n <= 1) return;
   uint32_t left_n = n / 2;
   uint32_t right_n = n - left_n;
-#pragma omp task if (n > leaf)
+#pragma omp task untied if (n > leaf)
   mergesort_par(A, left_n);
-#pragma omp task if (n > leaf)
+#pragma omp task untied if (n > leaf)
   mergesort_par(A + left_n, right_n);
 #pragma omp taskwait
   merge(A, A, left_n, A + left_n, right_n); 

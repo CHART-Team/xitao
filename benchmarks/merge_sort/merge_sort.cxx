@@ -4,13 +4,19 @@ using namespace std;
 int main(int argc, char** argv)
 {
     if(argc < 3) { 
-      cout << "usage: ./merge_sort matrix_size leaf_cell_size use_omp" <<endl;
+      cout << "usage: ./merge_sort matrix_size leaf_cell_size [use_omp use_sta_in_xitao]" <<endl;
       exit(0);
     }
     uint32_t n = atoi(argv[1]) ;
+    N = n;
     leaf = atoi(argv[2]);
     uint32_t use_omp = 0;
     if(argc > 3) use_omp = atoi(argv[3]);
+    if(argc > 4) use_sta = atoi(argv[4]);
+
+    config::formatted_print("Using STA", use_sta);
+    config::formatted_print("Using OpenMP", use_omp);
+
     vector<uint32_t> A (n);
     //uint32_t* A = new uint32_t[n];
     for(int i = 0; i < n; ++i) A[i] = rand() % n;
@@ -30,8 +36,9 @@ int main(int argc, char** argv)
 
         std::cout << "Building the DAG ..." << std::endl;
         
+
         // recursively build the DAG
-        auto parent = buildDAG(&A[0], n);
+        auto parent = buildDAG(&A[0], n, 0);
 
         std::cout << "DAG is ready, execute ..." << std::endl;
         
@@ -47,9 +54,7 @@ int main(int argc, char** argv)
         xitao::stop("Time in XiTAO");
     }
     // print out the result
-    //if(is_sorted(A.begin(), A.end())) cout << "Success" << endl;
     if(is_sorted(A.begin(), A.end())) cout << "Success" << endl;
-    
     else cout << "Failure " << endl;
     // return success
     return 0;

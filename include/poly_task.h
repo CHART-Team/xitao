@@ -35,6 +35,7 @@ public:
   // The leader task id in the resource partition
   int leader;
   int criticality;
+
 #if defined(DEBUG)
   int taskid;
   static std::atomic<int> created_tasks;
