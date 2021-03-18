@@ -44,6 +44,8 @@ public:
   std::atomic<int> refcount;
   std::vector<PolyTask *> out;
   std::atomic<int> threads_out_tao;
+  std::atomic<int> threads_in_tao;
+
   int width; /*!< number of resources that this assembly uses */  
 
   //Virtual declaration of performance table get/set within tasks

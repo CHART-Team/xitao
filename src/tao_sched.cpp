@@ -299,6 +299,10 @@ int worker_loop(int nthread)
         }
       }
       DEBUG_MSG("[DEBUG] Thread "<< nthread << " starts executing task " << assembly->taskid << "......");
+#ifdef NEED_BARRIER
+      assembly->threads_in_tao++;
+      while(assembly->threads_in_tao < assembly->width);
+#endif      
       assembly->execute(nthread);
 
       if(config::use_performance_modeling && assembly->leader == nthread) {

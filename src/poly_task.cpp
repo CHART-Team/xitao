@@ -37,6 +37,7 @@ PolyTask::PolyTask(int t, int _nthread=0) : type(t) {
   else task_pool[_nthread].tasks--;
   LOCK_RELEASE(worker_lock[_nthread]);
   threads_out_tao = 0;
+  threads_in_tao = 0;
 
   criticality=0;
   marker = 0;  
