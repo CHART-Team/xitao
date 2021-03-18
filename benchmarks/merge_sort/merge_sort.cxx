@@ -4,7 +4,7 @@ using namespace std;
 int main(int argc, char** argv)
 {
     if(argc < 3) { 
-      cout << "usage: ./merge_sort matrix_size leaf_cell_size [use_omp use_sta_in_xitao]" <<endl;
+      cout << "usage: ./merge_sort matrix_size leaf_cell_size [use_omp use_sta_in_xitao use_workload_hint]" <<endl;
       exit(0);
     }
     uint32_t n = atoi(argv[1]) ;
@@ -13,9 +13,11 @@ int main(int argc, char** argv)
     uint32_t use_omp = 0;
     if(argc > 3) use_omp = atoi(argv[3]);
     if(argc > 4) use_sta = atoi(argv[4]);
+    if(argc > 5) use_workload_hint = atoi(argv[5]);
+
     config::formatted_print("N", N);
     config::formatted_print("Leaf Size", leaf);
-
+    config::formatted_print("Using workload hint", use_workload_hint);
     config::formatted_print("Using STA", use_sta);
     config::formatted_print("Using OpenMP", use_omp);
 

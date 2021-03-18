@@ -3,13 +3,19 @@
 #include <iostream>
 #include <cmath>
 using namespace std;
-#define VERIFY
+//#define VERIFY
 int main(int argc, char** argv)
 {
     int use_omp = 0;
+    if(argc < 3) { 
+      cout << "usage: ./matmul matrix_dim_size leaf_block_size [use_omp use_sta_in_xitao use_workload_hint]" <<endl;
+      exit(0);
+    }
     if(argc > 1) N = atoi(argv[1]);
     if(argc > 2) leaf = atoi(argv[2]);
     if(argc > 3) use_omp = atoi(argv[3]);
+    if(argc > 4) use_sta = atoi(argv[4]);
+    if(argc > 5) use_workload_hint = atoi(argv[5]);
 
     vector<real_t> a (N * N);
     vector<real_t> b (N * N);
@@ -17,6 +23,9 @@ int main(int argc, char** argv)
 
     xitao::config::formatted_print("N", N);
     xitao::config::formatted_print("Leaf Size", leaf);
+    xitao::config::formatted_print("Using STA", use_sta);
+    xitao::config::formatted_print("Using workload hint", use_workload_hint);
+    xitao::config::formatted_print("Using OpenMP", use_omp);
 
     for(int i = 0; i < N * N ; ++i) {
       a[i] = (real_t)rand() / RAND_MAX;
@@ -38,7 +47,7 @@ int main(int argc, char** argv)
         
 
         // recursively build the DAG
-        divide(&a[0], &b[0], &c[0], N, NULL);
+        divide(&a[0], &b[0], &c[0], N);
         std::cout << "DAG is ready, execute ..." << std::endl;
         
         // start the timer

@@ -14,6 +14,9 @@ typedef uint32_t len_t;
 len_t leaf = 32;
 len_t N = 256; 
 int use_omp = 0;
+int use_sta = 0;
+uint32_t use_workload_hint = 0;
+
 template<class arr>
 void print_matrix(arr mat, len_t n) {
   cout << "**********************";
@@ -57,56 +60,53 @@ public:
     real_t* c;
     real_t** deps;
     len_t n;
-    
+    atomic<len_t> next;
+
     // the tao construction. resource hint 1
     MatMulTAO(real_t* a, real_t* b, real_t* c, real_t** deps, len_t n): 
                 a(a), b(b), c(c), deps(deps), n(n), AssemblyTask(1) { 
+      if(use_workload_hint != 0) workload_hint = n;
       for(int i = 0; i < n; ++i) c[i] = 0;
+      next = 0;
     }    
     
     // the work function
     void execute(int nthread) {
-      if(leader != nthread) return;
       if(n <= leaf) {
-        for(len_t i = 0; i < n; ++i) {
+        len_t i = next++;
+        while(i < n) {
           for(len_t k = 0; k < n; ++k) {
             for(len_t j = 0; j < n; ++j) {
               c[i * n + j] += a[i * N + k] * b[k * N + j];
             }
           }
+          i = next++;
         }
       } else {
-        int block = n / 2;
+        len_t block = n / 2;
+        len_t i = next++;
         auto& c1 = deps[0];
         auto& c2 = deps[1];
-        for(int i = 0; i < block; ++i) { 
+        auto& c3 = deps[2];
+        auto& c4 = deps[3];
+        auto& c5 = deps[4];
+        auto& c6 = deps[5];
+        auto& c7 = deps[6];
+        auto& c8 = deps[7];  
+        while(i < block) { 
           for(int j = 0; j < block; ++j) {
             c[i * n + j] = c1[i * block + j] + c2[i * block + j];
           }
-        }
-
-        auto& c3 = deps[2];
-        auto& c4 = deps[3];
-        for(int i = 0; i < block; ++i) { 
           for(int j = 0; j < block; ++j) {
             c[i * n + j + block] = c3[i * block + j] + c4[i * block + j];
           }
-        }
-
-        auto& c5 = deps[4];
-        auto& c6 = deps[5];
-        for(int i = 0; i < block; ++i) { 
           for(int j = 0; j < block; ++j) {
             c[(i + block) * n + j]= c5[i * block + j] + c6[i * block + j];
           }
-        }
-
-        auto& c7 = deps[6];
-        auto& c8 = deps[7];
-        for(int i = 0; i < block; ++i) { 
           for(int j = 0; j < block; ++j) {
             c[(i + block) * n + j + block] = c7[i * block + j] + c8[i * block + j];
-          }
+          } 
+          i = next++;
         }
       }
     }
@@ -119,10 +119,13 @@ public:
     }
 };
 
-void divide(real_t* a, real_t* b, real_t* c, len_t n, MatMulTAO* parent) {
+void divide(real_t* a, real_t* b, real_t* c, len_t n, len_t offset_x = 0, len_t offset_y = 0, MatMulTAO* parent = NULL) {
   MatMulTAO* matmul_tao;
+  float sta = float(offset_x * N + offset_y) / (N * N);
+  assert(sta < 1.0f);
   if(n <= leaf) {
     matmul_tao = new MatMulTAO(a, b, c, NULL, n);
+    matmul_tao->set_sta(sta);
     xitao_push(matmul_tao);
   } else {
     real_t** sub_c = new real_t*[8];
@@ -147,19 +150,19 @@ void divide(real_t* a, real_t* b, real_t* c, len_t n, MatMulTAO* parent) {
     sub_c[7] = new real_t[n / 2 * n / 2];
 
     matmul_tao = new MatMulTAO(a, b, c, sub_c, n);
+    matmul_tao->set_sta(sta);
 
+    divide(a11, b11, sub_c[0], n / 2, offset_x, offset_y, matmul_tao);
+    divide(a12, b21, sub_c[1], n / 2, offset_x, offset_y, matmul_tao);
 
-    divide(a11, b11, sub_c[0], n / 2, matmul_tao);
-    divide(a12, b21, sub_c[1], n / 2, matmul_tao);
-
-    divide(a11, b12, sub_c[2], n / 2, matmul_tao);
-    divide(a12, b22, sub_c[3], n / 2, matmul_tao);
+    divide(a11, b12, sub_c[2], n / 2, offset_x, offset_y + n / 2, matmul_tao);
+    divide(a12, b22, sub_c[3], n / 2, offset_x, offset_y + n / 2, matmul_tao);
     
-    divide(a21, b11, sub_c[4], n / 2, matmul_tao);
-    divide(a22, b21, sub_c[5], n / 2, matmul_tao);
+    divide(a21, b11, sub_c[4], n / 2, offset_x + n / 2, offset_y, matmul_tao);
+    divide(a22, b21, sub_c[5], n / 2, offset_x + n / 2, offset_y, matmul_tao);
 
-    divide(a21, b12, sub_c[6], n / 2, matmul_tao);
-    divide(a22, b22, sub_c[7], n / 2, matmul_tao);
+    divide(a21, b12, sub_c[6], n / 2, offset_x + n / 2, offset_y + n / 2, matmul_tao);
+    divide(a22, b22, sub_c[7], n / 2, offset_x + n / 2, offset_y + n / 2, matmul_tao);
   }
   if(parent) matmul_tao->make_edge(parent);
 }

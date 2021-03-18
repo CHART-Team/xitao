@@ -10,6 +10,7 @@ void mergesort_seq(uint32_t *A, uint32_t n);
 uint32_t leaf;
 uint32_t N;
 uint32_t use_sta = 0;
+uint32_t use_workload_hint = 0;
 // basic merge sort implementation
 void merge(uint32_t* A, uint32_t* left_A, uint32_t left_n, uint32_t* right_A, uint32_t right_n)
 {
@@ -72,7 +73,9 @@ public:
     uint32_t *A;
     
     // the tao construction. resource hint 1
-    MergeSortTAO(uint32_t *_A, uint32_t _n): A(_A) ,n(_n), left(NULL), right(NULL), AssemblyTask(1){ }    
+    MergeSortTAO(uint32_t *_A, uint32_t _n): A(_A) ,n(_n), left(NULL), right(NULL), AssemblyTask(1){ 
+      if(use_workload_hint != 0) workload_hint = n;
+    }    
     
     // the work function
     void execute(int nthread)
