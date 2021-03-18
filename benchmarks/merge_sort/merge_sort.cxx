@@ -13,6 +13,8 @@ int main(int argc, char** argv)
     uint32_t use_omp = 0;
     if(argc > 3) use_omp = atoi(argv[3]);
     if(argc > 4) use_sta = atoi(argv[4]);
+    config::formatted_print("N", N);
+    config::formatted_print("Leaf Size", leaf);
 
     config::formatted_print("Using STA", use_sta);
     config::formatted_print("Using OpenMP", use_omp);

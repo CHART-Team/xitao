@@ -13,7 +13,7 @@ int  perf_model::refresh_frequency      = 10;
 int  perf_model::old_tick_weight     = 4;
 bool perf_model::mold = true;
 bool config::verbose  = true;
-bool config::delete_executed_taos  = false;
+bool config::delete_executed_taos  = true;
 int  config::thread_base = GOTAO_THREAD_BASE;
 int  config::affinity = GOTAO_NO_AFFINITY;
 int  config::steal_attempts = STEAL_ATTEMPTS;
@@ -185,6 +185,8 @@ void config::print_configs() {
     formatted_print("Cluster w-stealing", ((config::enable_local_workstealing)? "enabled" : "disabled"));
     formatted_print("Performance model", ((config::use_performance_modeling)? "enabled" : "disabled"));
     formatted_print("Capturing STA", ((config::sta == 1)? "enabled" : "disabled"));
+    formatted_print("Auto TAO dealloc", ((config::delete_executed_taos)? "enabled" : "disabled"));
+    
     if(config::enable_workstealing) {
       formatted_print("Idle tries before steal", config::steal_attempts);
     }
