@@ -51,7 +51,7 @@ namespace xitao {
       float shortest_exec = std::numeric_limits<float>::max();
       float comp_perf = 0.0f; 
       auto&& partitions = inclusive_partitions[_nthread];
-      if(mold && rand()%refresh_frequency != 0) { 
+      if(rand()%refresh_frequency != 0) { 
         for(auto&& elem : partitions) {
           int leader = elem.first;
           int width  = elem.second;
