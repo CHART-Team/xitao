@@ -37,7 +37,7 @@ struct loi_kernel_info heat_kernels = {
 void usage( char *s )
 {
     fprintf(stderr, 
-        "Usage: %s <input file> [result file]\n\n", s);
+        "Usage: %s <input file> <use workload hint> [result file]\n\n", s);
 }
 
 int main( int argc, char *argv[] )
@@ -56,7 +56,7 @@ int main( int argc, char *argv[] )
     double residual=0.0;
 
     // check arguments
-    if( argc < 2 )
+    if( argc < 3 )
     {
     usage( argv[0] );
     return 1;
@@ -72,8 +72,9 @@ int main( int argc, char *argv[] )
     return 1;
     }
 
+    use_workload_hint = (argc>=3) ? atoi(argv[2]) : 0;
     // check result file
-    resfilename= (argc>=3) ? argv[2]:"heat.ppm";
+    resfilename= (argc>=4) ? argv[3]:"heat.ppm";
 
     if( !(resfile=fopen(resfilename, "w")) )
     {
@@ -202,6 +203,7 @@ int main( int argc, char *argv[] )
                              ceildiv(np, iydecomp*eydecomp), //(np + iydecomp*eydecomp -1) / (iydecomp*eydecomp), 
                              awidth);
           init1[x][y]->set_sta((float) (x * eydecomp + y) / (float) (exdecomp*eydecomp));
+          if(use_workload_hint != 0) init1[x][y]->workload_hint = x * eydecomp + y;
           xitao_push(init1[x][y]); // insert into affinity queue
        }
 
@@ -261,6 +263,7 @@ int main( int argc, char *argv[] )
 #else
 #ifdef TOPOPLACE
           stc[iter][x][y]->set_sta((float) (x * eydecomp + y) / (float) (exdecomp*eydecomp));
+          if(use_workload_hint != 0) stc[iter][x][y]->workload_hint = x * eydecomp + y;
 #else // no topo
           stc[iter][x][y]->set_sta(0.0);
 #endif  // TOPOPLACE
@@ -293,6 +296,8 @@ int main( int argc, char *argv[] )
 
 // this should ensure that we do not overwrite data which has not yet been fully processed
 // necessary because we do not do renaming
+          
+          if(use_workload_hint != 0) cpb[iter][x][y]->workload_hint = x * eydecomp + y;
           stc[iter][x][y]->make_edge(cpb[iter][x][y]);
           cpb[iter][x][y]->clone_sta(stc[iter][x][y]);
           cpb[iter][x][y]->criticality = 0; 
@@ -322,6 +327,7 @@ int main( int argc, char *argv[] )
                              ceildiv(np, iydecomp*eydecomp), //(np + iydecomp*eydecomp -1) / (iydecomp*eydecomp), 
                              awidth);
 
+          if(use_workload_hint != 0) stc[iter][x][y]->workload_hint = x * eydecomp + y;
           cpb[iter-1][x][y]->make_edge(stc[iter][x][y]);
           stc[iter][x][y]->clone_sta(cpb[iter-1][x][y]);
           cpb[iter-1][x][y]->criticality = 0; 
@@ -353,6 +359,7 @@ int main( int argc, char *argv[] )
 
 // this should ensure that we do not overwrite data which has not yet been fully processed
 // necessary because we do not do renaming
+          if(use_workload_hint != 0) cpb[iter][x][y]->workload_hint = x * eydecomp + y;
           stc[iter][x][y]->make_edge(cpb[iter][x][y]);
           cpb[iter][x][y]->clone_sta(stc[iter][x][y]);
 

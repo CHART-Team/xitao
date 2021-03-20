@@ -42,6 +42,8 @@ typedef struct
 }
 algoparam_t;
 
+// hint to create performance model per locality
+int use_workload_hint;
 // function declarations
 
 // misc.c
