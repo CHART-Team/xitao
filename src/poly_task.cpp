@@ -43,7 +43,7 @@ PolyTask::PolyTask(int t, int _nthread=0) : type(t) {
   marker = 0;  
   // setting the hint to 0. can be overwritten by the constructor of the child class 
   workload_hint = 0;
-
+  mold = true;
 }
                                           // Internally, GOTAO works only with queues, not stas
 void PolyTask::sta_to_queue(float x) {

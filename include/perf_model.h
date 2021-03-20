@@ -19,6 +19,7 @@ namespace xitao {
       int new_width = 1; 
       int new_leader = -1;
       int sz = ptt_layout.size(); 
+      bool mold_task = mold && it->mold;                                 // check the global mold config and the task specific one
       for(int leader = 0; leader < sz; ++leader) {
         for(auto&& width : ptt_layout[leader]) {
           if(width <= 0 || (!mold && width > 1)) continue;
@@ -51,11 +52,12 @@ namespace xitao {
       float shortest_exec = std::numeric_limits<float>::max();
       float comp_perf = 0.0f; 
       auto&& partitions = inclusive_partitions[_nthread];
+      bool mold_task = mold && it->mold;                                  // check the global mold config and the task specific one
       if(rand()%refresh_frequency != 0) { 
         for(auto&& elem : partitions) {
           int leader = elem.first;
           int width  = elem.second;
-          if(!mold && width > 1) continue;
+          if(!mold_task && width > 1) continue;
           auto&& ptt_val = it->get_timetable(leader, width);
           if(ptt_val == 0.0f) {
             new_width = width;
@@ -73,7 +75,7 @@ namespace xitao {
             new_leader = leader;      
           }
         }
-      } else if(mold) { 
+      } else if(mold_task) { 
         auto&& rand_partition = partitions[rand() % partitions.size()];
         new_leader = rand_partition.first;
         new_width  = rand_partition.second;

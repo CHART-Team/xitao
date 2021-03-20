@@ -45,8 +45,10 @@ public:
   std::vector<PolyTask *> out;
   std::atomic<int> threads_out_tao;
   std::atomic<int> threads_in_tao;
-
-  int width; /*!< number of resources that this assembly uses */  
+  // the number of resources that this assembly uses
+  int width; 
+  // mold task to more than width = 1 
+  bool mold; 
 
   //Virtual declaration of performance table get/set within tasks
   //! Virtual function that is called by the performance based scheduler to get an entry in PTT
