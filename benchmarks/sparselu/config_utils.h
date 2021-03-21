@@ -34,6 +34,8 @@ typedef double ELEM;
 int NB = 10;
 int BSIZE = 512;
 int TAO_WIDTH = 1;
+int USE_DENSE = 0;
+
 const float sta_precision = 100.0f;
 size_t STA_IND = 0;
 int NTHREADS = 0;
@@ -105,6 +107,7 @@ int get_sta_int_val(int ii, int jj) {
 }
 #endif
 int is_null_entry(int ii, int jj) {
+  if(USE_DENSE == 1) return FALSE; 
   int null_entry = FALSE;
   if ((ii<jj) && (ii%3 !=0)) null_entry =TRUE;
   if ((ii>jj) && (jj%3 !=0)) null_entry =TRUE;
