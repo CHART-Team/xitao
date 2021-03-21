@@ -71,7 +71,7 @@ void sparselu_parallel()
    //printf("Init OK Matrix is: %d (%d %d) # of blocks: %d memory is %ld MB\n", (NB*BSIZE), NB, BSIZE, bcount, BSIZE*BSIZE*bcount*sizeof(ELEM)/1024/1024);
    // init XiTAO runtime 
 
-   xitao_init();
+   //xitao_init(argc, argv);
 #ifndef NO_STA
    NTHREADS = xitao_nthreads;
    STA_IND = 0;
@@ -381,6 +381,7 @@ int main(int argc, char** argv) {
       dependency_matrix[i].resize(NB);
       dependency_matrix[i].assign(NB, NULL);
     }
+    xitao_init(argc, argv);
     sparselu_parallel();
     if(rep > 0) {
       for(int i = 0; i < NB; ++i) { 
