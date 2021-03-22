@@ -5,6 +5,14 @@ tmap xitao_ptt::runtime_ptt_tables;
 const size_t xitao_ptt::ptt_row_size = XITAO_MAXTHREADS;
 const size_t xitao_ptt::ptt_col_size = XITAO_MAXTHREADS + 1;
 const size_t xitao_ptt::ptt_table_size = ptt_col_size * ptt_row_size; 
+   
+   
+perf_data::perf_data(int table_size) : data(table_size, 0.0f) { 
+  last_leader = -1;
+  last_width  = -1;
+  cont_choices = 0;
+} 
+
 ptt_shared_type xitao_ptt::try_insert_table(PolyTask* pt, size_t const& workload_hint) {
   // declare the tao_info to capture its type
   xitao_ptt_key tao_info (workload_hint, typeid(*pt));
@@ -16,7 +24,7 @@ ptt_shared_type xitao_ptt::try_insert_table(PolyTask* pt, size_t const& workload
   if(runtime_ptt_tables.find(tao_info) == runtime_ptt_tables.end()) {
     
     // allocate the ptt table and place it in shared pointer
-    _ptt = std::make_shared<ptt_value_type>(ptt_table_size, 0);
+    _ptt = std::make_shared<perf_data>(ptt_table_size);
 
     // insert the ptt table to the mapper
     runtime_ptt_tables.insert(std::make_pair(tao_info, _ptt));
@@ -51,7 +59,7 @@ void xitao_ptt::reset_table(PolyTask* pt, size_t const& workload_hint){
     // get the existing value
     ptt_shared_type _ptt = runtime_ptt_tables[tao_info];            
     // reset all PTT values
-    std::fill(_ptt->begin(), _ptt->end(), 0);
+    std::fill(_ptt->data.begin(), _ptt->data.end(), 0);
   } 
 }
 
@@ -182,7 +190,7 @@ void xitao_ptt::clear_layout_partitions() {
 
 void xitao_ptt::print_table(ptt_shared_type ptt, const char* table_name) { 
   // capture the underlying table
-  auto&& table = *ptt;
+  auto&& table = ptt->data;
 
   // print table details
   std::cout << std::endl << table_name <<  " PTT Stats: " << std::endl;

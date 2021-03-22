@@ -47,6 +47,12 @@ namespace xitao {
     }
 
     static inline void history_mold_locally(int _nthread, PolyTask *it) {
+      auto& ptt = it->_ptt;
+      if(ptt->cont_choices >= 10) { 
+        it->leader = _nthread;
+        it->width  = ptt->last_width; 
+        return;
+      }
       int new_width = 1; 
       int new_leader = -1;
       float shortest_exec = std::numeric_limits<float>::max();
@@ -75,6 +81,12 @@ namespace xitao {
             new_leader = leader;      
           }
         }
+
+        if(ptt->last_width >= 0) { 
+          if(ptt->last_width == new_width) ptt->cont_choices++;
+          else ptt->cont_choices = 0;
+        }
+        ptt->last_width = new_width;
       } else if(mold_task) { 
         auto&& rand_partition = partitions[rand() % partitions.size()];
         new_leader = rand_partition.first;

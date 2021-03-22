@@ -83,12 +83,12 @@ int PolyTask::if_prio(int _nthread, PolyTask * it) {
 // get value at specific location (leader, width) in ptt
 float PolyTask::get_timetable(int thread, int index) {
   // return the ptt measurement at location
-  return (*_ptt)[index * xitao_ptt::ptt_row_size + thread];
+  return _ptt->data[index * xitao_ptt::ptt_row_size + thread];
 }
 
 // set value at specific location (leader, width) in ptt
 void PolyTask::set_timetable(int thread, float ticks, int index) {
-  (*_ptt)[index * xitao_ptt::ptt_row_size + thread] = ticks;  
+  _ptt->data[index * xitao_ptt::ptt_row_size + thread] = ticks;  
 }
 
 PolyTask * PolyTask::commit_and_wakeup(int _nthread) {
