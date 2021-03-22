@@ -335,13 +335,13 @@ int worker_loop(int nthread)
       do{
 	      int steal_tries = 0;
         do{
-          if(config::enable_local_workstealing) { 
+          if(config::enable_local_workstealing && steal_tries < 2) { 
 	    steal_tries++;
 	    random_core = largest_inclusive_partition.first + (rand_r(&seed)%largest_inclusive_partition.second);
 	  } else {
 	    random_core = (rand_r(&seed) % xitao_nthreads);
 	  } 
-      } while(random_core == nthread && steal_tries < 2);
+      } while(random_core == nthread);
           if(default_queue_manager::try_pop_ready_task(random_core, st, nthread)) {
             tao_total_steals++;
 	  }
