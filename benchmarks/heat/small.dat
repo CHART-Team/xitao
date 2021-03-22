@@ -1,4 +1,4 @@
-500   # iterations 
+2000   # iterations 
 2048     # resolution 
 0       # Algorithm 0=Jacobi 1=RedBlack 2=GaussSeidel
 2                     # number of heat sources
