@@ -131,6 +131,7 @@ public:
         diag(_in), col(_out), BSIZE(_len), AssemblyTask(width) 
   {  
     count = 0;
+    mold = false;
   }
   //! Inherited pure virtual function that is called by the runtime to cleanup any resources (if any), held by a TAO. 
   void cleanup() {     
@@ -179,6 +180,7 @@ public:
         diag(_in), row(_out), BSIZE(_len), AssemblyTask(width) 
   {  
     count = 0;
+    mold = false;
   }
   //! Inherited pure virtual function that is called by the runtime to cleanup any resources (if any), held by a TAO. 
   void cleanup() {     
@@ -230,6 +232,7 @@ public:
         row(_in1), col(_in2), inner(_out), BSIZE(_len), AssemblyTask(width) 
   {  
     count = 0;
+    mold = false;
   }
   //! Inherited pure virtual function that is called by the runtime to cleanup any resources (if any), held by a TAO. 
   void cleanup() {     
