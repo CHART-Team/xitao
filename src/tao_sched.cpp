@@ -333,12 +333,10 @@ int worker_loop(int nthread)
     if(config::enable_workstealing && config::steal_attempts && !(rand_r(&seed) % config::steal_attempts)) {
       int attempts = 1;
       do{
-	int steal_tries = 0;
-        bool is_local_steal = false;
+	      int steal_tries = 0;
         do{
           if(config::enable_local_workstealing) { 
 	    steal_tries++;
-	    is_local_steal = true;
 	    random_core = largest_inclusive_partition.first + (rand_r(&seed)%largest_inclusive_partition.second);
 	  } else {
 	    random_core = (rand_r(&seed) % xitao_nthreads);
