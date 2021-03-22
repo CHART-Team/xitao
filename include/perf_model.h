@@ -49,7 +49,7 @@ namespace xitao {
     static inline void history_mold_locally(int _nthread, PolyTask *it) {
       auto& ptt = it->_ptt;
       if(ptt->cont_choices >= 10) { 
-        it->leader = _nthread;
+        it->leader = _nthread - _nthread % ptt->last_width;
         it->width  = ptt->last_width; 
         return;
       }
