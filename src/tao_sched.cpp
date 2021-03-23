@@ -332,23 +332,25 @@ int worker_loop(int nthread)
     // STEAL_ATTEMPTS determines number of steals before retrying the loop
     if(config::enable_workstealing && config::steal_attempts && !(rand_r(&seed) % config::steal_attempts)) {
       int attempts = 1;
+      random_core = nthread;
       do{
-	      int steal_tries = 0;
+	      int local_steal_tries = 0;
         do{
-          if(config::enable_local_workstealing && steal_tries < 2) { 
-	    steal_tries++;
-	    random_core = largest_inclusive_partition.first + (rand_r(&seed)%largest_inclusive_partition.second);
-	  } else {
-	    random_core = (rand_r(&seed) % xitao_nthreads);
-	  } 
-      } while(random_core == nthread);
-          if(default_queue_manager::try_pop_ready_task(random_core, st, nthread)) {
-            tao_total_steals++;
-	  }
-      } while(!st && (attempts-- > 0));
-      if(st){
-        continue;
-      }
+          if(config::enable_local_workstealing) { 
+            local_steal_tries++;
+	          random_core = largest_inclusive_partition.first + (rand_r(&seed)%largest_inclusive_partition.second);
+	        } else {
+	          random_core = (rand_r(&seed) % xitao_nthreads);
+	        } 
+        } while(random_core == nthread && local_steal_tries < 2);
+        if(random_core != nthread && default_queue_manager::try_pop_ready_task(random_core, st, nthread)) {
+           tao_total_steals++;
+           break;
+	      }
+       } while(!st && (attempts-- > 0));
+       if(st){
+         continue;
+       }
     } 
 
     // 4. It may be that there are no more tasks in the flow
