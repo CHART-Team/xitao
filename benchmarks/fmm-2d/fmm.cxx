@@ -7,7 +7,7 @@ using namespace exafmm;
 
 int main(int argc, char ** argv) {
   if(argc < 3) {
-    std::cout << "Usage: ./bin numBodies ncrit" << std::endl;
+    std::cout << "Usage: ./bin numBodies ncrit [printPTT]" << std::endl;
     exit(0);
   }
   const int numBodies = atoi(argv[1]);                          // Number of bodies
@@ -15,6 +15,7 @@ int main(int argc, char ** argv) {
   ncrit = atoi(argv[2]);                                        // Number of bodies per leaf cell
   theta = 0.4;                                                  // Multipole acceptance criterion
 #ifdef USE_XITAO
+  bool printPTT = (argc > 3 && atoi(argv[3]) != 0)? true : false;
   xitao_init(argc, argv);
 #endif
   printf("--- %-16s ------------\n", "FMM Profiling");          // Start profiling
@@ -100,7 +101,7 @@ int main(int argc, char ** argv) {
   printf("%-20s : %8.5e s\n","Rel. L2 Error (p)", sqrt(pDif/pNrm));// Print potential error
   printf("%-20s : %8.5e s\n","Rel. L2 Error (F)", sqrt(FDif/FNrm));// Print force error
 #if USE_XITAO
-  if(xitao::config::use_performance_modeling) {
+  if(xitao::config::use_performance_modeling && printPTT) {
 //    xitao_ptt::print_table<FMM_TAO_1>("P2M", 0);
 //    xitao_ptt::print_table<FMM_TAO_1>("M2M", 1);
     xitao_ptt::print_table<M2LListTAO>("M2L", 0);
