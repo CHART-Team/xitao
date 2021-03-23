@@ -19,7 +19,7 @@ int main(int argc, char ** argv) {
 #endif
   printf("--- %-16s ------------\n", "FMM Profiling");          // Start profiling
   //! Initialize bodie
-  start("Initialize bodies");                                   // Start timer
+  exafmm::start("Initialize bodies");                                   // Start timer
   Bodies bodies(numBodies);                                     // Initialize bodies
   real_t average = 0;                                           // Average charge
   srand48(0);                                                   // Set seed for random number generator
@@ -36,42 +36,42 @@ int main(int argc, char ** argv) {
   for (size_t b=0; b<bodies.size(); b++) {                      // Loop over bodies
     bodies[b].q -= average;                                     // Charge neutral
   }                                                             // End loop over bodies
-  stop("Initialize bodies");                                    // Stop timer
+  exafmm::stop("Initialize bodies");                                    // Stop timer
 
   //! Build tree
-  start("Build tree");                                          // Start timer
+  exafmm::start("Build tree");                                          // Start timer
   Cells cells = buildTree(bodies);                              // Build tree
-  stop("Build tree");                                           // Stop timer
+  exafmm::stop("Build tree");                                           // Stop timer
 #if USE_XITAO
   //! FMM DAG building
-  start("FMM DAG");                                             // Start timer
+  exafmm::start("FMM DAG");                                             // Start timer
   upwardPass(cells);                                            // Upward pass for P2M, M2M
   horizontalPass(cells, cells);                                 // Horizontal pass for M2L, P2P
   downwardPass(cells);                                          // Downward pass for L2L, L2P
-  stop("FMM DAG");                                              // Stop timer
-  start("FMM Time");
+  exafmm::stop("FMM DAG");                                              // Stop timer
+  exafmm::start("FMM Time");
   xitao_start();
   xitao_fini();
-  stop("FMM Time");
+  exafmm::stop("FMM Time");
 #else
-  start("FMM Time");
+  exafmm::start("FMM Time");
   //! FMM evaluation
-  start("P2M & M2M");                                           // Start timer
+  exafmm::start("P2M & M2M");                                           // Start timer
   upwardPass(cells);                                            // Upward pass for P2M, M2M
-  stop("P2M & M2M");                                            // Stop timer
-  start("M2L & P2P");                                           // Start timer
+  exafmm::stop("P2M & M2M");                                            // Stop timer
+  exafmm::start("M2L & P2P");                                           // Start timer
   horizontalPass(cells, cells);                                 // Horizontal pass for M2L, P2P
-  stop("M2L & P2P");                                            // Stop timer
-  start("L2L & L2P");                                           // Start timer
+  exafmm::stop("M2L & P2P");                                            // Stop timer
+  exafmm::start("L2L & L2P");                                           // Start timer
   downwardPass(cells);                                          // Downward pass for L2L, L2P
-  stop("L2L & L2P");                                            // Stop timer
-  stop("FMM Time");
+  exafmm::stop("L2L & L2P");                                            // Stop timer
+  exafmm::stop("FMM Time");
   
 #endif  
 
 
   //! Direct N-Body
-  start("Direct N-Body");                                       // Start timer
+  exafmm::start("Direct N-Body");                                       // Start timer
   const int numTargets = 10;                                    // Number of targets for checking answer
   Bodies jbodies = bodies;                                      // Save bodies in jbodies
   int stride = bodies.size() / numTargets;                      // Stride of sampling
@@ -85,7 +85,7 @@ int main(int argc, char ** argv) {
     for (int d=0; d<2; d++) bodies[b].F[d] = 0;                 //  Clear force
   }                                                             // End loop over bodies
   direct(bodies, jbodies);                                      // Direct N-Body
-  stop("Direct N-Body");                                        // Stop timer
+  exafmm::stop("Direct N-Body");                                        // Stop timer
 
   //! Verify result
   double pDif = 0, pNrm = 0, FDif = 0, FNrm = 0;

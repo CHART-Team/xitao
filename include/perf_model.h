@@ -22,7 +22,7 @@ namespace xitao {
       bool mold_task = mold && it->mold;                                 // check the global mold config and the task specific one
       for(int leader = 0; leader < sz; ++leader) {
         for(auto&& width : ptt_layout[leader]) {
-          if(width <= 0 || (!mold && width > 1)) continue;
+          if(width <= 0 || (!mold_task && width > 1)) continue;
           auto&& ptt_val = it->get_timetable(leader, width);
           if(ptt_val == 0.0f) {
             new_width = width;
