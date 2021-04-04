@@ -6,7 +6,7 @@ DEBUG=0
 #include makefile.inc
 EXAMPLES += benchmarks
 CFLAGS += -std=gnu11 ${EXTRAEINC}
-CXXFLAGS += --std=c++11 -fPIC ${EXTRAEINC}
+CXXFLAGS += -DNEED_BARRIER --std=c++11 -fPIC ${EXTRAEINC}
 
 ifeq ($(DEBUG),1)
   CFLAGS += -g3 -O0 
@@ -33,7 +33,7 @@ XITAO_LIB = ./lib
 
 LIBS = -pthread -lm -L$(XITAO_LIB) -lxitao ${EXTRAELIBS}
 
-TAO_OBJS = src/tao_sched.o src/config.o src/xitao_ptt_key.o src/xitao_ptt.o src/poly_task.o src/xitao_workspace.o src/barriers.o src/config.o
+TAO_OBJS = src/tao_sched.o src/config.o src/runtime_stats.o src/xitao_ptt_key.o src/xitao_ptt.o src/poly_task.o src/xitao_workspace.o src/barriers.o src/config.o
 
 all: lib
 	cd $(EXAMPLES)/dotproduct && $(MAKE) clean && $(MAKE) 

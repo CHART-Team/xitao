@@ -13,6 +13,8 @@ int  perf_model::refresh_frequency      = 10;
 int  perf_model::old_tick_weight     = 4;
 bool perf_model::mold = true;
 bool config::verbose  = true;
+bool config::print_stats = false;
+string config::stats_file = "stats.txt";
 bool config::delete_executed_taos  = true;
 int  config::thread_base = GOTAO_THREAD_BASE;
 int  config::affinity = GOTAO_NO_AFFINITY;
@@ -26,6 +28,7 @@ bool config::enable_local_workstealing = false;
 bool config::use_performance_modeling = true;
 const string config::xitao_args_prefix = "--xitao_args=";
 
+
 static struct option long_options[] = {
   {"wstealing",    required_argument, 0, 'w'},
   {"lwstealing",   required_argument, 0, 'l'},
@@ -37,6 +40,7 @@ static struct option long_options[] = {
   {"oldtickweight",    required_argument, 0, 'o'},
   {"refreshtablefreq",    required_argument, 0, 'f'},
   {"dealloctaos",    required_argument, 0, 'd'},
+  {"stats",    optional_argument, 0, 'u'},
   {"mold",    required_argument, 0, 'm'},
   {"help",         no_argument,       0, 'h'},
   {0, 0, 0, 0}
@@ -70,10 +74,7 @@ void config::init_config(int argc, char** argv, bool read_all_args) {
   }
   // fill in the extracted args
   while (argc > 1) {
-    int option_index;
-    int c = getopt_long(argc, argv, "hp:c:w:l:s:m:t:i:o:f:d:",
-                        long_options, &option_index);
-
+    int c = getopt_long(argc, argv, "uhp:c:w:l:s:m:t:i:o:f:d:", long_options, &optind);
     if (c == -1) break;
     switch (c) {
       case 'w':
@@ -100,6 +101,12 @@ void config::init_config(int argc, char** argv, bool read_all_args) {
       case 'i':
         config::steal_attempts = atoi(optarg);
         break;
+      case 'u':
+        config::print_stats = true;
+        if(optarg == NULL && optind < argc && argv[optind] != NULL && argv[optind][0] != '-') {
+          config::stats_file = string(argv[optind]);
+        }
+        break;
       case 'h':
         config::usage(argv[0]);
         abort();
@@ -116,6 +123,10 @@ void config::init_config(int argc, char** argv, bool read_all_args) {
         config::usage(argv[0]);
         abort();
       }
+  }
+  if(config::print_stats && !config::use_performance_modeling) {
+    fprintf(stderr, "Error: stats cannot be used without enabling perfmodel");
+    abort();
   }
   if(args.size() > 1) {
     for(int i = 1; i < args.size(); ++i) delete[] args[i];
@@ -136,6 +147,7 @@ void config::usage(char* name) {
           " --oldtickweight (-o)                    : Weight of old tick versus new tick (%d)\n"
           " --refreshtablefreq (-f)                 : How often to attempt a random moldability to heat the table (%d)\n"
           " --dealloctaos (-d)[0/1]                 : The runtime deletes executed taos (%d)\n"
+          " --stats (-u)                            : Output runtime stats to file (%s)\n"
           " --mold (-m)                             : Enable/Disable dynamic moldability (%d)\n"
           " --help (-h)                             : Show this help document\n",
           name,
@@ -149,6 +161,7 @@ void config::usage(char* name) {
           perf_model::old_tick_weight,
           perf_model::refresh_frequency,
           config::delete_executed_taos,
+          config::stats_file.c_str(),
           perf_model::mold
           );
 }
@@ -186,7 +199,10 @@ void config::print_configs() {
     formatted_print("Performance model", ((config::use_performance_modeling)? "enabled" : "disabled"));
     formatted_print("Capturing STA", ((config::sta == 1)? "enabled" : "disabled"));
     formatted_print("Auto TAO dealloc", ((config::delete_executed_taos)? "enabled" : "disabled"));
-    
+    formatted_print("Print stats", ((config::print_stats)? "enabled" : "disabled"));
+    if(config::print_stats){
+      formatted_print("Stats file", config::stats_file);
+    }
     if(config::enable_workstealing) {
       formatted_print("Idle tries before steal", config::steal_attempts);
     }

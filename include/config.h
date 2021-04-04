@@ -13,10 +13,14 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 #include <getopt.h>
 #include <string>
 #include <iostream>
 #include <iomanip>
+using namespace std;
+extern char *optarg;
+extern int optind, opterr, optopt;
 namespace xitao {
   class config {
 public: 
@@ -31,6 +35,8 @@ public:
     static bool use_performance_modeling;
     static bool delete_executed_taos;
     static int nthreads;
+    static string stats_file;
+    static bool print_stats;
     static void print_configs();
     static void enable_stealing(int idle_tries_before_steal_count);
     static void disable_stealing();

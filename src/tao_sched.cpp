@@ -11,6 +11,7 @@
 #include <assert.h>
 #include "xitao_workspace.h"
 #include "queue_manager.h"
+#include "runtime_stats.h"
 // #include "perf_model.h"
 using namespace xitao;
 
@@ -146,6 +147,7 @@ void xitao_fini() {
   for(int i = 0; i < xitao_nthreads; i++){
     t[i]->join();
   }
+  runtime_stats::dump_stats();
 }
 
 // drain the pipeline
@@ -295,6 +297,9 @@ int worker_loop(int nthread)
       std::chrono::time_point<std::chrono::system_clock> t1,t2; 
       if(config::use_performance_modeling) {
         if(assembly->leader == nthread){
+          if(config::print_stats) {
+            runtime_stats::update_place_frequency(assembly);
+          }
           t1 = std::chrono::system_clock::now();
         }
       }
