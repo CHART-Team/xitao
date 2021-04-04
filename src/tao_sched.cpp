@@ -258,11 +258,11 @@ int worker_loop(int nthread)
     std::cout << "Thread " << nthread << " is deactivated since it is not included in any PTT partition" << std::endl;      
     return 0;
   }
+  if(config::print_stats) runtime_stats::start_worker_stats(nthread);
   while(true) {    
     int random_core = 0;
     AssemblyTask *assembly = nullptr;
     SimpleTask *simple = nullptr;
-
     // 0. If a task is already provided via forwarding then exeucute it (simple task)
     //    or insert it into the assembly queues (assembly task)
     if(st) {
@@ -308,7 +308,9 @@ int worker_loop(int nthread)
       assembly->threads_in_tao++;
       while(assembly->threads_in_tao < assembly->width);
 #endif      
+      if(config::print_stats) runtime_stats::start_worktime_epoch(nthread);
       assembly->execute(nthread);
+      if(config::print_stats) runtime_stats::end_worktime_epoch(nthread);
 
       if(config::use_performance_modeling && assembly->leader == nthread) {
         t2 = std::chrono::system_clock::now();
@@ -379,6 +381,7 @@ int worker_loop(int nthread)
     // Finally check if the program has terminated
     if(PolyTask::pending_tasks == 0) pending_tasks_cv.notify_one();
     if(gotao_can_exit && (PolyTask::pending_tasks == 0)){
+      if(config::print_stats) runtime_stats::end_worker_stats(nthread);
       break;
     }
   }

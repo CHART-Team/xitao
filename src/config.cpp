@@ -124,10 +124,6 @@ void config::init_config(int argc, char** argv, bool read_all_args) {
         abort();
       }
   }
-  if(config::print_stats && !config::use_performance_modeling) {
-    fprintf(stderr, "Error: stats cannot be used without enabling perfmodel");
-    abort();
-  }
   if(args.size() > 1) {
     for(int i = 1; i < args.size(); ++i) delete[] args[i];
   }
