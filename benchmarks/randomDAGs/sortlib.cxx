@@ -102,14 +102,6 @@ static ELM *seqpart(ELM *low, ELM *high)
 	  return curr_high - 1;
 }
 
-#define swap(a, b) \
-{ \
-  ELM tmp;\
-  tmp = a;\
-  a = b;\
-  b = tmp;\
-}
-
 static void insertion_sort(ELM *low, ELM *high)
 {
      ELM *p, *q;
@@ -213,14 +205,6 @@ void seqmerge(ELM *low1, ELM *high1, ELM *low2, ELM *high2, ELM *lowdest)
      }
 }
 
-#define swap_indices(a, b) \
-{ \
-  ELM *tmp;\
-  tmp = a;\
-  a = b;\
-  b = tmp;\
-}
-
 ELM *binsplit(ELM val, ELM *low, ELM *high)
 {
      /*
@@ -244,7 +228,7 @@ ELM *binsplit(ELM val, ELM *low, ELM *high)
 }
 
 
-ELM *array, *tmp, *array1;
+ELM *arr, *tmp;
 
 void scramble_array( void )
 {
@@ -254,7 +238,7 @@ void scramble_array( void )
      for (i = 0; i < sort_buffer_size; ++i) {
 	  j = my_rand();
 	  j = j % sort_buffer_size;
-	  swap(array[i], array[j]);
+	  std::swap(arr[i], arr[j]);
      }
 }
 
@@ -266,7 +250,7 @@ void fill_array( void )
 
      /* first, fill with integers 1..size */
      for (i = 0; i < sort_buffer_size; ++i) {
-	  array[i] = i;
+	  arr[i] = i;
      }
 }
 
