@@ -1,3 +1,34 @@
+/* BSD 3-Clause License
+
+* Copyright (c) 2019-2021, contributors
+* All rights reserved.
+
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are met:
+
+* 1. Redistributions of source code must retain the above copyright notice, this
+*    list of conditions and the following disclaimer.
+
+* 2. Redistributions in binary form must reproduce the above copyright notice,
+*    this list of conditions and the following disclaimer in the documentation
+*    and/or other materials provided with the distribution.
+
+* 3. Neither the name of the copyright holder nor the names of its
+*    contributors may be used to endorse or promote products derived from
+*    this software without specific prior written permission.
+
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+* DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+* FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+* DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+* SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+* CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+* OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+* OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
 /*
  * misc.c
  *
@@ -27,7 +58,7 @@
  */
 int initialize( algoparam_t *param, int no_padding )
 {
-    int i, j;
+    int i, j, err;
     double dist;
 
     // total number of points (including border)
@@ -56,8 +87,8 @@ int initialize( algoparam_t *param, int no_padding )
 	const size_t alignment = sizeof(double)*psize*psize;
 	//fprintf( stderr, "Aligning memory (%d *sizeof(double/**/))\n", alignment/sizeof(double) );
 	
-	posix_memalign( (void**) &(param->u), alignment, sizeof(double)*psize*psize );
-	posix_memalign( (void**) &(param->uhelp), alignment, sizeof(double)*psize*psize );
+	err = posix_memalign( (void**) &(param->u), alignment, sizeof(double)*psize*psize );
+	err = posix_memalign( (void**) &(param->uhelp), alignment, sizeof(double)*psize*psize );
     }
     (param->uvis)  = (double*)calloc( sizeof(double),
 				      (param->visres+2) *
@@ -293,38 +324,38 @@ int coarsen( double *uold, unsigned oldx, unsigned oldy, unsigned padding,
 #define BUFSIZE 100
 int read_input( FILE *infile, algoparam_t *param )
 {
-  int i, n;
+  int i, n, err;
   char buf[BUFSIZE];
-
-  fgets(buf, BUFSIZE, infile);
+  char* res;
+  res = fgets(buf, BUFSIZE, infile);
   n = sscanf( buf, "%u", &(param->maxiter) );
   if( n!=1)
     return 0;
 
-  fgets(buf, BUFSIZE, infile);
+  res = fgets(buf, BUFSIZE, infile);
   n = sscanf( buf, "%u", &(param->resolution) );
   if( n!=1 )
     return 0;
 
   param->visres = param->resolution;
 
-  fgets(buf, BUFSIZE, infile);
+  res = fgets(buf, BUFSIZE, infile);
   n = sscanf(buf, "%d", &(param->algorithm) );
   if( n!=1 )
     return 0;
 
-  fgets(buf, BUFSIZE, infile);
+  res = fgets(buf, BUFSIZE, infile);
   n = sscanf(buf, "%u", &(param->numsrcs) );
   if( n!=1 )
     return 0;
 
   //(param->heatsrcs) = 
   //  (heatsrc_t*) malloc( sizeof(heatsrc_t) * (param->numsrcs) );
-  posix_memalign( (void **) &param->heatsrcs, sizeof(heatsrc_t) * (param->numsrcs), sizeof(heatsrc_t) * (param->numsrcs) );
+  err = posix_memalign( (void **) &param->heatsrcs, sizeof(heatsrc_t) * (param->numsrcs), sizeof(heatsrc_t) * (param->numsrcs) );
   
   for( i=0; i<param->numsrcs; i++ )
     {
-      fgets(buf, BUFSIZE, infile);
+      res = fgets(buf, BUFSIZE, infile);
       n = sscanf( buf, "%f %f %f %f",
 		  &(param->heatsrcs[i].posx),
 		  &(param->heatsrcs[i].posy),
