@@ -30,6 +30,7 @@ struct completions{
 const int xitao_vec_static = 0;
 const int xitao_vec_dynamic = 1;
 class PolyTask;
+class perf_data;
 //struct tao_type_info;
 namespace xitao {   
   //typedef std::pair<std::type_index, size_t> ptt_key_type;
@@ -39,7 +40,7 @@ namespace xitao {
   typedef std::vector<float> ptt_value_type; 
 
   /*! a typedef of the shared pointer to ptt table type*/
-  typedef std::shared_ptr<ptt_value_type> ptt_shared_type;  
+  typedef std::shared_ptr<perf_data> ptt_shared_type;  
 
   /*! a typedef of map that keeps track of the active PTT tables*/
   typedef std::unordered_map<ptt_key_type, ptt_shared_type, xitao_ptt_hash> tmap;    

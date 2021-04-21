@@ -5,8 +5,19 @@
 #include "poly_task.h"
 #include <iostream>
 #include <algorithm>
-using namespace xitao;
+#include <map>
+/*! a class that contains the performance model for task*/
+class perf_data { 
+public:
+  xitao::ptt_value_type data;
+  int last_leader;
+  int last_width;
+  int cont_choices;
+  std::map<std::pair<int,int>,int> resource_place_freq; 
+  perf_data(int table_size);
+};
 
+using namespace xitao;
 /*! a class the manages the runtime ptt tables*/
 class xitao_ptt {
 public:

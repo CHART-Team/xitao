@@ -11,6 +11,7 @@
 #include <assert.h>
 #include "xitao_workspace.h"
 #include "queue_manager.h"
+#include "runtime_stats.h"
 // #include "perf_model.h"
 using namespace xitao;
 
@@ -146,6 +147,7 @@ void xitao_fini() {
   for(int i = 0; i < xitao_nthreads; i++){
     t[i]->join();
   }
+  runtime_stats::dump_stats();
 }
 
 // drain the pipeline
@@ -176,7 +178,7 @@ int check_and_get_available_queue(int queue) {
 // programmer should specify some queue
 void xitao_push(PolyTask *pt, int queue)
 {
-  if((queue == -1) && (pt->affinity_queue != -1)){
+  if((queue == -1) && (pt->affinity_queue != -1) && config::sta){
     queue = pt->affinity_queue;
   }
   else{
@@ -193,7 +195,6 @@ void xitao_push(PolyTask *pt, int queue)
   }
   if(config::use_performance_modeling)
     pt->_ptt = xitao_ptt::try_insert_table(pt, pt->workload_hint);    /*be sure that a single orphaned task has a PTT*/
-  
   default_queue_manager::insert_in_ready_queue(pt, queue);
 }
 
@@ -251,15 +252,17 @@ int worker_loop(int nthread)
   PolyTask *st = nullptr;
   starting_barrier->wait();  
   auto&&  partitions = inclusive_partitions[nthread];
+  auto&& largest_inclusive_partition = inclusive_partitions[nthread].back();
+
   if(partitions.size() == 0) {
     std::cout << "Thread " << nthread << " is deactivated since it is not included in any PTT partition" << std::endl;      
     return 0;
   }
+  if(config::print_stats) runtime_stats::start_worker_stats(nthread);
   while(true) {    
     int random_core = 0;
     AssemblyTask *assembly = nullptr;
     SimpleTask *simple = nullptr;
-
     // 0. If a task is already provided via forwarding then exeucute it (simple task)
     //    or insert it into the assembly queues (assembly task)
     if(st) {
@@ -294,11 +297,20 @@ int worker_loop(int nthread)
       std::chrono::time_point<std::chrono::system_clock> t1,t2; 
       if(config::use_performance_modeling) {
         if(assembly->leader == nthread){
+          if(config::print_stats) {
+            runtime_stats::update_place_frequency(assembly);
+          }
           t1 = std::chrono::system_clock::now();
         }
       }
       DEBUG_MSG("[DEBUG] Thread "<< nthread << " starts executing task " << assembly->taskid << "......");
+#ifdef NEED_BARRIER
+      assembly->threads_in_tao++;
+      while(assembly->threads_in_tao < assembly->width);
+#endif      
+      if(config::print_stats) runtime_stats::start_worktime_epoch(nthread);
       assembly->execute(nthread);
+      if(config::print_stats) runtime_stats::end_worktime_epoch(nthread);
 
       if(config::use_performance_modeling && assembly->leader == nthread) {
         t2 = std::chrono::system_clock::now();
@@ -312,9 +324,9 @@ int worker_loop(int nthread)
       st = nullptr;
       if(_final) { // the last exiting thread updates
         DEBUG_MSG("[DEBUG] Thread " << nthread << " completed assembly task " << assembly->taskid);
-        st = assembly->commit_and_wakeup(nthread);
         assembly->cleanup();
-        delete assembly;
+        st = assembly->commit_and_wakeup(nthread);
+        if(config::delete_executed_taos) delete assembly;
       }
       continue;
     }
@@ -327,15 +339,25 @@ int worker_loop(int nthread)
     // STEAL_ATTEMPTS determines number of steals before retrying the loop
     if(config::enable_workstealing && config::steal_attempts && !(rand_r(&seed) % config::steal_attempts)) {
       int attempts = 1;
+      random_core = nthread;
       do{
+	      int local_steal_tries = 0;
         do{
-          random_core = (rand_r(&seed) % xitao_nthreads);
-        } while(random_core == nthread);
-          if(default_queue_manager::try_pop_ready_task(random_core, st, nthread)) tao_total_steals++;
-      } while(!st && (attempts-- > 0));
-      if(st){
-        continue;
-      }
+          if(config::enable_local_workstealing) { 
+            local_steal_tries++;
+	          random_core = largest_inclusive_partition.first + (rand_r(&seed)%largest_inclusive_partition.second);
+	        } else {
+	          random_core = (rand_r(&seed) % xitao_nthreads);
+	        } 
+        } while(random_core == nthread && local_steal_tries < 2);
+        if(random_core != nthread && default_queue_manager::try_pop_ready_task(random_core, st, nthread)) {
+           tao_total_steals++;
+           break;
+	      }
+       } while(!st && (attempts-- > 0));
+       if(st){
+         continue;
+       }
     } 
 
     // 4. It may be that there are no more tasks in the flow
@@ -359,6 +381,7 @@ int worker_loop(int nthread)
     // Finally check if the program has terminated
     if(PolyTask::pending_tasks == 0) pending_tasks_cv.notify_one();
     if(gotao_can_exit && (PolyTask::pending_tasks == 0)){
+      if(config::print_stats) runtime_stats::end_worker_stats(nthread);
       break;
     }
   }

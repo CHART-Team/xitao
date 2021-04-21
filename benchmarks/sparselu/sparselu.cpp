@@ -71,7 +71,7 @@ void sparselu_parallel()
    //printf("Init OK Matrix is: %d (%d %d) # of blocks: %d memory is %ld MB\n", (NB*BSIZE), NB, BSIZE, bcount, BSIZE*BSIZE*bcount*sizeof(ELEM)/1024/1024);
    // init XiTAO runtime 
 
-   xitao_init();
+   //xitao_init(argc, argv);
 #ifndef NO_STA
    NTHREADS = xitao_nthreads;
    STA_IND = 0;
@@ -350,13 +350,14 @@ void sparselu_serial()
 
 int main(int argc, char** argv) {
   if(argc < 4) {
-    printf("Usage: ./sparselu BLOCKS BLOCKSIZE RESOURCE_HINT\n");
+    printf("Usage: ./sparselu BLOCKS BLOCKSIZE RESOURCE_HINT <ITER USE_DENSE>\n");
     exit(0);
   }
   NB = atoi(argv[1]);
   BSIZE = atoi(argv[2]);
   TAO_WIDTH = atoi(argv[3]);
   int rep = (argc > 4)? atoi(argv[4]) : 1;
+  USE_DENSE = (argc > 5)? atoi(argv[5]) : 0;
   printf("%s\n", std::string(130, '=').c_str());
   printf("Runtime Stats\n");
   printf("%s\n", std::string(130, '=').c_str());
@@ -380,6 +381,7 @@ int main(int argc, char** argv) {
       dependency_matrix[i].resize(NB);
       dependency_matrix[i].assign(NB, NULL);
     }
+    xitao_init(argc, argv);
     sparselu_parallel();
     if(rep > 0) {
       for(int i = 0; i < NB; ++i) { 
@@ -403,7 +405,7 @@ int main(int argc, char** argv) {
       if(std::isnan(res_serial[i]) || std::isnan(res_parallel[i])) continue;
       if(!std::isfinite(res_serial[i]) || !std::isfinite(res_parallel[i])) continue;
       diff += (res_serial[i] - res_parallel[i]) * (res_serial[i] - res_parallel[i]);
-      norm += res_serial[i] * res_parallel[i];
+      norm += res_serial[i] * res_serial[i];
     }
     if(std::isnan(sqrt(diff/norm)) || !std::isfinite(sqrt(diff/norm))) printf("Error is too high\n");
     else printf("%-20s : %8.5e\n","Rel. L2 Error", sqrt(diff/norm));

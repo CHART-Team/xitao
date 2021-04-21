@@ -35,6 +35,7 @@ public:
   // The leader task id in the resource partition
   int leader;
   int criticality;
+
 #if defined(DEBUG)
   int taskid;
   static std::atomic<int> created_tasks;
@@ -43,7 +44,11 @@ public:
   std::atomic<int> refcount;
   std::vector<PolyTask *> out;
   std::atomic<int> threads_out_tao;
-  int width; /*!< number of resources that this assembly uses */  
+  std::atomic<int> threads_in_tao;
+  // the number of resources that this assembly uses
+  int width; 
+  // mold task to more than width = 1 
+  bool mold; 
 
   //Virtual declaration of performance table get/set within tasks
   //! Virtual function that is called by the performance based scheduler to get an entry in PTT
@@ -75,12 +80,12 @@ public:
   /*!
     \param x a floating point value between [0, 1) that indicates the topology address in one dimension
   */
-  int sta_to_queue(float x);
+  void sta_to_queue(float x);
   //! give a TAO an STA address
   /*!
     \param x a floating point value between [0, 1) that indicates the topology address in one dimension
   */
-  int set_sta(float x);
+  void set_sta(float x);
   //! get the current STA address of a TAO
   float get_sta();
   //! copy the STA of a TAO to the current TAO

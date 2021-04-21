@@ -13,8 +13,14 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 #include <getopt.h>
 #include <string>
+#include <iostream>
+#include <iomanip>
+using namespace std;
+extern char *optarg;
+extern int optind, opterr, optopt;
 namespace xitao {
   class config {
 public: 
@@ -25,8 +31,12 @@ public:
     static int sta;
     static int hw_contexts;
     static bool enable_workstealing; 
+    static bool enable_local_workstealing; 
     static bool use_performance_modeling;
+    static bool delete_executed_taos;
     static int nthreads;
+    static string stats_file;
+    static bool print_stats;
     static void print_configs();
     static void enable_stealing(int idle_tries_before_steal_count);
     static void disable_stealing();
@@ -41,7 +51,15 @@ public:
     static void init_config(int argc, char** argv, bool read_all_args=false);   
     static void usage(char* name); 
     template<typename T>
-    static void formatted_print(std::string s, T v, bool fixed=true);
+    static void formatted_print(std::string s, T v, bool fixed=true) {
+    if (!verbose) return;
+      std::cout << std::setw(stringLength) << std::left << s << " : ";
+      if(fixed)
+        std::cout << std::setprecision(decimal) << std::fixed;
+      else
+        std::cout << std::setprecision(1) << std::scientific;
+      std::cout << v << std::endl;
+    }
   };
 }
 

@@ -34,18 +34,18 @@ public:
   AssemblyTask(int w, int nthread=0) : PolyTask(TASK_ASSEMBLY, nthread) {
     leader = -1;
     width = w;
-#ifdef NEED_BARRIER
-    barrier = new BARRIER(w);
-#endif 
+// #ifdef NEED_BARRIER
+//     barrier = new BARRIER(w);
+// #endif 
   }
-#ifdef NEED_BARRIER
-  BARRIER *barrier;
-#endif  
+// #ifdef NEED_BARRIER
+//   BARRIER *barrier;
+// #endif  
   virtual void execute(int thread) = 0;
   ~AssemblyTask(){
-#ifdef NEED_BARRIER
-    delete barrier;
-#endif
+// #ifdef NEED_BARRIER
+//     delete barrier;
+// #endif
   }  
 };
 

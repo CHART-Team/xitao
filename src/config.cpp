@@ -1,8 +1,8 @@
 #include "config.h"
 #include "perf_model.h"
 #include <thread>
-#include <iostream>
 #include <sstream>
+
 using namespace xitao;
 using namespace std;
 
@@ -13,6 +13,9 @@ int  perf_model::refresh_frequency      = 10;
 int  perf_model::old_tick_weight     = 4;
 bool perf_model::mold = true;
 bool config::verbose  = true;
+bool config::print_stats = false;
+string config::stats_file = "stats.txt";
+bool config::delete_executed_taos  = true;
 int  config::thread_base = GOTAO_THREAD_BASE;
 int  config::affinity = GOTAO_NO_AFFINITY;
 int  config::steal_attempts = STEAL_ATTEMPTS;
@@ -21,17 +24,23 @@ int  config::sta = TAO_STA;
 int  config::hw_contexts = GOTAO_HW_CONTEXTS;
 int  config::nthreads = std::thread::hardware_concurrency();
 bool config::enable_workstealing = true; 
+bool config::enable_local_workstealing = false; 
 bool config::use_performance_modeling = true;
 const string config::xitao_args_prefix = "--xitao_args=";
 
+
 static struct option long_options[] = {
   {"wstealing",    required_argument, 0, 'w'},
+  {"lwstealing",   required_argument, 0, 'l'},
   {"perfmodel",    required_argument, 0, 'p'},
   {"nthreads",     required_argument, 0, 't'},
   {"idletries",    required_argument, 0, 'i'},
   {"minparcost",   required_argument, 0, 'c'},
+  {"sta",          required_argument, 0, 's'},
   {"oldtickweight",    required_argument, 0, 'o'},
   {"refreshtablefreq",    required_argument, 0, 'f'},
+  {"dealloctaos",    required_argument, 0, 'd'},
+  {"stats",    optional_argument, 0, 'u'},
   {"mold",    required_argument, 0, 'm'},
   {"help",         no_argument,       0, 'h'},
   {0, 0, 0, 0}
@@ -65,14 +74,17 @@ void config::init_config(int argc, char** argv, bool read_all_args) {
   }
   // fill in the extracted args
   while (argc > 1) {
-    int option_index;
-    int c = getopt_long(argc, argv, "hp:c:w:m:t:i:o:f:",
-                        long_options, &option_index);
-
+    int c = getopt_long(argc, argv, "uhp:c:w:l:s:m:t:i:o:f:d:", long_options, &optind);
     if (c == -1) break;
     switch (c) {
       case 'w':
         enable_workstealing = atoi(optarg);
+        break;
+      case 's':
+        sta = atoi(optarg);
+        break;
+      case 'l':
+        enable_local_workstealing = atoi(optarg);
         break;
       case 'm':
         perf_model::mold = atoi(optarg);
@@ -89,6 +101,12 @@ void config::init_config(int argc, char** argv, bool read_all_args) {
       case 'i':
         config::steal_attempts = atoi(optarg);
         break;
+      case 'u':
+        config::print_stats = true;
+        if(optarg == NULL && optind < argc && argv[optind] != NULL && argv[optind][0] != '-') {
+          config::stats_file = string(argv[optind]);
+        }
+        break;
       case 'h':
         config::usage(argv[0]);
         abort();
@@ -98,7 +116,10 @@ void config::init_config(int argc, char** argv, bool read_all_args) {
       case 'f':
         perf_model::refresh_frequency = atoi(optarg);
         break;
-      default:
+      case 'd':
+        delete_executed_taos = atoi(optarg);
+        break;
+       default:
         config::usage(argv[0]);
         abort();
       }
@@ -113,35 +134,32 @@ void config::usage(char* name) {
           "Usage: %s [options]\n"
           "Long option (short option)               : Description (Default value)\n"
           " --wstealing (-w) [0/1]                  : Enable/Disable work-stealing (%d)\n"
+          " --lwstealing (-l)[0/1]                  : Enable/Disable cluster-level work-stealing (%d)\n"
           " --perfmodel (-p) [0/1]                  : Enable/Disable performance modeling  (%d)\n"
+          " --sta (-s) [0/1]                        : Enable/Disable capturing sta  (%d)\n"
           " --nthreads (-t)                         : The number of worker threads (%d)\n"
           " --idletries (-i)                        : The number of idle tries before a steal attempt (%d)\n"
           " --minparcost (-c) [0/1]                 : model 1 (parallel cost) - 0 (parallel time) (%d)\n"
           " --oldtickweight (-o)                    : Weight of old tick versus new tick (%d)\n"
           " --refreshtablefreq (-f)                 : How often to attempt a random moldability to heat the table (%d)\n"
+          " --dealloctaos (-d)[0/1]                 : The runtime deletes executed taos (%d)\n"
+          " --stats (-u)                            : Output runtime stats to file (%s)\n"
           " --mold (-m)                             : Enable/Disable dynamic moldability (%d)\n"
           " --help (-h)                             : Show this help document\n",
           name,
           config::enable_workstealing,
+          config::enable_local_workstealing,
           config::use_performance_modeling,
+          config::sta,
           config::nthreads,
           config::steal_attempts,
           perf_model::minimize_parallel_cost,
           perf_model::old_tick_weight,
           perf_model::refresh_frequency,
+          config::delete_executed_taos,
+          config::stats_file.c_str(),
           perf_model::mold
           );
-}
-
-template<typename T>
-void config::formatted_print(std::string s, T v, bool fixed) {
-  if (!verbose) return;
-  std::cout << std::setw(stringLength) << std::left << s << " : ";
-  if(fixed)
-    std::cout << std::setprecision(decimal) << std::fixed;
-  else
-    std::cout << std::setprecision(1) << std::scientific;
-  std::cout << v << std::endl;
 }
 
 void config::enable_stealing(int idle_tries_before_steal_count = STEAL_ATTEMPTS) {
@@ -173,7 +191,14 @@ void config::print_configs() {
     cout << "***************************************************" << endl;
     formatted_print("Number of threads", config::nthreads);
     formatted_print("Work stealing", ((config::enable_workstealing)? "enabled" : "disabled"));
+    formatted_print("Cluster w-stealing", ((config::enable_local_workstealing)? "enabled" : "disabled"));
     formatted_print("Performance model", ((config::use_performance_modeling)? "enabled" : "disabled"));
+    formatted_print("Capturing STA", ((config::sta == 1)? "enabled" : "disabled"));
+    formatted_print("Auto TAO dealloc", ((config::delete_executed_taos)? "enabled" : "disabled"));
+    formatted_print("Print stats", ((config::print_stats)? "enabled" : "disabled"));
+    if(config::print_stats){
+      formatted_print("Stats file", config::stats_file);
+    }
     if(config::enable_workstealing) {
       formatted_print("Idle tries before steal", config::steal_attempts);
     }

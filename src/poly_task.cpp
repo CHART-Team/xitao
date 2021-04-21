@@ -37,25 +37,28 @@ PolyTask::PolyTask(int t, int _nthread=0) : type(t) {
   else task_pool[_nthread].tasks--;
   LOCK_RELEASE(worker_lock[_nthread]);
   threads_out_tao = 0;
+  threads_in_tao = 0;
 
   criticality=0;
   marker = 0;  
   // setting the hint to 0. can be overwritten by the constructor of the child class 
   workload_hint = 0;
-
+  mold = true;
 }
                                           // Internally, GOTAO works only with queues, not stas
-int PolyTask::sta_to_queue(float x) {
-  if(x >= GOTAO_NO_AFFINITY) { 
+void PolyTask::sta_to_queue(float x) {
+  if(x >= GOTAO_NO_AFFINITY || x < 0.0) { 
     affinity_queue = -1;
+  } else {
+    affinity_queue = (int) (x*xitao_nthreads);
   }
-    else if (x < 0.0) return 1;  // error, should it be reported?
-    else affinity_queue = (int) (x*xitao_nthreads);
-    return 0; 
+}
+
+void PolyTask::set_sta(float x) {  
+  if(config::sta == 1) {
+    affinity_relative_index = x;  // whenever a sta is changed, it triggers a translation
+    sta_to_queue(x);
   }
-int PolyTask::set_sta(float x) {    
-  affinity_relative_index = x;  // whenever a sta is changed, it triggers a translation
-  return sta_to_queue(x);
 } 
 float PolyTask::get_sta() {             // return sta value
   return affinity_relative_index; 
@@ -80,12 +83,12 @@ int PolyTask::if_prio(int _nthread, PolyTask * it) {
 // get value at specific location (leader, width) in ptt
 float PolyTask::get_timetable(int thread, int index) {
   // return the ptt measurement at location
-  return (*_ptt)[index * xitao_ptt::ptt_row_size + thread];
+  return _ptt->data[index * xitao_ptt::ptt_row_size + thread];
 }
 
 // set value at specific location (leader, width) in ptt
 void PolyTask::set_timetable(int thread, float ticks, int index) {
-  (*_ptt)[index * xitao_ptt::ptt_row_size + thread] = ticks;  
+  _ptt->data[index * xitao_ptt::ptt_row_size + thread] = ticks;  
 }
 
 PolyTask * PolyTask::commit_and_wakeup(int _nthread) {
@@ -94,29 +97,18 @@ PolyTask * PolyTask::commit_and_wakeup(int _nthread) {
     int refs = it->refcount.fetch_sub(1);
     if(refs == 1) {
       DEBUG_MSG("[DEBUG] Task " << it->taskid << " became ready");
-      if(config::use_performance_modeling) {
-        int pr = if_prio(_nthread, it);
-        if (pr == 1) {
-          perf_model::global_search_ptt(it);
-          //globalsearch_PTT(_nthread, it);
-          DEBUG_MSG("[DEBUG] Priority=1, task "<< it->taskid <<" will run on thread "<< it->leader << ", width become " << it->width);
-          default_queue_manager::insert_task_in_assembly_queues(it);
-        } else {  
-          DEBUG_MSG("[DEBUG] Priority=0, task "<< it->taskid <<" is pushed to WSQ of thread "<< _nthread); 
-          default_queue_manager::insert_in_ready_queue(it, _nthread);
-        }
+      if(it->criticality == 1 && config::use_performance_modeling) {
+        perf_model::global_search_ptt(it);
+        DEBUG_MSG("[DEBUG] Priority=1, task "<< it->taskid <<" will run on thread "<< it->leader << ", width become " << it->width);
+        default_queue_manager::insert_task_in_assembly_queues(it);
       } else {
-        if(!ret && ((it->affinity_queue == -1) || ((it->affinity_queue/it->width) == (_nthread/it->width)))){
-          // history_mold(_nthread,(*it)); 
-          ret = it; // forward locally only if affinity matches
-        } else {
-          // otherwise insert into affinity queue, or in local queue
-          int ndx = it->affinity_queue;
-          if((ndx == -1) || ((it->affinity_queue/it->width) == (_nthread/it->width)))
-            ndx = _nthread;
-          //history_mold(_nthread,(*it)); 
+        // if(!ret && it->affinity_queue == -1){
+        //   ret = it;
+        // } else { 
+          // either forward locally or following affinity
+          int ndx = (it->affinity_queue == -1)? _nthread : it->affinity_queue;
           default_queue_manager::insert_in_ready_queue(it, ndx);
-        } 
+        //} 
       }
     }
   }

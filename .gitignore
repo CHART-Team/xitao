@@ -12,6 +12,10 @@ html
 latex
 heat-tao
 heat-tbb
+benchmarks/fmm-2d/layout
+benchmarks/fmm-2d/layout4
+benchmarks/fmm-2d/test
+benchmarks/heat/output
 benchmarks/bfs/data/bfs/inputGen/*.txt
 benchmarks/dataparallel/dataparallel
 benchmarks/dataparallel/dataparallel.cxx.experiments
