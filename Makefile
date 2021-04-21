@@ -37,12 +37,16 @@ TAO_OBJS = src/tao_sched.o src/config.o src/runtime_stats.o src/xitao_ptt_key.o 
 
 all: lib
 	cd $(EXAMPLES)/dotproduct && $(MAKE) clean && $(MAKE) 
-#	cd $(EXAMPLES)/randomDAGs && $(MAKE) clean && $(MAKE)
+	cd $(EXAMPLES)/randomDAGs && $(MAKE) clean && $(MAKE)
 	cd $(EXAMPLES)/syntheticDAGs && $(MAKE) clean && $(MAKE) 
 	cd $(EXAMPLES)/heat && $(MAKE) clean && $(MAKE) 
 	cd $(EXAMPLES)/dataparallel && $(MAKE) clean && $(MAKE) 
 	cd $(EXAMPLES)/fibonacci && $(MAKE) clean && $(MAKE) 
 	cd $(EXAMPLES)/sparselu && $(MAKE) clean && $(MAKE) 
+	cd $(EXAMPLES)/matmul && $(MAKE) clean && $(MAKE) 
+	cd $(EXAMPLES)/fmm-2d && $(MAKE) clean && $(MAKE) 
+	cd $(EXAMPLES)/sparselu && $(MAKE) clean && $(MAKE) 
+	cd $(EXAMPLES)/merge_sort && $(MAKE) clean && $(MAKE) 
 %.o : %.cxx
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
