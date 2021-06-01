@@ -31,6 +31,7 @@ Long option (short option)               : Description (Default value)
  --refreshtablefreq (-t)                 : How often to attempt a random moldability to heat the table (10)
  --mold (-m)                             : Enable/Disable dynamic moldability (1)
  --help (-h)                             : Show this help document
+
 ```
 
 ## Explanation for the Dot Product Example ##
