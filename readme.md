@@ -12,7 +12,7 @@ make lib
 ```
 ## Running different scheduling algorithms in XiTAO ##
 
-### 1. Adaptive Resource Moldable Scheduler (ARMS) + Moldability ###
+### 1. Adaptive Resource Moldable Scheduler - With Moldability (ARMS-M) ###
 Without locality-aware stealing
 ```
 ./binary --xitao_args="-t32 -w1 -l0 -p1 -m1 -f10 -c0"
@@ -21,7 +21,7 @@ With locality-aware stealing
 ```
 ./binary --xitao_args="-t32 -w1 -l1 -p1 -m1 -f10 -c0"
 ```
-### 2. Adaptive Resource Moldable Scheduler (ARMS) - No Moldability ###
+### 2. Adaptive Resource Moldable Scheduler - No Moldability (ARMS-1) ###
 Without locality-aware stealing
 ```
 ./binary --xitao_args="-t32 -w1 -l0 -p1 -m0 -f10 -c0"
