@@ -10,6 +10,30 @@ The following figure shows the simplified architecture of the XiTAO runtime
 ```bash
 make lib
 ```
+## Running different scheduling algorithms in XiTAO ##
+
+### 1. Adaptive Resource Moldable Scheduler (ARMS) + Moldability ###
+Without locality-aware stealing
+```
+./binary --xitao_args="-t32 -w1 -l0 -p1 -m1 -f10 -c0"
+```
+With locality-aware stealing
+```
+./binary --xitao_args="-t32 -w1 -l1 -p1 -m1 -f10 -c0"
+```
+### 2. Adaptive Resource Moldable Scheduler (ARMS) - No Moldability ###
+Without locality-aware stealing
+```
+./binary --xitao_args="-t32 -w1 -l0 -p1 -m0 -f10 -c0"
+```
+With locality-aware stealing
+```
+./binary --xitao_args="-t32 -w1 -l1 -p1 -m0 -f10 -c0"
+```
+### 3. Random Work-Stealing (RWS) ###
+```
+./binary --xitao_args="-t32 -w1 -p0 -s0"
+```
 
 ## Running Dot Product Example ##
 ```bash
