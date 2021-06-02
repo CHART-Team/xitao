@@ -46,11 +46,11 @@ By initializing the command line arguments to the runtime using ```xitao_init(ar
 ```
 Usage: --xitao_args= [options]
 Long option (short option)               : Description (Default value)
- --wstealing (-w) [0/1]                  : Enable/Disable work-stealing (1)
- --perfmodel (-p) [0/1]                  : Enable/Disable performance modeling  (1)
+ --wstealing (-w) [0/1]                  : Enable (1) / Disable (0) work-stealing (1)
+ --perfmodel (-p) [0/1]                  : Enable (1) / Disable (0) performance modeling  (1)
  --nthreads (-t)                         : The number of worker threads (8)
  --idletries (-i)                        : The number of idle tries before a steal attempt (100)
- --minparcost (-c) [0/1]                 : model 1 (parallel cost) - 0 (parallel time) (1)
+ --minparcost (-c) [0/1]                 : Parallel cost (1) - Parallel time (0) (1)
  --oldtickweight (-o)                    : Weight of old tick versus new tick (4)
  --refreshtablefreq (-t)                 : How often to attempt a random moldability to heat the table (10)
  --mold (-m)                             : Enable/Disable dynamic moldability (1)
