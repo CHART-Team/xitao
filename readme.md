@@ -46,14 +46,14 @@ By initializing the command line arguments to the runtime using ```xitao_init(ar
 ```
 Usage: --xitao_args= [options]
 Long option (short option)               : Description (Default value)
- --wstealing (-w) [0/1]                  : Enable (1) / Disable (0) work-stealing (1)
- --perfmodel (-p) [0/1]                  : Enable (1) / Disable (0) performance modeling  (1)
+ --wstealing (-w) [0/1]                  : Disable (0) / Enable (1) work-stealing (1)
+ --perfmodel (-p) [0/1]                  : Disable (0) / Enable (1) performance modeling  (1)
  --nthreads (-t)                         : The number of worker threads (8)
  --idletries (-i)                        : The number of idle tries before a steal attempt (100)
  --minparcost (-c) [0/1]                 : Parallel cost (1) - Parallel time (0) (1)
  --oldtickweight (-o)                    : Weight of old tick versus new tick (4)
  --refreshtablefreq (-t)                 : How often to attempt a random moldability to heat the table (10)
- --mold (-m)                             : Enable/Disable dynamic moldability (1)
+ --mold (-m)                             : Disable (0) / Enable (1) dynamic moldability (1)
  --help (-h)                             : Show this help document
 
 ```
@@ -81,7 +81,7 @@ Create a file with number of lines = number of threads + 1
 
 -- first line contains affinity for each thread
 
--- the subsequent lines correspond to the threads listed in order, in which the thread is a leader. The line contains the allowed resource partition widths
+-- the subsequent lines correspond to the threads listed in the same order The line contains the allowed resource partition widths for each worker thread
 
 -- set environment variable XITAO_LAYOUT_PATH to the absolute path of the layout file
 
